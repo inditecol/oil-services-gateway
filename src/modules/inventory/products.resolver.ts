@@ -7,6 +7,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 import { ProductsService } from './products.service';
 import { SurtidoresService } from './surtidores.service';
+import { PrismaService } from '../../config/prisma/prisma.service';
 import { Producto, ProductListResponse } from './entities/producto.entity';
 import { 
   ProductWithConversionsResponse, 
@@ -45,9 +46,17 @@ import { CreateProductInput } from './dto/create-product.input';
 import { UpdateProductInput } from './dto/update-product.input';
 import { WriteOffExpiredProductsInput } from './dto/write-off-expired.input';
 import { WriteOffExpiredProductsResponse } from './entities/write-off-response.entity';
-import { PrismaService } from '../../config/prisma/prisma.service';
 import { TanquesService } from './tanques.service';
 import { InventoryService } from './inventory.service';
+
+// Nuevas importaciones para el sistema de ventas de productos
+import { MetodoPago } from './entities/metodo-pago.entity';
+import { HistorialVentasProductos } from './entities/historial-ventas-productos.entity';
+import { ConsolidadoProductosVendidos, ResumenVentasProductos } from './entities/consolidado-productos-ventas.entity';
+import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput } from './dto/registrar-venta-producto.input';
+import { CrearMetodoPagoInput, ActualizarMetodoPagoInput, FiltrosMetodosPagoInput } from './dto/metodo-pago.input';
+import { MetodosPagoService } from './services/metodos-pago.service';
+import { HistorialVentasService } from './services/historial-ventas.service';
 
 @Resolver(() => Producto)
 @UseGuards(JwtAuthGuard)
@@ -57,7 +66,9 @@ export class ProductsResolver {
     private readonly surtidoresService: SurtidoresService,
     private readonly prisma: PrismaService,
     private readonly tanquesService: TanquesService,
-    private readonly inventoryService: InventoryService
+    private readonly inventoryService: InventoryService,
+    private readonly metodosPagoService: MetodosPagoService,
+    private readonly historialVentasService: HistorialVentasService
   ) {}
 
   @Mutation(() => Producto)
@@ -845,6 +856,53 @@ export class ProductsResolver {
               ventasProductosCalculadas++;
               
               console.log(`[CIERRE_TURNO] Stock actualizado para ${product.codigo}: -${cantidadTotalProducto} ${product.unidadMedida}`);
+
+              // REGISTRAR VENTAS EN HistorialVentasProductos
+              try {
+                // Obtener el turno activo
+                const turnoActivo = await this.prisma.turno.findFirst({
+                  where: {
+                    puntoVentaId: cierreTurnoInput.puntoVentaId,
+                    activo: true
+                  }
+                });
+
+                if (turnoActivo) {
+                  // Registrar cada venta individual
+                  for (const ventaIndividual of ventasIndividualesDetalle) {
+                    for (const metodoPago of ventaIndividual.metodosPago) {
+                      // Buscar el método de pago por código
+                      const metodoPagoDb = await this.prisma.metodoPago.findUnique({
+                        where: { codigo: metodoPago.metodoPago }
+                      });
+
+                      if (metodoPagoDb) {
+                        await this.prisma.historialVentasProductos.create({
+                          data: {
+                            fechaVenta: new Date(),
+                            cantidadVendida: ventaIndividual.cantidad,
+                            precioUnitario: ventaIndividual.precioUnitario,
+                            valorTotal: ventaIndividual.valorTotal,
+                            unidadMedida: ventaProducto.unidadMedida,
+                            observaciones: ventaIndividual.observaciones || `Venta registrada en cierre de turno - ${metodoPago.metodoPago}`,
+                            productoId: product.id,
+                            metodoPagoId: metodoPagoDb.id,
+                            usuarioId: user.id,
+                            turnoId: turnoActivo.id,
+                            puntoVentaId: cierreTurnoInput.puntoVentaId
+                          }
+                        });
+                        console.log(`[CIERRE_TURNO] Venta registrada en historial: ${product.codigo} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - ${metodoPago.metodoPago}`);
+                      }
+                    }
+                  }
+                } else {
+                  console.warn(`[CIERRE_TURNO] No se encontró turno activo para registrar ventas de productos`);
+                }
+              } catch (error) {
+                console.error(`[CIERRE_TURNO] Error al registrar ventas en historial:`, error);
+                advertencias.push(`Error al registrar ventas de ${product.codigo} en historial: ${error.message}`);
+              }
 
               // Calcular métodos de pago consolidados con porcentajes
               const metodosPagoProductoFinal = metodosPagoConsolidados.map(mp => ({
@@ -2337,5 +2395,149 @@ export class ProductsResolver {
       fechaDesde,
       fechaHasta,
     });
+  }
+
+  // ===== NUEVAS FUNCIONALIDADES PARA VENTAS DE PRODUCTOS =====
+
+  /**
+   * REGISTRAR VENTA DE PRODUCTO
+   */
+  @Mutation(() => HistorialVentasProductos)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async registrarVentaProducto(
+    @Args('input') input: RegistrarVentaProductoInput,
+    @CurrentUser() user: any
+  ): Promise<HistorialVentasProductos> {
+    // Agregar información del usuario actual
+    const inputWithUser = {
+      ...input,
+      usuarioId: user.id
+    };
+    
+    return this.historialVentasService.registrarVentaProducto(inputWithUser);
+  }
+
+  /**
+   * OBTENER VENTAS DE PRODUCTOS CON FILTROS
+   */
+  @Query(() => [HistorialVentasProductos])
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async obtenerVentasProductos(
+    @Args('filtros', { nullable: true }) filtros?: FiltrosVentasProductosInput
+  ): Promise<HistorialVentasProductos[]> {
+    return this.historialVentasService.obtenerVentasPaginadas(filtros);
+  }
+
+  /**
+   * OBTENER VENTAS POR PRODUCTO
+   */
+  @Query(() => [HistorialVentasProductos])
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async obtenerVentasPorProducto(
+    @Args('productoId', { type: () => ID }) productoId: string,
+    @Args('filtros', { nullable: true }) filtros?: FiltrosVentasProductosInput
+  ): Promise<HistorialVentasProductos[]> {
+    return this.historialVentasService.obtenerVentasPorProducto(productoId, filtros);
+  }
+
+  /**
+   * REPORTE CONSOLIDADO DE PRODUCTOS VENDIDOS
+   */
+  @Query(() => ResumenVentasProductos)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async getAllProductsSalesConsolidatedReport(
+    @Args('filtros') filtros: FiltrosReporteVentasInput
+  ): Promise<ResumenVentasProductos> {
+    return this.historialVentasService.obtenerResumenVentasPorPeriodo(filtros);
+  }
+
+  /**
+   * ESTADÍSTICAS GENERALES DE VENTAS
+   */
+  @Query(() => String, { name: 'getEstadisticasVentasGenerales' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async getEstadisticasVentasGenerales(): Promise<string> {
+    const estadisticas = await this.historialVentasService.obtenerEstadisticasGenerales();
+    return JSON.stringify(estadisticas);
+  }
+
+  // ===== MÉTODOS DE PAGO =====
+
+  /**
+   * OBTENER TODOS LOS MÉTODOS DE PAGO
+   */
+  @Query(() => [MetodoPago])
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async obtenerMetodosPago(
+    @Args('filtros', { nullable: true }) filtros?: FiltrosMetodosPagoInput
+  ): Promise<MetodoPago[]> {
+    return this.metodosPagoService.obtenerTodos(filtros);
+  }
+
+  /**
+   * OBTENER MÉTODOS DE PAGO POR CATEGORÍA
+   */
+  @Query(() => [MetodoPago])
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async obtenerMetodosPagoPorCategoria(
+    @Args('categoria') categoria: 'efectivo' | 'tarjeta' | 'digital'
+  ): Promise<MetodoPago[]> {
+    return this.metodosPagoService.obtenerPorCategoria(categoria);
+  }
+
+  /**
+   * OBTENER MÉTODO DE PAGO POR CÓDIGO
+   */
+  @Query(() => MetodoPago, { nullable: true })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async obtenerMetodoPagoPorCodigo(
+    @Args('codigo') codigo: string
+  ): Promise<MetodoPago | null> {
+    return this.metodosPagoService.obtenerPorCodigo(codigo);
+  }
+
+  /**
+   * CREAR MÉTODO DE PAGO
+   */
+  @Mutation(() => MetodoPago)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager')
+  async crearMetodoPago(
+    @Args('input') input: CrearMetodoPagoInput
+  ): Promise<MetodoPago> {
+    return this.metodosPagoService.crearMetodoPago(input);
+  }
+
+  /**
+   * ACTUALIZAR MÉTODO DE PAGO
+   */
+  @Mutation(() => MetodoPago)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager')
+  async actualizarMetodoPago(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: ActualizarMetodoPagoInput
+  ): Promise<MetodoPago> {
+    return this.metodosPagoService.actualizarMetodoPago(id, input);
+  }
+
+  /**
+   * ELIMINAR MÉTODO DE PAGO
+   */
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async eliminarMetodoPago(
+    @Args('id', { type: () => ID }) id: string
+  ): Promise<boolean> {
+    return this.metodosPagoService.eliminarMetodoPago(id);
   }
 } 

@@ -1104,11 +1104,21 @@ export class ProductsService {
             const precioCompra = lecturaInput.precioCompra || 0;
             const costoTotalCombustible = volumenFinal * precioCompra;
 
-            // Actualizar nivel del tanque
+            // Calcular volumen real usando tabla de aforo
+            let volumenReal = 0;
+            try {
+              volumenReal = await this.tanquesService.getVolumeByHeight(tanque.id, lecturaInput.alturaFluidoNueva);
+            } catch (error) {
+              console.warn(`No se pudo calcular volumen por tabla de aforo para tanque ${tanque.id}:`, error.message);
+              // Usar cálculo aproximado si no hay tabla de aforo
+              volumenReal = volumenFinal;
+            }
+
+            // Actualizar nivel del tanque con volumen real calculado
             await prisma.tanque.update({
               where: { id: tanque.id },
               data: {
-                nivelActual: lecturaInput.alturaFluidoNueva,
+                nivelActual: volumenReal,
                 alturaActual: lecturaInput.alturaFluidoNueva
               }
             });

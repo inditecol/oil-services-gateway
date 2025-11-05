@@ -98,7 +98,7 @@ export class TanquesService {
       orderBy: { nombre: 'asc' },
     });
 
-    return tanques.map(tanque => this.mapTanqueWithCalculations(tanque));
+    return Promise.all(tanques.map(tanque => this.mapTanqueWithCalculations(tanque)));
   }
 
   /**
@@ -120,7 +120,7 @@ export class TanquesService {
       throw new NotFoundException('Tanque no encontrado');
     }
 
-    return this.mapTanqueWithCalculations(tanque);
+    return await this.mapTanqueWithCalculations(tanque);
   }
 
   /**
@@ -180,7 +180,7 @@ export class TanquesService {
       },
     });
 
-    return this.mapTanqueWithCalculations(tanque);
+    return await this.mapTanqueWithCalculations(tanque);
   }
 
   /**
@@ -315,7 +315,7 @@ export class TanquesService {
       },
     });
 
-    const tanqueMapeado = this.mapTanqueWithCalculations(tanqueActualizado);
+    const tanqueMapeado = await this.mapTanqueWithCalculations(tanqueActualizado);
 
     if (warnings.length === 0) {
       messages.push(`Nivel actualizado exitosamente: ${volumen} ${unidadDisplay} (${alturaFluido}cm)`);
@@ -335,19 +335,21 @@ export class TanquesService {
    */
   async getTankStatusByPuntoVenta(puntoVentaId: string): Promise<TanqueWithStatus[]> {
     const tanques = await this.findByPuntoVenta(puntoVentaId);
+    const tanquesWithStatus = await Promise.all(
+      tanques.map(async tanque => {
+        const porcentajeLlenado = await this.calcularPorcentajeLlenado(tanque);
+        const estado = this.determinarEstadoTanque(porcentajeLlenado);
+        const requiereAbastecimiento = porcentajeLlenado <= 20; // Menos del 20%
 
-    return tanques.map(tanque => {
-      const porcentajeLlenado = this.calcularPorcentajeLlenado(tanque);
-      const estado = this.determinarEstadoTanque(porcentajeLlenado);
-      const requiereAbastecimiento = porcentajeLlenado <= 20; // Menos del 20%
-
-      return {
-        tanque,
-        estado,
-        porcentajeLlenado,
-        requiereAbastecimiento,
-      };
-    });
+        return {
+          tanque,
+          estado,
+          porcentajeLlenado,
+          requiereAbastecimiento,
+        };
+      })
+    );
+    return tanquesWithStatus;
   }
 
   /**
@@ -494,8 +496,8 @@ export class TanquesService {
   /**
    * Mapear tanque con cálculos adicionales
    */
-  private mapTanqueWithCalculations(tanque: any): Tanque {
-    const nivelPorcentaje = this.calcularPorcentajeLlenado(tanque);
+  private async mapTanqueWithCalculations(tanque: any): Promise<Tanque> {
+    const nivelPorcentaje = await this.calcularPorcentajeLlenado(tanque);
     
     return {
       ...tanque,
@@ -552,15 +554,23 @@ export class TanquesService {
   }
 
   /**
-   * Calcular porcentaje de llenado
+   * Calcular porcentaje de llenado basado en alturaActual y tabla de aforo
    */
-  private calcularPorcentajeLlenado(tanque: any): number {
+  private async calcularPorcentajeLlenado(tanque: any): Promise<number> {
     const capacidadTotal = parseFloat(tanque.capacidadTotal.toString());
-    const nivelActual = parseFloat(tanque.nivelActual.toString());
+    const alturaActual = parseFloat(tanque.alturaActual.toString());
     
     if (capacidadTotal === 0) return 0;
     
-    return Math.round((nivelActual / capacidadTotal) * 100 * 100) / 100;
+    try {
+      // Calcular volumen real usando tabla de aforo
+      const volumenActual = await this.getVolumeByHeight(tanque.id, alturaActual);
+      return Math.round((volumenActual / capacidadTotal) * 100 * 100) / 100;
+    } catch (error) {
+      // Si no hay tabla de aforo o hay error, usar cálculo aproximado
+      console.warn(`No se pudo calcular volumen por tabla de aforo para tanque ${tanque.id}:`, error.message);
+      return Math.round((alturaActual / 200) * 100 * 100) / 100; // Aproximación basada en altura
+    }
   }
 
   /**

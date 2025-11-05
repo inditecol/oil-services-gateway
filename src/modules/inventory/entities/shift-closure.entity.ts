@@ -82,7 +82,7 @@ export class ProductSaleResult {
 }
 
 @ObjectType()
-export class ResumenVentasProductos {
+export class ResumenVentasProductosTurno {
   @Field(() => Int)
   totalProductosVendidos: number;
 
@@ -278,8 +278,8 @@ export class ActualizacionInventarioResponse {
   @Field(() => ResumenTanques, { nullable: true })
   resumenTanques?: ResumenTanques;
 
-  @Field(() => ResumenVentasProductos, { nullable: true })
-  resumenVentasProductos?: ResumenVentasProductos;
+  @Field(() => ResumenVentasProductosTurno, { nullable: true })
+  resumenVentasProductos?: ResumenVentasProductosTurno;
 
   @Field(() => EstadisticasVentas, { nullable: true })
   estadisticasVentas?: EstadisticasVentas;

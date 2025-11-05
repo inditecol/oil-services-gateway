@@ -1123,6 +1123,122 @@ async function main() {
 
   console.log('✅ Inventario actual creado');
 
+  // 12. CREAR MÉTODOS DE PAGO
+  console.log('💳 Creando métodos de pago...');
+
+  const metodosPago = [
+    {
+      codigo: 'EFECTIVO',
+      nombre: 'Efectivo',
+      descripcion: 'Pago en efectivo',
+      esEfectivo: true,
+      esTarjeta: false,
+      esDigital: false,
+      orden: 1
+    },
+    {
+      codigo: 'TARJETA_CREDITO',
+      nombre: 'Tarjeta de Crédito',
+      descripcion: 'Pago con tarjeta de crédito',
+      esEfectivo: false,
+      esTarjeta: true,
+      esDigital: false,
+      orden: 2
+    },
+    {
+      codigo: 'TARJETA_DEBITO',
+      nombre: 'Tarjeta de Débito',
+      descripcion: 'Pago con tarjeta de débito',
+      esEfectivo: false,
+      esTarjeta: true,
+      esDigital: false,
+      orden: 3
+    },
+    {
+      codigo: 'TRANSFERENCIA',
+      nombre: 'Transferencia Bancaria',
+      descripcion: 'Pago por transferencia bancaria',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: true,
+      orden: 4
+    },
+    {
+      codigo: 'NEQUI',
+      nombre: 'Nequi',
+      descripcion: 'Pago con billetera digital Nequi',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: true,
+      orden: 5
+    },
+    {
+      codigo: 'DAVIPLATA',
+      nombre: 'Daviplata',
+      descripcion: 'Pago con billetera digital Daviplata',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: true,
+      orden: 6
+    },
+    {
+      codigo: 'PSE',
+      nombre: 'PSE',
+      descripcion: 'Pago Seguro en Línea (PSE)',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: true,
+      orden: 7
+    },
+    {
+      codigo: 'CHEQUE',
+      nombre: 'Cheque',
+      descripcion: 'Pago con cheque',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: false,
+      orden: 8
+    }
+    ,
+    {
+      codigo: 'Rumbo',
+      nombre: 'Rumbo',
+      descripcion: 'Pago con Rumbo',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: false,
+      orden: 9
+    },
+    {
+      codigo: 'Regalo',
+      nombre: 'Regalo',
+      descripcion: 'Pago con Regalo',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: false,
+      orden: 9
+    }
+  ];
+
+  for (const metodoPago of metodosPago) {
+    await prisma.metodoPago.upsert({
+      where: { codigo: metodoPago.codigo },
+      update: {},
+      create: {
+        codigo: metodoPago.codigo,
+        nombre: metodoPago.nombre,
+        descripcion: metodoPago.descripcion,
+        activo: true,
+        esEfectivo: metodoPago.esEfectivo,
+        esTarjeta: metodoPago.esTarjeta,
+        esDigital: metodoPago.esDigital,
+        orden: metodoPago.orden
+      }
+    });
+  }
+
+  console.log('✅ Métodos de pago creados');
+
   console.log('\n🎉 Seed completo ejecutado exitosamente!');
   console.log('\n📋 RESUMEN DE DATOS CREADOS:');
   console.log(`🏢 Empresas: ${empresaPrincipal.nombre}`);
@@ -1140,6 +1256,7 @@ async function main() {
   console.log(`🚗 Surtidores: 9 con múltiples mangueras`);
   console.log(`🕐 Turnos: 3 de ejemplo (2 activos, 1 completado)`);
   console.log(`📈 Inventario: Configurado para todos los puntos de venta`);
+  console.log(`💳 Métodos de Pago: 8 métodos configurados (Efectivo, Tarjetas, Digitales)`);
 
   console.log('\n💰 EJEMPLOS DE PRECIOS (COP):');
   console.log('🏪 Tienda:');

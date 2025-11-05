@@ -206,10 +206,12 @@ export class CarrotanquesService {
     // Agrupar compartimientos por vehículo (usando los primeros caracteres de la placa)
     const vehiculosMap = new Map<string, any[]>();
     
+    let idVehiculo = '';
     compartimientos.forEach(comp => {
       // Extraer la placa base del vehículo (ej: SSY683-C1 -> SSY683)
-      const placaVehiculo = comp.placa.split('-')[0];
-      
+      const placaVehiculo = comp.placa;
+       idVehiculo =comp.id;
+      console.log("placaVehiculo", placaVehiculo);
       if (!vehiculosMap.has(placaVehiculo)) {
         vehiculosMap.set(placaVehiculo, []);
       }
@@ -222,7 +224,7 @@ export class CarrotanquesService {
       const porcentajeOcupacion = capacidadTotal > 0 ? (nivelTotal / capacidadTotal) * 100 : 0;
 
       return {
-        id: `vehiculo-${placaVehiculo}`,
+        id: idVehiculo,
         nombre: `Carrotanque ${placaVehiculo}`,
         placa: placaVehiculo,
         capacidadTotal,

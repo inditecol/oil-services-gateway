@@ -72,6 +72,7 @@ model PuntoVenta {
   ventas               Venta[]
   usuarios             Usuario[]          @relation("PuntoVentaToUsuario")
   entradasInventario   EntradaInventario[] // Relación con entradas de inventario
+  historialVentasProductos HistorialVentasProductos[]
 
   @@map("puntos_venta")
   @@schema("configuracion")
@@ -113,6 +114,7 @@ model Usuario {
   rol               Rol                @relation(fields: [rolId], references: [id])
   ventas            Venta[]
   puntosVenta       PuntoVenta[]       @relation("PuntoVentaToUsuario")
+  historialVentasProductos HistorialVentasProductos[]
 
   @@map("usuarios")
   @@schema("usuarios")
@@ -134,6 +136,7 @@ model Turno {
   puntoVenta        PuntoVenta         @relation(fields: [puntoVentaId], references: [id])
   usuario           Usuario?           @relation(fields: [usuarioId], references: [id])
   ventas            Venta[]
+  historialVentasProductos HistorialVentasProductos[]
 
   @@map("turnos")
   @@schema("turnos")
@@ -175,13 +178,15 @@ model CierreTurno {
 
 model CierreTurnoMetodoPago {
   id              String      @id @default(cuid())
-  metodoPago      String      // EFECTIVO, TARJETA_CREDITO, TARJETA_DEBITO, etc.
+  metodoPago      String      // EFECTIVO, TARJETA_CREDITO, TARJETA_DEBITO, etc. (mantener para compatibilidad)
+  metodoPagoId    String?     // Nueva relación normalizada
   monto           Decimal     @db.Decimal(12, 2)
   porcentaje      Decimal     @db.Decimal(5, 2)
   observaciones   String?
   createdAt       DateTime    @default(now())
   cierreTurnoId   String
   cierreTurno     CierreTurno @relation(fields: [cierreTurnoId], references: [id], onDelete: Cascade)
+  metodoPagoRel   MetodoPago? @relation(fields: [metodoPagoId], references: [id])
 
   @@map("cierre_turno_metodos_pago")
   @@schema("turnos")
@@ -201,6 +206,7 @@ model Cliente {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   ventas          Venta[]
+  historialVentasProductos HistorialVentasProductos[]
 
   @@map("clientes")
   @@schema("clientes")
@@ -240,6 +246,7 @@ model Producto {
   categoria          Categoria           @relation(fields: [categoriaId], references: [id])
   tanques            Tanque[]
   detallesVentas     DetalleVenta[]
+  historialVentasProductos HistorialVentasProductos[]
 
   @@map("productos")
   @@schema("inventario")
@@ -561,4 +568,54 @@ model TablaAforoCarrotanque {
   @@index([carrotanqueId, altura])
   @@map("tabla_aforo_carrotanque")
   @@schema("inventario")
+}
+
+// Tabla para métodos de pago
+model MetodoPago {
+  id          String   @id @default(cuid())
+  codigo      String   @unique
+  nombre      String
+  descripcion String?
+  activo      Boolean  @default(true)
+  esEfectivo  Boolean  @default(false)
+  esTarjeta   Boolean  @default(false)
+  esDigital   Boolean  @default(false)
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  historialVentasProductos HistorialVentasProductos[]
+  cierresTurnoMetodosPago CierreTurnoMetodoPago[]
+
+  @@map("metodos_pago")
+  @@schema("configuracion")
+}
+
+// Tabla única para historial de ventas de productos
+model HistorialVentasProductos {
+  id                String   @id @default(cuid())
+  fechaVenta        DateTime
+  cantidadVendida   Float
+  precioUnitario    Float
+  valorTotal        Float
+  unidadMedida      String
+  observaciones     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relaciones
+  productoId        String
+  producto          Producto @relation(fields: [productoId], references: [id])
+  metodoPagoId      String
+  metodoPago        MetodoPago @relation(fields: [metodoPagoId], references: [id])
+  clienteId         String?
+  cliente           Cliente? @relation(fields: [clienteId], references: [id])
+  usuarioId         String
+  usuario           Usuario @relation(fields: [usuarioId], references: [id])
+  turnoId           String
+  turno             Turno @relation(fields: [turnoId], references: [id])
+  puntoVentaId      String
+  puntoVenta        PuntoVenta @relation(fields: [puntoVentaId], references: [id])
+  
+  @@map("historial_ventas_productos")
+  @@schema("ventas")
 }

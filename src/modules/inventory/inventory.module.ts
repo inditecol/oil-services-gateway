@@ -11,7 +11,10 @@ import { TanquesService } from './tanques.service';
 import { TanquesResolver } from './tanques.resolver';
 import { CarrotanquesService } from './carrotanques.service';
 import { CarrotanquesResolver } from './carrotanques.resolver';
-import { MetodosPagoResolver } from './metodos-pago.resolver';
+
+// Nuevos servicios para el sistema de ventas de productos
+import { MetodosPagoService } from './services/metodos-pago.service';
+import { HistorialVentasService } from './services/historial-ventas.service';
 
 @Module({
   providers: [
@@ -27,8 +30,20 @@ import { MetodosPagoResolver } from './metodos-pago.resolver';
     TanquesResolver,
     CarrotanquesService,
     CarrotanquesResolver,
-    MetodosPagoResolver,
+    // Nuevos servicios
+    MetodosPagoService,
+    HistorialVentasService,
   ],
-  exports: [InventoryService, ProductsService, CategoriesService, SurtidoresService, TanquesService, CarrotanquesService],
+  exports: [
+    InventoryService, 
+    ProductsService, 
+    CategoriesService, 
+    SurtidoresService, 
+    TanquesService, 
+    CarrotanquesService,
+    // Exportar nuevos servicios
+    MetodosPagoService,
+    HistorialVentasService,
+  ],
 })
 export class InventoryModule {} 
