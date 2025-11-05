@@ -165,27 +165,31 @@ export class HistorialVentasService {
   }
 
   async obtenerResumenVentasPorPeriodo(filtros: FiltrosReporteVentasInput): Promise<ResumenVentasProductos> {
-    const where: any = {};
+    const GALONES_TO_LITROS = 3.78541;
+    const LITROS_TO_GALONES = 0.264172;
+
+    // === VENTAS DE PRODUCTOS DE TIENDA ===
+    const whereTienda: any = {};
 
     if (filtros.productoId) {
-      where.productoId = filtros.productoId;
+      whereTienda.productoId = filtros.productoId;
     }
 
     if (filtros.puntoVentaId) {
-      where.puntoVentaId = filtros.puntoVentaId;
+      whereTienda.puntoVentaId = filtros.puntoVentaId;
     }
 
     if (filtros.fechaInicio) {
-      where.fechaVenta = { ...where.fechaVenta, gte: filtros.fechaInicio };
+      whereTienda.fechaVenta = { ...whereTienda.fechaVenta, gte: filtros.fechaInicio };
     }
 
     if (filtros.fechaFin) {
-      where.fechaVenta = { ...where.fechaVenta, lte: filtros.fechaFin };
+      whereTienda.fechaVenta = { ...whereTienda.fechaVenta, lte: filtros.fechaFin };
     }
 
-    // Obtener estadísticas generales
-    const estadisticas = await this.prisma.historialVentasProductos.aggregate({
-      where,
+    // Obtener estadísticas generales de productos de tienda
+    const estadisticasTienda = await this.prisma.historialVentasProductos.aggregate({
+      where: whereTienda,
       _sum: {
         valorTotal: true,
         cantidadVendida: true
@@ -195,10 +199,10 @@ export class HistorialVentasService {
       }
     });
 
-    // Obtener productos vendidos consolidados
-    const productosVendidos = await this.prisma.historialVentasProductos.groupBy({
+    // Obtener productos vendidos consolidados de tienda
+    const productosVendidosTienda = await this.prisma.historialVentasProductos.groupBy({
       by: ['productoId'],
-      where,
+      where: whereTienda,
       _sum: {
         cantidadVendida: true,
         valorTotal: true
@@ -211,23 +215,113 @@ export class HistorialVentasService {
       }
     });
 
-    // Obtener información de productos
+    // === VENTAS DE COMBUSTIBLE (HISTORIAL DE LECTURAS) ===
+    const whereCombustibleManguera: any = {
+      producto: {
+        esCombustible: true
+      }
+    };
+
+    // Filtrar por punto de venta a través de la relación manguera -> surtidor -> puntoVenta
+    if (filtros.puntoVentaId) {
+      whereCombustibleManguera.surtidor = {
+        puntoVentaId: filtros.puntoVentaId
+      };
+    }
+
+    // Filtrar por producto si está especificado
+    if (filtros.productoId) {
+      whereCombustibleManguera.productoId = filtros.productoId;
+    }
+
+    const whereCombustible: any = {
+      manguera: whereCombustibleManguera
+    };
+
+    // Filtrar por fechas
+    if (filtros.fechaInicio || filtros.fechaFin) {
+      whereCombustible.fechaLectura = {};
+      if (filtros.fechaInicio) {
+        whereCombustible.fechaLectura.gte = filtros.fechaInicio;
+      }
+      if (filtros.fechaFin) {
+        whereCombustible.fechaLectura.lte = filtros.fechaFin;
+      }
+    }
+
+    // Obtener historial de lecturas con información de manguera y producto
+    const historialLecturas = await this.prisma.historialLectura.findMany({
+      where: whereCombustible,
+      include: {
+        manguera: {
+          include: {
+            producto: true,
+            surtidor: true
+          }
+        }
+      }
+    });
+
+    // Agrupar ventas de combustible por producto
+    const ventasCombustiblePorProducto = new Map<string, {
+      cantidadTotal: number;
+      valorTotal: number;
+      numeroVentas: number;
+      productos: { cantidad: number; valor: number }[];
+    }>();
+
+    historialLecturas.forEach(lectura => {
+      const productoId = lectura.manguera.productoId;
+      const cantidadVendida = Number(lectura.cantidadVendida);
+      const valorVenta = Number(lectura.valorVenta);
+      
+      // Convertir a litros si la unidad de medida del producto es galones
+      let cantidadLitros = cantidadVendida;
+      if (lectura.manguera.producto.unidadMedida.toLowerCase() === 'galones') {
+        cantidadLitros = cantidadVendida * GALONES_TO_LITROS;
+      }
+
+      if (!ventasCombustiblePorProducto.has(productoId)) {
+        ventasCombustiblePorProducto.set(productoId, {
+          cantidadTotal: 0,
+          valorTotal: 0,
+          numeroVentas: 0,
+          productos: []
+        });
+      }
+
+      const productoData = ventasCombustiblePorProducto.get(productoId)!;
+      productoData.cantidadTotal += cantidadLitros;
+      productoData.valorTotal += valorVenta;
+      productoData.numeroVentas += 1;
+      productoData.productos.push({
+        cantidad: cantidadLitros,
+        valor: valorVenta
+      });
+    });
+
+    // === COMBINAR RESULTADOS ===
+    // Obtener información de todos los productos involucrados
+    const productosIdsTienda = productosVendidosTienda.map(p => p.productoId);
+    const productosIdsCombustible = Array.from(ventasCombustiblePorProducto.keys());
+    const todosProductosIds = [...new Set([...productosIdsTienda, ...productosIdsCombustible])];
+
     const productos = await this.prisma.producto.findMany({
       where: {
-        id: { in: productosVendidos.map(p => p.productoId) }
+        id: { in: todosProductosIds }
       }
     });
 
     const productosMap = new Map(productos.map(p => [p.id, p]));
 
-    const consolidadoProductos: any[] = productosVendidos.map(p => {
+    // Consolidar productos de tienda
+    const consolidadoProductosTienda = productosVendidosTienda.map(p => {
       const producto = productosMap.get(p.productoId);
-      const cantidadTotal = p._sum.cantidadVendida || 0;
-      const valorTotal = p._sum.valorTotal || 0;
-      const precioPromedio = p._avg.precioUnitario || 0;
+      const cantidadTotal = Number(p._sum.cantidadVendida || 0);
+      const valorTotal = Number(p._sum.valorTotal || 0);
+      const precioPromedio = Number(p._avg.precioUnitario || 0);
       const numeroVentas = p._count.id || 0;
       
-      // Calcular rentabilidad (margen de ganancia)
       const costoTotal = cantidadTotal * Number(producto?.precioCompra || 0);
       const rentabilidad = costoTotal > 0 ? ((valorTotal - costoTotal) / costoTotal) * 100 : 0;
 
@@ -242,9 +336,72 @@ export class HistorialVentasService {
       };
     });
 
-    const totalVentas = estadisticas._sum.valorTotal || 0;
-    const totalCantidad = estadisticas._sum.cantidadVendida || 0;
-    const totalTransacciones = estadisticas._count.id || 0;
+    // Consolidar productos de combustible
+    const consolidadoProductosCombustible = Array.from(ventasCombustiblePorProducto.entries()).map(([productoId, datos]) => {
+      const producto = productosMap.get(productoId);
+      const cantidadTotal = datos.cantidadTotal;
+      const valorTotal = datos.valorTotal;
+      const precioPromedio = datos.numeroVentas > 0 ? valorTotal / cantidadTotal : 0;
+      const numeroVentas = datos.numeroVentas;
+      
+      const costoTotal = cantidadTotal * Number(producto?.precioCompra || 0);
+      const rentabilidad = costoTotal > 0 ? ((valorTotal - costoTotal) / costoTotal) * 100 : 0;
+
+      return {
+        productoId: productoId,
+        producto: producto!,
+        cantidadTotalVendida: cantidadTotal,
+        valorTotalVentas: valorTotal,
+        precioPromedio: precioPromedio,
+        numeroVentas: numeroVentas,
+        rentabilidad: rentabilidad
+      };
+    });
+
+    // Combinar ambos tipos de productos
+    const consolidadoProductosMap = new Map<string, any>();
+    
+    // Agregar productos de tienda
+    consolidadoProductosTienda.forEach(p => {
+      consolidadoProductosMap.set(p.productoId, p);
+    });
+
+    // Agregar o combinar productos de combustible
+    consolidadoProductosCombustible.forEach(p => {
+      if (consolidadoProductosMap.has(p.productoId)) {
+        // Si el producto ya existe (ventas de tienda y combustible), combinar
+        const existente = consolidadoProductosMap.get(p.productoId)!;
+        existente.cantidadTotalVendida += p.cantidadTotalVendida;
+        existente.valorTotalVentas += p.valorTotalVentas;
+        existente.numeroVentas += p.numeroVentas;
+        existente.precioPromedio = existente.cantidadTotalVendida > 0 
+          ? existente.valorTotalVentas / existente.cantidadTotalVendida 
+          : 0;
+        const costoTotal = existente.cantidadTotalVendida * Number(existente.producto.precioCompra || 0);
+        existente.rentabilidad = costoTotal > 0 
+          ? ((existente.valorTotalVentas - costoTotal) / costoTotal) * 100 
+          : 0;
+      } else {
+        // Si es solo combustible, agregar
+        consolidadoProductosMap.set(p.productoId, p);
+      }
+    });
+
+    const consolidadoProductos = Array.from(consolidadoProductosMap.values());
+
+    // Calcular totales combinados
+    const totalVentasTienda = Number(estadisticasTienda._sum.valorTotal || 0);
+    const totalVentasCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.valorTotalVentas, 0);
+    const totalVentas = totalVentasTienda + totalVentasCombustible;
+
+    const totalCantidadTienda = Number(estadisticasTienda._sum.cantidadVendida || 0);
+    const totalCantidadCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.cantidadTotalVendida, 0);
+    const totalCantidad = totalCantidadTienda + totalCantidadCombustible;
+
+    const totalTransaccionesTienda = estadisticasTienda._count.id || 0;
+    const totalTransaccionesCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.numeroVentas, 0);
+    const totalTransacciones = totalTransaccionesTienda + totalTransaccionesCombustible;
+
     const promedioPorVenta = totalTransacciones > 0 ? totalVentas / totalTransacciones : 0;
 
     return {

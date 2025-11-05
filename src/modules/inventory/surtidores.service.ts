@@ -359,8 +359,10 @@ export class SurtidoresService {
     usuarioId?: string,
     startTime?: Date,
     finishTime?: Date,
-    observaciones?: string
-  ): Promise<{ success: boolean; cantidadVendida: number; valorVenta: number }> {
+    observaciones?: string,
+    cierreTurnoId?: string,
+    fechaLectura?: Date
+  ): Promise<{ success: boolean; cantidadVendida: number; valorVenta: number; historialId?: string }> {
     console.log(`[SURTIDORES] updateMangueraReadingsWithHistory iniciado:`, {
       numeroSurtidor,
       numeroManguera,
@@ -397,7 +399,7 @@ export class SurtidoresService {
 
       if (!manguera) {
         console.error(`[SURTIDORES] Manguera no encontrada: ${numeroSurtidor}/${numeroManguera}`);
-        return { success: false, cantidadVendida: 0, valorVenta: 0 };
+        return { success: false, cantidadVendida: 0, valorVenta: 0, historialId: undefined };
       }
 
       // OBTENER LA LECTURA ACTUAL DE LA BASE DE DATOS (será la "anterior" en el historial)
@@ -431,7 +433,7 @@ export class SurtidoresService {
       const historialCreado = await this.prisma.historialLectura.create({
         data: {
           mangueraId: manguera.id,
-          fechaLectura: new Date(),
+          fechaLectura: fechaLectura || new Date(),
           lecturaAnterior: lecturaAnteriorDB,
           lecturaActual: nuevaLectura,
           cantidadVendida,
@@ -440,7 +442,8 @@ export class SurtidoresService {
           observaciones,
           usuarioId,
           startTime,
-          finishTime
+          finishTime,
+          turnoId: cierreTurnoId || null // Guardamos el ID del cierre de turno en turnoId
         },
       });
 
@@ -448,13 +451,14 @@ export class SurtidoresService {
         id: historialCreado.id,
         lecturaAnterior: historialCreado.lecturaAnterior,
         lecturaActual: historialCreado.lecturaActual,
-        cantidadVendida: historialCreado.cantidadVendida
+        cantidadVendida: historialCreado.cantidadVendida,
+        turnoId: historialCreado.turnoId
       });
 
-      return { success: true, cantidadVendida, valorVenta };
+      return { success: true, cantidadVendida, valorVenta, historialId: historialCreado.id };
     } catch (error) {
       console.error('[SURTIDORES] Error updating manguera readings with history:', error);
-      return { success: false, cantidadVendida: 0, valorVenta: 0 };
+      return { success: false, cantidadVendida: 0, valorVenta: 0, historialId: undefined };
     }
   }
 
@@ -464,6 +468,7 @@ export class SurtidoresService {
   async getMangueraReadingHistory(
     numeroSurtidor: string,
     numeroManguera: string,
+    puntoVentaId: string,
     fechaDesde?: Date,
     fechaHasta?: Date,
     page: number = 1,
@@ -477,6 +482,7 @@ export class SurtidoresService {
           numero: numeroManguera,
           surtidor: {
             numero: numeroSurtidor,
+            puntoVentaId: puntoVentaId,
           },
         },
         ...(fechaDesde && fechaHasta && {
@@ -493,12 +499,19 @@ export class SurtidoresService {
           include: {
             manguera: {
               include: {
-                surtidor: true,
+                surtidor: {
+                  include: {
+                    puntoVenta: true,
+                  },
+                },
                 producto: true,
               },
             },
           },
-          orderBy: { fechaLectura: 'desc' },
+          orderBy: [
+            { fechaLectura: 'desc' },
+            { createdAt: 'desc' },
+          ],
           skip,
           take: limit,
         }),

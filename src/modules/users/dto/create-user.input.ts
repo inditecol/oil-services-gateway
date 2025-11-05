@@ -34,6 +34,15 @@ export class CreateUserInput {
   telefono?: string;
 
   @Field()
+  @IsNotEmpty({ message: 'El tipo de documento es requerido' })
+  @IsString({ message: 'El tipo de documento debe ser una cadena' })
+  tipoDeDocumento: string;
+
+  @Field(() => String)
+  @IsNotEmpty({ message: 'El número de identificación es requerido' })
+  numeroDeIdentificacion: number;
+
+  @Field()
   @IsNotEmpty({ message: 'El rol es requerido' })
   @IsString({ message: 'El rol debe ser una cadena' })
   rolId: string;

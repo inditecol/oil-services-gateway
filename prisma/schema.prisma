@@ -73,6 +73,7 @@ model PuntoVenta {
   usuarios             Usuario[]          @relation("PuntoVentaToUsuario")
   entradasInventario   EntradaInventario[] // Relación con entradas de inventario
   historialVentasProductos HistorialVentasProductos[]
+  caja                 Caja?
 
   @@map("puntos_venta")
   @@schema("configuracion")
@@ -94,6 +95,8 @@ model Rol {
 
 model Usuario {
   id                String             @id @default(cuid())
+  tipoDeDocumento   String
+  numeroDeIdentificacion BigInt
   email             String             @unique
   username          String             @unique
   password          String
@@ -113,6 +116,7 @@ model Usuario {
   empresa           Empresa?           @relation(fields: [empresaId], references: [id])
   rol               Rol                @relation(fields: [rolId], references: [id])
   ventas            Venta[]
+  historialPrecios  HistorialPrecios[]
   puntosVenta       PuntoVenta[]       @relation("PuntoVentaToUsuario")
   historialVentasProductos HistorialVentasProductos[]
 
@@ -171,6 +175,8 @@ model CierreTurno {
   usuario                Usuario                   @relation(fields: [usuarioId], references: [id])
   // RELACIÓN CON MÉTODOS DE PAGO
   metodosPago            CierreTurnoMetodoPago[]
+  // RELACIÓN CON MOVIMIENTOS DE EFECTIVO
+  movimientosEfectivo    MovimientoEfectivo[]
 
   @@map("cierres_turno")
   @@schema("turnos")
@@ -247,8 +253,32 @@ model Producto {
   tanques            Tanque[]
   detallesVentas     DetalleVenta[]
   historialVentasProductos HistorialVentasProductos[]
+  historialPrecios   HistorialPrecios[]
 
   @@map("productos")
+  @@schema("inventario")
+}
+
+model HistorialPrecios {
+  id                String    @id @default(cuid())
+  productoId        String
+  precioAnterior    Decimal   @db.Decimal(10, 2)
+  precioNuevo       Decimal   @db.Decimal(10, 2)
+  diferencia        Decimal   @db.Decimal(10, 2) // Diferencia absoluta
+  porcentajeCambio  Decimal   @db.Decimal(5, 2)  // Porcentaje de cambio
+  motivo            String?   // Motivo del cambio de precio
+  observaciones     String?   // Observaciones adicionales
+  fechaCambio       DateTime  @default(now())
+  usuarioId         String    // Usuario que realizó el cambio
+  createdAt         DateTime  @default(now())
+  
+  // Relaciones
+  producto          Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  usuario           Usuario   @relation(fields: [usuarioId], references: [id])
+  
+  @@index([productoId, fechaCambio])
+  @@index([fechaCambio])
+  @@map("historial_precios")
   @@schema("inventario")
 }
 
@@ -511,7 +541,7 @@ model VentaDiaria {
 
   @@unique([puntoVentaId, fecha])
   @@map("ventas_diarias")
-  @@schema("reportes")
+  @@schema("ventas")
 }
 
 model InventarioActual {
@@ -527,7 +557,7 @@ model InventarioActual {
 
   @@unique([puntoVentaId, productoId])
   @@map("inventario_actual")
-  @@schema("reportes")
+  @@schema("inventario")
 }
 
 model Carrotanque {
@@ -618,4 +648,47 @@ model HistorialVentasProductos {
   
   @@map("historial_ventas_productos")
   @@schema("ventas")
+}
+
+// Modelo para registrar todos los movimientos de efectivo
+model MovimientoEfectivo {
+  id                String          @id @default(cuid())
+  fecha             DateTime        @default(now())
+  tipo              String          // "INGRESO" o "EGRESO"
+  monto             Decimal         @db.Decimal(12, 2)
+  concepto          String          // Descripción del movimiento (ej: "Venta", "Pago proveedor", "Depósito banco")
+  detalle           String?         // Detalle adicional del movimiento
+  observaciones     String?
+  
+  // Relación con cierre de turno
+  cierreTurnoId     String
+  cierreTurno       CierreTurno    @relation(fields: [cierreTurnoId], references: [id], onDelete: Cascade)
+  
+  // Auditoría
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([cierreTurnoId])
+  @@index([tipo])
+  @@index([fecha])
+  @@map("movimientos_efectivo")
+  @@schema("turnos")
+}
+
+// Modelo para la caja de cada punto de venta
+model Caja {
+  id                String       @id @default(cuid())
+  puntoVentaId      String       @unique
+  saldoActual       Decimal      @default(0) @db.Decimal(12, 2) // Saldo actual en efectivo
+  saldoInicial      Decimal      @default(0) @db.Decimal(12, 2) // Saldo inicial del día
+  fechaUltimoMovimiento DateTime? // Fecha del último movimiento
+  activa            Boolean      @default(true)
+  observaciones     String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  puntoVenta        PuntoVenta   @relation(fields: [puntoVentaId], references: [id], onDelete: Cascade)
+  
+  @@map("cajas")
+  @@schema("configuracion")
 }

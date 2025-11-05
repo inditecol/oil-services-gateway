@@ -178,6 +178,34 @@ export class MetodoPagoInput {
 }
 
 @InputType()
+export class MovimientoEfectivoInput {
+  @Field()
+  @IsString()
+  @IsNotEmpty({ message: 'El tipo de movimiento es requerido' })
+  tipo: string; // "INGRESO" o "EGRESO"
+
+  @Field(() => Float)
+  @IsNumber({}, { message: 'El monto debe ser un número' })
+  @Min(0, { message: 'El monto debe ser mayor o igual a 0' })
+  monto: number;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty({ message: 'El concepto es requerido' })
+  concepto: string; // Ej: "Venta", "Pago proveedor", "Depósito banco", "Gasto operación"
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  detalle?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  observaciones?: string;
+}
+
+@InputType()
 export class ResumenVentasTurnoInput {
   @Field(() => Float)
   @IsNumber({}, { message: 'El total de ventas del turno debe ser un número' })
@@ -268,6 +296,13 @@ export class CierreTurnoInput {
   @ValidateNested()
   @Type(() => ResumenVentasTurnoInput)
   resumenVentas: ResumenVentasTurnoInput;
+
+  @Field(() => [MovimientoEfectivoInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MovimientoEfectivoInput)
+  movimientosEfectivo?: MovimientoEfectivoInput[];
 
   @Field({ nullable: true })
   @IsOptional()

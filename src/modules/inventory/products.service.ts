@@ -223,7 +223,7 @@ export class ProductsService {
     return this.formatProducts(productos);
   }
 
-  async update(id: string, updateProductInput: UpdateProductInput): Promise<Producto> {
+  async update(id: string, updateProductInput: UpdateProductInput, usuarioId?: string): Promise<Producto> {
     const existingProduct = await this.findById(id);
     
     if (!existingProduct) {
@@ -241,11 +241,21 @@ export class ProductsService {
       }
     }
 
+    // Verificar si el precio de venta está cambiando
+    const precioAnterior = parseFloat(existingProduct.precioVenta.toString());
+    const precioNuevo = updateProductInput.precioVenta ? parseFloat(updateProductInput.precioVenta.toString()) : precioAnterior;
+    const precioCambio = precioAnterior !== precioNuevo;
+
     const producto = await this.prisma.producto.update({
       where: { id },
       data: updateProductInput,
       include: { categoria: true },
     });
+
+    // Registrar cambio de precio si aplica
+    if (precioCambio && usuarioId) {
+      await this.registrarCambioPrecio(id, precioAnterior, precioNuevo, usuarioId, updateProductInput.motivoCambioPrecio);
+    }
 
     return this.formatProduct(producto);
   }
@@ -1717,6 +1727,114 @@ export class ProductsService {
       productoId: movimiento.productoId,
       tanqueId: movimiento.tanqueId,
       carrotanqueId: movimiento.carrotanqueId
+    };
+  }
+
+  /**
+   * Registrar cambio de precio en el historial
+   */
+  private async registrarCambioPrecio(
+    productoId: string,
+    precioAnterior: number,
+    precioNuevo: number,
+    usuarioId: string,
+    motivo?: string
+  ): Promise<void> {
+    const diferencia = precioNuevo - precioAnterior;
+    const porcentajeCambio = precioAnterior > 0 ? (diferencia / precioAnterior) * 100 : 0;
+
+    await this.prisma.historialPrecios.create({
+      data: {
+        productoId,
+        precioAnterior,
+        precioNuevo,
+        diferencia,
+        porcentajeCambio,
+        motivo,
+        usuarioId,
+        fechaCambio: new Date()
+      }
+    });
+  }
+
+  /**
+   * Obtener historial de precios de un producto
+   */
+  async obtenerHistorialPrecios(
+    productoId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ historial: any[]; total: number; totalPages: number; currentPage: number }> {
+    const skip = (page - 1) * limit;
+
+    const [historial, total] = await Promise.all([
+      this.prisma.historialPrecios.findMany({
+        where: { productoId },
+        include: {
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { fechaCambio: 'desc' },
+        skip,
+        take: limit
+      }),
+      this.prisma.historialPrecios.count({
+        where: { productoId }
+      })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      historial: historial.map(h => ({
+        ...h,
+        precioAnterior: parseFloat(h.precioAnterior.toString()),
+        precioNuevo: parseFloat(h.precioNuevo.toString()),
+        diferencia: parseFloat(h.diferencia.toString()),
+        porcentajeCambio: parseFloat(h.porcentajeCambio.toString())
+      })),
+      total,
+      totalPages,
+      currentPage: page
+    };
+  }
+
+  /**
+   * Obtener el saldo actual de la caja de un punto de venta
+   */
+  async getCajaSaldo(puntoVentaId: string) {
+    let caja = await this.prisma.caja.findUnique({
+      where: { puntoVentaId }
+    });
+
+    if (!caja) {
+      // Crear la caja si no existe
+      caja = await this.prisma.caja.create({
+        data: {
+          puntoVentaId,
+          saldoActual: 0,
+          saldoInicial: 0,
+          activa: true
+        }
+      });
+    }
+
+    return {
+      id: caja.id,
+      puntoVentaId: caja.puntoVentaId,
+      saldoActual: parseFloat(caja.saldoActual.toString()),
+      saldoInicial: parseFloat(caja.saldoInicial.toString()),
+      fechaUltimoMovimiento: caja.fechaUltimoMovimiento,
+      activa: caja.activa,
+      observaciones: caja.observaciones,
+      createdAt: caja.createdAt,
+      updatedAt: caja.updatedAt
     };
   }
 

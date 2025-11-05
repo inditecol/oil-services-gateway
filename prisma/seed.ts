@@ -155,16 +155,10 @@ async function main() {
   // Admin con acceso a todos los puntos de venta de la empresa principal
   const adminUser = await prisma.usuario.upsert({
     where: { email: 'admin@estacion.com' },
-    update: {
-      empresaId: empresaPrincipal.id,
-      puntosVenta: {
-        set: [
-          { id: puntoVentaGasol1.id },
-          { id: puntoVentaGasol2.id },
-        ]
-      },
-    },
+    update: {},
     create: {
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1000000000,
       email: 'admin@estacion.com',
       username: 'admin',
       password: hashedPassword,
@@ -186,16 +180,10 @@ async function main() {
   // Gerente con acceso a 2 puntos de venta
   const gerenteUser = await prisma.usuario.upsert({
     where: { email: 'gerente@estacion.com' },
-    update: {
-      empresaId: empresaPrincipal.id,
-      puntosVenta: {
-        set: [
-          { id: puntoVentaGasol1.id },
-          { id: puntoVentaGasol2.id }
-        ]
-      },
-    },
+    update: {},
     create: {
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1000000001,
       email: 'gerente@estacion.com',
       username: 'gerente',
       password: managerHashedPassword,
@@ -217,16 +205,10 @@ async function main() {
   // Supervisor con acceso a puntos de venta norte y sur
   const supervisorUser = await prisma.usuario.upsert({
     where: { email: 'supervisor@estacion.com' },
-    update: {
-      empresaId: empresaPrincipal.id,
-      puntosVenta: {
-        set: [
-          { id: puntoVentaGasol1.id },
-          { id: puntoVentaGasol2.id }
-        ]
-      },
-    },
+    update: {},
     create: {
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1000000002,
       email: 'supervisor@estacion.com',
       username: 'supervisor',
       password: hashedPassword,
@@ -245,22 +227,19 @@ async function main() {
     },
   });
 
-  // Empleado solo del punto de venta principal
-  const empleadoPrincipal = await prisma.usuario.upsert({
-    where: { email: 'empleado.principal@estacion.com' },
-    update: {
-      empresaId: empresaPrincipal.id,
-      puntosVenta: {
-        set: [{ id: puntoVentaGasol1.id }]
-      },
-    },
+  // Empleado
+  const anayerlyGarcia = await prisma.usuario.upsert({
+    where: { email: 'anayerly.garcia@estacion.com' },
+    update: {},
     create: {
-      email: 'empleado.principal@estacion.com',
-      username: 'empleado_principal',
+      email: 'anayerly.garcia@estacion.com',
+      username: 'anayerlygarcia',
       password: employeeHashedPassword,
-      nombre: 'Juan',
-      apellido: 'Pérez',
-      telefono: '965432109',
+      nombre: 'Anayerly',
+      apellido: 'Garcia Garcia',
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1065877110,
+      telefono: '954321098',
       emailVerified: true,
       rolId: employeeRole.id,
       empresaId: empresaPrincipal.id,
@@ -270,21 +249,80 @@ async function main() {
     },
   });
 
-  // Empleado solo del punto de venta norte
-  const empleadoNorte = await prisma.usuario.upsert({
-    where: { email: 'empleado.norte@estacion.com' },
-    update: {
+  const luisChogo = await prisma.usuario.upsert({
+    where: { email: 'luis.chogo@estacion.com' },
+    update: {},
+    create: {
+      email: 'luis.chogo@estacion.com',
+      username: 'luischogo',
+      password: employeeHashedPassword,
+      nombre: 'Luis armenio',
+      apellido: 'Chogo Quiroz',
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1007676909,
+      telefono: '954321098',
+      emailVerified: true,
+      rolId: employeeRole.id,
       empresaId: empresaPrincipal.id,
       puntosVenta: {
-        set: [{ id: puntoVentaGasol1.id }, { id: puntoVentaGasol2.id }]
+        connect: [{ id: puntoVentaGasol1.id }, { id: puntoVentaGasol2.id }]
       },
     },
+  });
+
+  const cristianSequea = await prisma.usuario.upsert({
+    where: { email: 'cristian.sequea@estacion.com' },
+    update: {},
     create: {
-      email: 'empleado.norte@estacion.com',
-      username: 'empleado_norte',
+      email: 'cristian.sequea@estacion.com',
+      username: 'cristiansequea',
       password: employeeHashedPassword,
-      nombre: 'Ana',
-      apellido: 'García',
+      nombre: 'Cristian Gabriel',
+      apellido: 'Sequea Pacheco',
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1007582721,
+      telefono: '954321098',
+      emailVerified: true,
+      rolId: employeeRole.id,
+      empresaId: empresaPrincipal.id,
+      puntosVenta: {
+        connect: [{ id: puntoVentaGasol1.id }, { id: puntoVentaGasol2.id }]
+      },
+    },
+  });
+
+  const andresRuidiaz = await prisma.usuario.upsert({
+    where: { email: 'andres.ruidiaz@estacion.com' },
+    update: {},
+    create: {
+      email: 'andres.ruidiaz@estacion.com',
+      username: 'andresruidiaz',
+      password: employeeHashedPassword,
+      nombre: 'Andres',
+      apellido: 'Ruidiaz Navarro',
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1006686469,
+      telefono: '954321098',
+      emailVerified: true,
+      rolId: employeeRole.id,
+      empresaId: empresaPrincipal.id,
+      puntosVenta: {
+        connect: [{ id: puntoVentaGasol1.id }, { id: puntoVentaGasol2.id }]
+      },
+    },
+  });
+
+  const juanCervantes = await prisma.usuario.upsert({
+    where: { email: 'juan.cervantes@estacion.com' },
+    update: {},
+    create: {
+      email: 'juan.cervantes@estacion.com',
+      username: 'juancervantes',
+      password: employeeHashedPassword,
+      nombre: 'Juan Carlos',
+      apellido: 'Cervantes Hernandez',
+      tipoDeDocumento: 'CC',
+      numeroDeIdentificacion: 1063482673,
       telefono: '954321098',
       emailVerified: true,
       rolId: employeeRole.id,
@@ -342,34 +380,16 @@ async function main() {
   // 6. CREAR PRODUCTOS
   console.log('🛢️ Creando productos...');
 
-  const gasolina95 = await prisma.producto.upsert({
-    where: { codigo: 'GASOL-95' },
+  const dieselGasol1 = await prisma.producto.upsert({
+    where: { codigo: 'DIESEL-Gasol-1' },
     update: {},
     create: {
-      codigo: 'GASOL-95',
-      nombre: 'Gasolina 95 Octanos',
-      descripcion: 'Gasolina sin plomo 95 octanos premium',
-      unidadMedida: 'Galones',
-      precioCompra: 12500, // Precio de compra en COP
-      precioVenta: 15900,  // Precio de venta en COP  
-      moneda: 'COP',
-      stockMinimo: 1000,
-      stockActual: 5000,
-      esCombustible: true,
-      categoriaId: combustibleCategory.id,
-    },
-  });
-
-  const diesel = await prisma.producto.upsert({
-    where: { codigo: 'DIESEL' },
-    update: {},
-    create: {
-      codigo: 'DIESEL',
-      nombre: 'Diesel B5',
+      codigo: 'DIESEL-Gasol-1',
+      nombre: 'Diesel B5 Gasol 1',
       descripcion: 'Diesel con 5% de biodiesel',
       unidadMedida: 'Galones',
-      precioCompra: 11200, // Precio de compra en COP
-      precioVenta: 14300,  // Precio de venta en COP
+      precioCompra: 9512.39, // Precio de compra en COP
+      precioVenta: 10020.00,  // Precio de venta en COP
       moneda: 'COP',
       stockMinimo: 800,
       stockActual: 4000,
@@ -378,16 +398,53 @@ async function main() {
     },
   });
 
-  const gasolina90 = await prisma.producto.upsert({
-    where: { codigo: 'GASOL-90' },
+  const gasolina90Gasol1 = await prisma.producto.upsert({
+    where: { codigo: 'GASOL-90-Gasol-1' },
     update: {},
     create: {
-      codigo: 'GASOL-90',
-      nombre: 'Gasolina 90 Octanos',
+      codigo: 'GASOL-90-Gasol-1',
+      nombre: 'Gasolina 90 Octanos Gasol 1',
       descripcion: 'Gasolina sin plomo 90 octanos',
       unidadMedida: 'Galones',
-      precioCompra: 11800, // Precio de compra en COP
-      precioVenta: 14990,  // Precio de venta en COP
+      precioCompra: 12595.85, // Precio de compra en COP
+      precioVenta: 13990.00,  // Precio de venta en COP
+      moneda: 'COP',
+      stockMinimo: 1200,
+      stockActual: 6000,
+      esCombustible: true,
+      categoriaId: combustibleCategory.id,
+    },
+  });
+
+
+  const dieselGasol2 = await prisma.producto.upsert({
+    where: { codigo: 'DIESEL-Gasol-2' },
+    update: {},
+    create: {
+      codigo: 'DIESEL-Gasol-2',
+      nombre: 'Diesel B5 Gasol 2',
+      descripcion: 'Diesel con 5% de biodiesel',
+      unidadMedida: 'Galones',
+      precioCompra: 9512.39, // Precio de compra en COP
+      precioVenta: 10020.00,  // Precio de venta en COP
+      moneda: 'COP',
+      stockMinimo: 800,
+      stockActual: 4000,
+      esCombustible: true,
+      categoriaId: combustibleCategory.id,
+    },
+  });
+
+  const gasolina90Gasol2 = await prisma.producto.upsert({
+    where: { codigo: 'GASOL-90-Gasol-2' },
+    update: {},
+    create: {
+      codigo: 'GASOL-90-Gasol-2',
+      nombre: 'Gasolina 90 Octanos Gasol 2',
+      descripcion: 'Gasolina sin plomo 90 octanos',
+      unidadMedida: 'Galones',
+      precioCompra: 12595.85, // Precio de compra en COP
+      precioVenta: 13990.00,  // Precio de venta en COP
       moneda: 'COP',
       stockMinimo: 1200,
       stockActual: 6000,
@@ -397,15 +454,15 @@ async function main() {
   });
 
   const hidroblue = await prisma.producto.upsert({
-    where: { codigo: 'HIDROBLUE' },
+    where: { codigo: 'HIDROBLUE-Gasol-1' },
     update: {},
     create: {
       codigo: 'HIDROBLUE',
       nombre: 'Hidroblue (AdBlue)',
       descripcion: 'Líquido reductor de emisiones para motores diesel',
       unidadMedida: 'Litros',
-      precioCompra: 5200,  // Precio de compra en COP
-      precioVenta: 7500,   // Precio de venta en COP
+      precioCompra: 2950,  // Precio de compra en COP
+      precioVenta: 3200,   // Precio de venta en COP
       moneda: 'COP',
       stockMinimo: 50,
       stockActual: 200,
@@ -644,18 +701,80 @@ async function main() {
   // 7. CREAR TANQUES PARA CADA PUNTO DE VENTA
   console.log('⛽ Creando tanques...');
 
+  // Función helper para cargar archivos JSON de aforo
+  function loadAforoData(filePath: string): Array<{altura: number, volumen: number}> {
+    try {
+      const fullPath = path.join(__dirname, '..', 'tablas aforo gasol', filePath);
+      const fileContent = fs.readFileSync(fullPath, 'utf8');
+      
+      // Algunos archivos tienen formato diferente (sin comillas en las propiedades)
+      // Intentar parsear directamente primero, si falla, limpiar el formato
+      try {
+        return JSON.parse(fileContent);
+      } catch {
+        // Limpiar formato de archivos sin comillas
+        const cleanedContent = fileContent
+          .replace(/\{altura:/g, '{"altura":')
+          .replace(/,volumen:/g, ',"volumen":')
+          .replace(/\}/g, '}');
+        return JSON.parse(cleanedContent);
+      }
+    } catch (error) {
+      console.warn(`⚠️ No se pudo cargar el archivo de aforo: ${filePath}`, error);
+      return [];
+    }
+  }
+
+  // Función helper para obtener volumen desde altura usando tabla de aforo
+  function getVolumeFromAforo(aforoData: Array<{altura: number, volumen: number}>, altura: number): number {
+    if (aforoData.length === 0) return 0;
+    
+    // Ordenar por altura para búsqueda binaria o lineal
+    const sortedData = [...aforoData].sort((a, b) => a.altura - b.altura);
+    
+    // Buscar el valor exacto o el más cercano
+    for (let i = 0; i < sortedData.length; i++) {
+      if (sortedData[i].altura >= altura) {
+        // Si encontramos el valor exacto
+        if (sortedData[i].altura === altura) {
+          return sortedData[i].volumen;
+        }
+        // Interpolación lineal entre el valor anterior y el actual
+        if (i > 0) {
+          const prev = sortedData[i - 1];
+          const curr = sortedData[i];
+          const factor = (altura - prev.altura) / (curr.altura - prev.altura);
+          return prev.volumen + (curr.volumen - prev.volumen) * factor;
+        }
+        return sortedData[i].volumen;
+      }
+    }
+    // Si la altura es mayor que todos, retornar el último volumen
+    return sortedData[sortedData.length - 1].volumen;
+  }
+
   const tanques = [
     // Tanques Punto de Venta gasol 1
-    { nombre: 'Tanque 5000G gasol 1 gasolina', puntoVentaId: puntoVentaGasol1.id, productoId: gasolina95.id, capacidad: 5000, unidadMedida: 'Galones' },
-    { nombre: 'Tanque 15000 gasol 1 diesel', puntoVentaId: puntoVentaGasol1.id, productoId: diesel.id, capacidad: 15000, unidadMedida: 'Galones' },
+    { nombre: 'Tanque 5000G gasol 1 gasolina', puntoVentaId: puntoVentaGasol1.id, productoId: gasolina90Gasol1.id, capacidad: 5000, unidadMedida: 'Galones', alturaActual: 59.7, aforoFile: 'gasol 1/tabla-aforo-tanque-5000gal.json' },
+    { nombre: 'Tanque 15000 gasol 1 diesel', puntoVentaId: puntoVentaGasol1.id, productoId: dieselGasol1.id, capacidad: 15000, unidadMedida: 'Galones', alturaActual: 19.3, aforoFile: 'gasol 1/tabla-aforo-tanque-15000gal.json' },
   
     // Tanques Punto de Venta gasol 2
-    { nombre: 'Tanque 5000G gasol 2 gasolina', puntoVentaId: puntoVentaGasol2.id, productoId: gasolina95.id, capacidad: 5000, unidadMedida: 'Galones' },
-    { nombre: 'Tanque 15000 gasol 2 diesel', puntoVentaId: puntoVentaGasol2.id, productoId: diesel.id, capacidad: 15000, unidadMedida: 'Galones' },
-    { nombre: 'Tanque 6500 gasol 2 hidroblue', puntoVentaId: puntoVentaGasol2.id, productoId: hidroblue.id, capacidad: 6500, unidadMedida: 'Litros' },
+    { nombre: 'Tanque 5000G gasol 2 gasolina', puntoVentaId: puntoVentaGasol2.id, productoId: gasolina90Gasol2.id, capacidad: 5000, unidadMedida: 'Galones', alturaActual: 35.4, aforoFile: 'gasol 2/tabla-aforo-tanque-5000gal gasol 2.json' },
+    { nombre: 'Tanque 15000 gasol 2 diesel', puntoVentaId: puntoVentaGasol2.id, productoId: dieselGasol2.id, capacidad: 15000, unidadMedida: 'Galones', alturaActual: 57.4, aforoFile: 'gasol 2/tabla-aforo-tanque-15000 gal.json' },
+    { nombre: 'Tanque 6500 gasol 2 hidroblue', puntoVentaId: puntoVentaGasol2.id, productoId: hidroblue.id, capacidad: 6500, unidadMedida: 'Litros', alturaActual: 200, aforoFile: 'gasol 2/tabla-aforo-tanque-hidroblue.json' },
   ];
 
   for (const tanque of tanques) {
+    // Cargar tabla de aforo para este tanque
+    const aforoData = loadAforoData(tanque.aforoFile);
+    
+    // Calcular el nivel actual basado en la altura y la tabla de aforo
+    let nivelActualCalculado = tanque.capacidad * 0.7; // valor por defecto
+    if (aforoData.length > 0) {
+      nivelActualCalculado = getVolumeFromAforo(aforoData, tanque.alturaActual);
+      console.log(`📊 Tanque ${tanque.nombre}: Altura ${tanque.alturaActual} → Volumen ${nivelActualCalculado}`);
+    }
+
     await prisma.tanque.upsert({
       where: {
         puntoVentaId_nombre: {
@@ -667,11 +786,12 @@ async function main() {
       create: {
         nombre: tanque.nombre,
         capacidadTotal: tanque.capacidad,
-        nivelActual: tanque.capacidad * 0.7, // 70% lleno
+        nivelActual: nivelActualCalculado,
         nivelMinimo: tanque.capacidad * 0.1, // 10% mínimo
         productoId: tanque.productoId,
         puntoVentaId: tanque.puntoVentaId,
         unidadMedida: tanque.unidadMedida,
+        alturaActual: tanque.alturaActual,
       },
     });
   }
@@ -709,30 +829,6 @@ async function main() {
 
   // CREAR TABLAS DE AFORO PARA CADA TANQUE
   console.log('📊 Creando tablas de aforo...');
-
-  // Función helper para cargar archivos JSON de aforo
-  function loadAforoData(filePath: string): Array<{altura: number, volumen: number}> {
-    try {
-      const fullPath = path.join(__dirname, '..', 'tablas aforo gasol', filePath);
-      const fileContent = fs.readFileSync(fullPath, 'utf8');
-      
-      // Algunos archivos tienen formato diferente (sin comillas en las propiedades)
-      // Intentar parsear directamente primero, si falla, limpiar el formato
-      try {
-        return JSON.parse(fileContent);
-      } catch {
-        // Limpiar formato de archivos sin comillas
-        const cleanedContent = fileContent
-          .replace(/\{altura:/g, '{"altura":')
-          .replace(/,volumen:/g, ',"volumen":')
-          .replace(/\}/g, '}');
-        return JSON.parse(cleanedContent);
-      }
-    } catch (error) {
-      console.warn(`⚠️ No se pudo cargar el archivo de aforo: ${filePath}`, error);
-      return [];
-    }
-  }
 
   // Mapeo de tanques a sus archivos de aforo correspondientes
   const tanqueAforoMapping = [
@@ -876,34 +972,42 @@ async function main() {
   console.log('🚗 Creando surtidores y mangueras...');
 
   const surtidores = [
-    // Surtidores Punto de Venta Principal
+    // Surtidores Punto de Venta gasol 1
     {
       numero: 'S-001',
       nombre: 'Surtidor Principal 1',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '1', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '2', color: 'Amarillo', productoId: diesel.id },
-      ]
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
+      ],
+      activo: false,
     },
     {
       numero: 'S-002',
       nombre: 'Surtidor Principal 2',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '3', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '4', color: 'Amarillo', productoId: diesel.id },
-      ]
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
+      ],
+      activo: false,
     },
 
-    // Surtidores Punto de Venta Norte
+    // Surtidores Punto de Venta gasol 1 (continuación)
     {
       numero: 'S-003',
       nombre: 'Surtidor Principal 3',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '5', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '6', color: 'Amarillo', productoId: diesel.id },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual: 55156.75},
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual: 25430.98 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual: 49945.34 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual: 39645.59 },
       ]
     },
     {
@@ -911,54 +1015,69 @@ async function main() {
       nombre: 'Surtidor Principal 4',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '7', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '8', color: 'Amarillo', productoId: diesel.id },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual: 241203.90 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false,lecturaActual: 0  },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:238344.81 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false,lecturaActual:0 },
       ]
+    },
+    {
+      numero: 'S-001',
+      nombre: 'Surtidor Principal 1',
+      puntoVentaId: puntoVentaGasol2.id,
+      mangueras: [
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
+      ],
+      activo: false,
+    },
+    {
+      numero: 'S-002',
+      nombre: 'Surtidor Principal 2',
+      puntoVentaId: puntoVentaGasol2.id,
+      mangueras: [
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
+      ],
+      activo: false,
+    },
+    {
+      numero: 'S-003',
+      nombre: 'Surtidor Principal 3',
+      puntoVentaId: puntoVentaGasol2.id,
+      mangueras: [
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:53949},
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:22866.41 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:46557.55 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:32676.75 },
+      ],
+      activo: true,
+    },
+    {
+      numero: 'S-004',
+      nombre: 'Surtidor Principal 4',
+      puntoVentaId: puntoVentaGasol2.id,
+      mangueras: [
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:269786.29},
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false,lecturaActual:0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:229180.93 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false,lecturaActual:0 },
+      ],
+      activo: true,
     },
     {
       numero: 'S-005',
-      nombre: 'Surtidor Principal 5',
+      nombre: 'Surtidor Hidroblue',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '7', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '8', color: 'Amarillo', productoId: diesel.id },
-      ]
-    },
-    {
-      numero: 'S-006',
-      nombre: 'Surtidor Principal 6',
-      puntoVentaId: puntoVentaGasol2.id,
-      mangueras: [
-        { numero: '7', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '8', color: 'Amarillo', productoId: diesel.id },
-      ]
-    },
-    {
-      numero: 'S-007',
-      nombre: 'Surtidor Principal 7',
-      puntoVentaId: puntoVentaGasol2.id,
-      mangueras: [
-        { numero: '7', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '8', color: 'Amarillo', productoId: diesel.id },
-      ]
-    },
-    {
-      numero: 'S-008',
-      nombre: 'Surtidor Principal 8',
-      puntoVentaId: puntoVentaGasol2.id,
-      mangueras: [
-        { numero: '9', color: 'Rojo', productoId: gasolina95.id },
-        { numero: '10', color: 'Amarillo', productoId: diesel.id },
-      ]
-    },
-    { 
-      numero: 'S-009', 
-      nombre: 'Surtidor Principal 9', 
-      puntoVentaId: puntoVentaGasol2.id,
-      mangueras: [
-        { numero: '11', color: 'Azul', productoId: hidroblue.id },
-      ]
-    },
+        { numero: '1', color: 'Azul', productoId: hidroblue.id, activo: true, lecturaActual:15603.3 },
+      ],
+      activo: true,
+    }
   ];
 
   for (const surtidor of surtidores) {
@@ -975,6 +1094,7 @@ async function main() {
         nombre: surtidor.nombre,
         descripcion: `Surtidor ${surtidor.numero}`,
         ubicacion: 'Zona de despacho',
+        activo: surtidor.activo,
         cantidadMangueras: surtidor.mangueras.length,
         fechaInstalacion: new Date('2020-01-01'),
         puntoVentaId: surtidor.puntoVentaId,
@@ -995,7 +1115,8 @@ async function main() {
           numero: manguera.numero,
           color: manguera.color,
           lecturaAnterior: 0,
-          lecturaActual: Math.floor(Math.random() * 50000) + 10000, // Lectura aleatoria
+          lecturaActual: manguera.lecturaActual,
+          activo: manguera.activo,
           surtidorId: createdSurtidor.id,
           productoId: manguera.productoId,
         },
@@ -1038,67 +1159,19 @@ async function main() {
 
   console.log('✅ Clientes creados');
 
-  // 10. CREAR TURNOS DE EJEMPLO
-  console.log('🕐 Creando turnos de ejemplo...');
-
-  const ahora = new Date();
-  const ayer = new Date(ahora);
-  ayer.setDate(ayer.getDate() - 1);
-
-  const turnoActual = await prisma.turno.create({
-    data: {
-      fechaInicio: ahora,
-      fechaFin: null,
-      horaInicio: '08:00',
-      horaFin: null,
-      observaciones: 'Turno matutino en curso',
-      activo: true,
-      usuarioId: empleadoPrincipal.id,
-      puntoVentaId: puntoVentaGasol1.id,
-    },
-  });
-
-  const turnoCompletado = await prisma.turno.create({
-    data: {
-      fechaInicio: ayer,
-      fechaFin: ayer,
-      horaInicio: '08:00',
-      horaFin: '16:00',
-      observaciones: 'Turno matutino completado',
-      activo: false,
-      usuarioId: empleadoNorte.id,
-      puntoVentaId: puntoVentaGasol2.id,
-    },
-  });
-
-  const turnoSupervisor = await prisma.turno.create({
-    data: {
-      fechaInicio: ahora,
-      fechaFin: null,
-      horaInicio: '14:00',
-      horaFin: null,
-      observaciones: 'Turno vespertino supervisión',
-      activo: true,
-      usuarioId: supervisorUser.id,
-      puntoVentaId: puntoVentaGasol2.id,
-    },
-  });
-
-  console.log('✅ Turnos de ejemplo creados');
-
   // 11. CREAR INVENTARIO ACTUAL
   console.log('📊 Creando inventario actual...');
 
   const inventarioData = [
     // Inventario Principal
-    { puntoVentaId: puntoVentaGasol1.id, productoId: gasolina95.id, stockActual: 5000, precio: 15900 },
-    { puntoVentaId: puntoVentaGasol1.id, productoId: diesel.id, stockActual: 4000, precio: 14300 },
-    { puntoVentaId: puntoVentaGasol1.id, productoId: gasolina90.id, stockActual: 6000, precio: 14990 },
+    { puntoVentaId: puntoVentaGasol1.id, productoId: gasolina90Gasol1.id, stockActual: 5000, precio: 15900 },
+    { puntoVentaId: puntoVentaGasol1.id, productoId: dieselGasol1.id, stockActual: 4000, precio: 14300 },
+    { puntoVentaId: puntoVentaGasol1.id, productoId: gasolina90Gasol1.id, stockActual: 6000, precio: 14990 },
 
-    // Inventario Gasol 2
-    { puntoVentaId: puntoVentaGasol2.id, productoId: gasolina95.id, stockActual: 3500, precio: 15900 },
-    { puntoVentaId: puntoVentaGasol2.id, productoId: diesel.id, stockActual: 2800, precio: 14300 },
-    { puntoVentaId: puntoVentaGasol2.id, productoId: gasolina90.id, stockActual: 4200, precio: 14990 },
+    // Inventario Punto de Venta gasol 2
+    { puntoVentaId: puntoVentaGasol2.id, productoId: gasolina90Gasol2.id, stockActual: 3500, precio: 15900 },
+    { puntoVentaId: puntoVentaGasol2.id, productoId: dieselGasol2.id, stockActual: 2800, precio: 14300 },
+    { puntoVentaId: puntoVentaGasol2.id, productoId: gasolina90Gasol2.id, stockActual: 4200, precio: 14990 },
     { puntoVentaId: puntoVentaGasol2.id, productoId: hidroblue.id, stockActual: 200, precio: 7500 },
   ];
 
@@ -1238,6 +1311,35 @@ async function main() {
   }
 
   console.log('✅ Métodos de pago creados');
+
+  // 13. CREAR CAJAS PARA CADA PUNTO DE VENTA
+  console.log('💰 Creando cajas para cada punto de venta...');
+
+  const cajaGasol1 = await prisma.caja.upsert({
+    where: { puntoVentaId: puntoVentaGasol1.id },
+    update: {},
+    create: {
+      puntoVentaId: puntoVentaGasol1.id,
+      saldoActual: 6650962.10,
+      saldoInicial: 6650962.10,
+      activa: true,
+      observaciones: 'Caja inicial para Gasol 1',
+    },
+  });
+
+  const cajaGasol2 = await prisma.caja.upsert({
+    where: { puntoVentaId: puntoVentaGasol2.id },
+    update: {},
+    create: {
+      puntoVentaId: puntoVentaGasol2.id,
+      saldoActual: 4843150.64,
+      saldoInicial: 4843150.64,
+      activa: true,
+      observaciones: 'Caja inicial para Gasol 2',
+    },
+  });
+
+  console.log('✅ Cajas creadas para cada punto de venta');
 
   console.log('\n🎉 Seed completo ejecutado exitosamente!');
   console.log('\n📋 RESUMEN DE DATOS CREADOS:');

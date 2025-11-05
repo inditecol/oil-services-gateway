@@ -22,7 +22,8 @@ import {
   ActualizacionInventarioResponse,
   BusquedaCierresCompletosResponse,
   EstadisticasCierresPorPeriodoResponse,
-  EstadisticasMetodosPagoResponse
+  EstadisticasMetodosPagoResponse,
+  ResumenCaja
 } from './entities/shift-closure.entity';
 import {
   CierreTurnoInput,
@@ -57,6 +58,8 @@ import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReport
 import { CrearMetodoPagoInput, ActualizarMetodoPagoInput, FiltrosMetodosPagoInput } from './dto/metodo-pago.input';
 import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
+import { HistorialPrecios, HistorialPreciosResponse } from './entities/historial-precios.entity';
+import { Caja } from './entities/caja.entity';
 
 @Resolver(() => Producto)
 @UseGuards(JwtAuthGuard)
@@ -132,6 +135,15 @@ export class ProductsResolver {
     return this.productsService.findLowStock();
   }
 
+  @Query(() => Caja, { name: 'getCajaSaldo' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async getCajaSaldo(
+    @Args('puntoVentaId') puntoVentaId: string
+  ): Promise<Caja> {
+    return this.productsService.getCajaSaldo(puntoVentaId);
+  }
+
   @Query(() => [Producto], { name: 'fuelProducts' })
   async findFuelProducts(): Promise<Producto[]> {
     return this.productsService.findFuel();
@@ -203,8 +215,9 @@ export class ProductsResolver {
   async updateProduct(
     @Args('id', { type: () => ID }) id: string,
     @Args('updateProductInput') updateProductInput: UpdateProductInput,
+    @CurrentUser() user: any
   ): Promise<Producto> {
-    return this.productsService.update(id, updateProductInput);
+    return this.productsService.update(id, updateProductInput, user.id);
   }
 
   @Mutation(() => Producto)
@@ -382,6 +395,9 @@ export class ProductsResolver {
 
       console.log(`[CIERRE_TURNO] Validación exitosa. Procesando ${cierreTurnoInput.lecturasSurtidores.length} surtidores`);
 
+      // Array para guardar los IDs de las lecturas creadas para actualizarlas después con el cierreTurnoId
+      const historialesLecturaIds: string[] = [];
+
       // 3. PROCESAR CADA SURTIDOR (ya validado que pertenece al punto de venta)
       for (const surtidor of cierreTurnoInput.lecturasSurtidores) {
         const ventasCalculadas = [];
@@ -475,13 +491,19 @@ export class ProductsResolver {
                 user.id,
                 new Date(cierreTurnoInput.startTime),
                 new Date(cierreTurnoInput.finishTime),
-                `Cierre de turno ${cierreTurnoInput.puntoVentaId} - Cantidad vendida: ${cantidadLitros}L`
+                `Cierre de turno ${cierreTurnoInput.puntoVentaId} - Cantidad vendida: ${cantidadLitros}L`,
+                undefined, // cierreTurnoId se actualizará después
+                new Date(cierreTurnoInput.finishTime) // fechaLectura con la fecha del proceso
               );
               
               if (!lecturaActualizada.success) {
                 advertencias.push(`No se pudo actualizar lecturas para surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`);
               } else {
                 console.log(`[CIERRE_TURNO] Lecturas actualizadas - Cantidad vendida: ${lecturaActualizada.cantidadVendida}G`);
+                // Guardar el ID del historial para actualizarlo después con el cierreTurnoId
+                if (lecturaActualizada.historialId) {
+                  historialesLecturaIds.push(lecturaActualizada.historialId);
+                }
               }
             } catch (lecturaError) {
               console.error(`[CIERRE_TURNO] Error actualizando lecturas:`, lecturaError);
@@ -1042,7 +1064,7 @@ export class ProductsResolver {
       }
 
       // GUARDAR EN BASE DE DATOS - OPERACIÓN TRANSACCIONAL
-      const cierreTurnoGuardado = await this.prisma.$transaction(async (prisma) => {
+      const resultado = await this.prisma.$transaction(async (prisma) => {
         // Crear o encontrar un turno para este punto de venta
         let turno = await prisma.turno.findFirst({
           where: {
@@ -1214,9 +1236,135 @@ export class ProductsResolver {
           );
         }
 
-        return cierre;
+        // Registrar movimientos de efectivo
+        const movimientosEfectivo = [];
+
+        // 1. Registrar ingreso de efectivo por ventas (si existe)
+        if (resumenFinanciero.totalEfectivo > 0) {
+          movimientosEfectivo.push({
+            tipo: 'INGRESO',
+            monto: resumenFinanciero.totalEfectivo,
+            concepto: 'Venta en efectivo',
+            detalle: `Ingreso por ventas del turno`,
+            observaciones: `Total de ventas en efectivo registrado en el cierre`
+          });
+        }
+
+        // 2. Registrar movimientos de efectivo adicionales del input
+        if (cierreTurnoInput.movimientosEfectivo && cierreTurnoInput.movimientosEfectivo.length > 0) {
+          cierreTurnoInput.movimientosEfectivo.forEach(movimiento => {
+            movimientosEfectivo.push({
+              tipo: movimiento.tipo,
+              monto: movimiento.monto,
+              concepto: movimiento.concepto,
+              detalle: movimiento.detalle,
+              observaciones: movimiento.observaciones
+            });
+          });
+        }
+
+        // 3. Crear los registros de movimientos de efectivo en la base de datos
+        let resumenCaja = null;
+        const fechaMovimiento = new Date(cierreTurnoInput.finishTime);
+        if (movimientosEfectivo.length > 0) {
+          await Promise.all(
+            movimientosEfectivo.map(movimiento =>
+              prisma.movimientoEfectivo.create({
+                data: {
+                  cierreTurnoId: cierre.id,
+                  fecha: fechaMovimiento,
+                  tipo: movimiento.tipo,
+                  monto: movimiento.monto,
+                  concepto: movimiento.concepto,
+                  detalle: movimiento.detalle,
+                  observaciones: movimiento.observaciones
+                }
+              })
+            )
+          );
+          console.log(`[CIERRE_TURNO] ${movimientosEfectivo.length} movimientos de efectivo registrados`);
+
+          // 4. Actualizar el saldo de la caja del punto de venta
+          // Obtener o crear la caja del punto de venta
+          let caja = await prisma.caja.findUnique({
+            where: { puntoVentaId: cierreTurnoInput.puntoVentaId }
+          });
+
+          if (!caja) {
+            // Crear la caja si no existe
+            caja = await prisma.caja.create({
+              data: {
+                puntoVentaId: cierreTurnoInput.puntoVentaId,
+                saldoActual: 0,
+                saldoInicial: 0,
+                activa: true
+              }
+            });
+            console.log(`[CIERRE_TURNO] Caja creada para el punto de venta ${cierreTurnoInput.puntoVentaId}`);
+          }
+
+          // Calcular el cambio en el saldo basado en los movimientos
+          const saldoAnterior = Number(caja.saldoActual);
+          let totalIngresos = 0;
+          let totalEgresos = 0;
+          let cambioSaldo = 0;
+          
+          movimientosEfectivo.forEach(movimiento => {
+            if (movimiento.tipo === 'INGRESO') {
+              totalIngresos += Number(movimiento.monto);
+              cambioSaldo += Number(movimiento.monto);
+            } else if (movimiento.tipo === 'EGRESO') {
+              totalEgresos += Number(movimiento.monto);
+              cambioSaldo -= Number(movimiento.monto);
+            }
+          });
+
+          // Actualizar el saldo de la caja
+          const nuevoSaldo = saldoAnterior + cambioSaldo;
+          await prisma.caja.update({
+            where: { id: caja.id },
+            data: {
+              saldoActual: nuevoSaldo,
+              fechaUltimoMovimiento: fechaMovimiento
+            }
+          });
+          console.log(`[CIERRE_TURNO] Caja actualizada: Saldo anterior $${saldoAnterior} → Saldo nuevo $${nuevoSaldo} (Cambio: ${cambioSaldo > 0 ? '+' : ''}$${cambioSaldo})`);
+
+          // Crear resumen de caja
+          resumenCaja = {
+            saldoAnterior,
+            saldoNuevo: nuevoSaldo,
+            totalIngresos,
+            totalEgresos,
+            movimientosRegistrados: movimientosEfectivo.length,
+            observaciones: `Cierre de turno - ${movimientosEfectivo.length} movimiento(s) registrado(s)`
+          };
+        }
+
+        // 5. Actualizar los historiales de lectura con el cierreTurnoId
+        if (historialesLecturaIds.length > 0) {
+          await Promise.all(
+            historialesLecturaIds.map(historialId =>
+              prisma.historialLectura.update({
+                where: { id: historialId },
+                data: {
+                  turnoId: cierre.id // Actualizar con el ID del cierre de turno
+                }
+              })
+            )
+          );
+          console.log(`[CIERRE_TURNO] ${historialesLecturaIds.length} historiales de lectura actualizados con cierreTurnoId: ${cierre.id}`);
+        }
+
+        return {
+          cierre,
+          resumenCaja
+        };
       });
 
+      const cierreTurnoGuardado = resultado.cierre;
+      const resumenCajaFinal = resultado.resumenCaja;
+      
       console.log(`[CIERRE_TURNO] Datos guardados en BD con ID: ${cierreTurnoGuardado.id}`);
 
       return {
@@ -1228,6 +1376,7 @@ export class ProductsResolver {
         totalGeneralGalones: Math.round(totalGeneralGalones * 100) / 100,
         valorTotalGeneral: Math.round(valorTotalGeneral * 100) / 100,
         resumenFinanciero,
+        resumenCaja: resumenCajaFinal,
         fechaProceso: new Date(),
         turnoId: cierreTurnoGuardado.id, // Retornamos el ID del cierre creado
         productosActualizados,
@@ -2539,5 +2688,27 @@ export class ProductsResolver {
     @Args('id', { type: () => ID }) id: string
   ): Promise<boolean> {
     return this.metodosPagoService.eliminarMetodoPago(id);
+  }
+
+  // ===== HISTORIAL DE PRECIOS =====
+
+  /**
+   * OBTENER HISTORIAL DE PRECIOS DE UN PRODUCTO
+   */
+  @Query(() => HistorialPreciosResponse)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async obtenerHistorialPrecios(
+    @Args('productoId', { type: () => ID }) productoId: string,
+    @Args('page', { type: () => Int, defaultValue: 1 }) page: number = 1,
+    @Args('limit', { type: () => Int, defaultValue: 10 }) limit: number = 10
+  ): Promise<HistorialPreciosResponse> {
+    const result = await this.productsService.obtenerHistorialPrecios(productoId, page, limit);
+    return {
+      historial: result.historial,
+      total: result.total,
+      totalPages: result.totalPages,
+      currentPage: result.currentPage
+    };
   }
 } 

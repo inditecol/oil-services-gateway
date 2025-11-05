@@ -91,6 +91,7 @@ export class SurtidoresResolver {
   async getMangueraReadingHistory(
     @Args('numeroSurtidor') numeroSurtidor: string,
     @Args('numeroManguera') numeroManguera: string,
+    @Args('puntoVentaId') puntoVentaId: string,
     @Args('fechaDesde', { nullable: true }) fechaDesde?: Date,
     @Args('fechaHasta', { nullable: true }) fechaHasta?: Date,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number = 1,
@@ -99,6 +100,7 @@ export class SurtidoresResolver {
     return this.surtidoresService.getMangueraReadingHistory(
       numeroSurtidor,
       numeroManguera,
+      puntoVentaId,
       fechaDesde,
       fechaHasta,
       page,
@@ -168,6 +170,7 @@ export class SurtidoresResolver {
   async getMangueraSalesHistory(
     @Args('numeroSurtidor') numeroSurtidor: string,
     @Args('numeroManguera') numeroManguera: string,
+    @Args('puntoVentaId') puntoVentaId: string,
     @Args('fechaDesde', { nullable: true }) fechaDesde?: Date,
     @Args('fechaHasta', { nullable: true }) fechaHasta?: Date,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number = 1,
@@ -179,6 +182,7 @@ export class SurtidoresResolver {
       const historial = await this.surtidoresService.getMangueraReadingHistory(
         numeroSurtidor,
         numeroManguera,
+        puntoVentaId,
         fechaDesde,
         fechaHasta,
         page,
@@ -256,6 +260,7 @@ export class SurtidoresResolver {
       const historial = await this.surtidoresService.getMangueraReadingHistory(
         numeroSurtidor,
         manguera.numero,
+        puntoVentaId,
         fechaDesde,
         fechaHasta,
         1,
@@ -355,6 +360,7 @@ export class SurtidoresResolver {
           const historial = await this.surtidoresService.getMangueraReadingHistory(
             surtidor.numero,
             manguera.numero,
+            surtidor.puntoVenta?.id || '',
             fechaDesde,
             fechaHasta,
             1,

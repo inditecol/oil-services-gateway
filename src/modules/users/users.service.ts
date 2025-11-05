@@ -58,6 +58,8 @@ export class UsersService {
     const user = await this.prisma.usuario.create({
       data: {
         ...userData,
+        tipoDeDocumento: createUserInput.tipoDeDocumento,
+        numeroDeIdentificacion: BigInt(createUserInput.numeroDeIdentificacion),
         password: hashedPassword,
         puntosVenta: puntosVentaIds ? {
           connect: puntosVentaIds.map(id => ({ id }))

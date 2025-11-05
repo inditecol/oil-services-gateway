@@ -1,11 +1,19 @@
-#comando para reseteat y borrar datos
+# Opción 1: Reset completo (borra todo y recrea estructura + datos)
+    
+    1.npm run prisma:reset
 
-    1. npx prisma db push --force-reset
 
 comando para sincronizar el cliente de prisma
 
-    2. npx prisma generate
+    2.npx prisma generate
+
+
+
+Push (si cambiaste el schema) + Seed manual
+
+    3.npx prisma db push
+
 
 sincronizar los datos, seed
 
-    3. npx prisma db seed
+    4.npx prisma db seed

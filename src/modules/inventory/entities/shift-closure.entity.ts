@@ -250,6 +250,27 @@ export class ResumenFinanciero {
 }
 
 @ObjectType()
+export class ResumenCaja {
+  @Field(() => Float)
+  saldoAnterior: number;
+
+  @Field(() => Float)
+  saldoNuevo: number;
+
+  @Field(() => Float)
+  totalIngresos: number;
+
+  @Field(() => Float)
+  totalEgresos: number;
+
+  @Field(() => Int)
+  movimientosRegistrados: number;
+
+  @Field({ nullable: true })
+  observaciones?: string;
+}
+
+@ObjectType()
 export class EstadisticasVentas {
   @Field(() => Int)
   cantidadVentasDeclaradas: number;
@@ -295,6 +316,9 @@ export class ActualizacionInventarioResponse {
 
   @Field(() => ResumenFinanciero)
   resumenFinanciero: ResumenFinanciero;
+
+  @Field(() => ResumenCaja, { nullable: true })
+  resumenCaja?: ResumenCaja;
 
   @Field()
   fechaProceso: Date;
