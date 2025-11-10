@@ -43,6 +43,12 @@ export class Producto {
   @Field(() => Int)
   stockActual: number;
 
+  @Field(() => String, { nullable: true })
+  tipoProducto?: string;
+
+  @Field(() => Int, { nullable: true })
+  codigoPlu?: number;
+
   @Field()
   esCombustible: boolean;
 
