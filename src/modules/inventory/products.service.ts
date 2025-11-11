@@ -83,8 +83,9 @@ export class ProductsService {
         tipoProducto: createProductInput.tipoProducto,
         codigoPlu: createProductInput.codigoPlu,
         categoriaId: createProductInput.categoriaId,
+        puntoVentaId: createProductInput.puntoVentaId,
       },
-      include: { categoria: true },
+      include: { categoria: true, puntoVenta: true },
     });
 
     return this.formatProduct(producto);
@@ -97,6 +98,7 @@ export class ProductsService {
     categoriaId?: string;
     activo?: boolean;
     esCombustible?: boolean;
+    puntoVentaId?: string;
   }): Promise<{ products: Producto[]; total: number; page: number; limit: number; totalPages: number }> {
     const page = filters?.page || 1;
     const limit = filters?.limit || 10;
@@ -125,10 +127,14 @@ export class ProductsService {
       where.esCombustible = filters.esCombustible;
     }
 
+    if (filters?.puntoVentaId && filters.puntoVentaId.trim() !== '') {
+      where.puntoVentaId = filters.puntoVentaId;
+    }
+
     const [productos, total] = await Promise.all([
       this.prisma.producto.findMany({
         where,
-        include: { categoria: true },
+        include: { categoria: true, puntoVenta: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -150,7 +156,7 @@ export class ProductsService {
   async findById(id: string): Promise<Producto | null> {
     const producto = await this.prisma.producto.findUnique({
       where: { id },
-      include: { categoria: true },
+      include: { categoria: true, puntoVenta: true },
     });
 
     return producto ? this.formatProduct(producto) : null;
@@ -159,7 +165,7 @@ export class ProductsService {
   async findByCode(codigo: string): Promise<Producto | null> {
     const producto = await this.prisma.producto.findUnique({
       where: { codigo },
-      include: { categoria: true },
+      include: { categoria: true, puntoVenta: true },
     });
 
     return producto ? this.formatProduct(producto) : null;
@@ -169,6 +175,16 @@ export class ProductsService {
     const productos = await this.prisma.producto.findMany({
       where: { categoriaId },
       include: { categoria: true },
+      orderBy: { nombre: 'asc' },
+    });
+
+    return this.formatProducts(productos);
+  }
+
+  async findByPointOfSale(puntoVentaId: string): Promise<Producto[]> {
+    const productos = await this.prisma.producto.findMany({
+      where: { puntoVentaId },
+      include: { categoria: true, puntoVenta: true },
       orderBy: { nombre: 'asc' },
     });
 
