@@ -418,7 +418,6 @@ async function main() {
     },
   });
 
-
   const dieselGasol2 = await prisma.producto.upsert({
     where: { codigo: 'DIESEL-Gasol-2' },
     update: {},
@@ -2165,7 +2164,6 @@ async function main() {
       categoriaId: tiendaCategory.id,
     },
   });
-
 
   // LUBRICANTES
   console.log('🛢️ Creando lubricantes...');
