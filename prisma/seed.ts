@@ -394,7 +394,6 @@ async function main() {
       stockMinimo: 800,
       stockActual: 4000,
       tipoProducto: 'Combustible',
-      codigoPlu: 0,
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -414,7 +413,6 @@ async function main() {
       stockMinimo: 1200,
       stockActual: 6000,
       tipoProducto: 'Combustible',
-      codigoPlu: 0,
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -435,7 +433,6 @@ async function main() {
       stockMinimo: 800,
       stockActual: 4000,
       tipoProducto: 'Combustible',
-      codigoPlu: 0,
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -455,7 +452,6 @@ async function main() {
       stockMinimo: 1200,
       stockActual: 6000,
       tipoProducto: 'Combustible',
-      codigoPlu: 0,
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -475,7 +471,6 @@ async function main() {
       stockMinimo: 50,
       stockActual: 200,
       tipoProducto: 'Aditivo',
-      codigoPlu: 0,
       esCombustible: false,
       categoriaId: combustibleCategory.id,
     },
@@ -483,86 +478,6 @@ async function main() {
 
   // PRODUCTOS DE TIENDA
   console.log('🏪 Creando productos de tienda...');
-
-  const cocaCola350 = await prisma.producto.upsert({
-    where: { codigo: 'COCA-350' },
-    update: {},
-    create: {
-      codigo: 'COCA-350',
-      nombre: 'Coca Cola 350ml',
-      descripcion: 'Bebida gaseosa Coca Cola presentación 350ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 2500,  // Precio de compra en COP
-      precioVenta: 4000,   // Precio de venta en COP
-      moneda: 'COP',
-      stockMinimo: 50,
-      stockActual: 120,    // Stock inicial
-      tipoProducto: 'Bebida',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: tiendaCategory.id,
-    },
-  });
-
-  const agua600 = await prisma.producto.upsert({
-    where: { codigo: 'AGUA-600' },
-    update: {},
-    create: {
-      codigo: 'AGUA-600',
-      nombre: 'Agua Natural 600ml',
-      descripcion: 'Agua purificada embotellada 600ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 1200,  // Precio de compra en COP
-      precioVenta: 2500,   // Precio de venta en COP
-      moneda: 'COP',
-      stockMinimo: 100,
-      stockActual: 200,    // Stock inicial
-      tipoProducto: 'Bebida',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: tiendaCategory.id,
-    },
-  });
-
-  const jugoPiña = await prisma.producto.upsert({
-    where: { codigo: 'JUGO-PINA-250' },
-    update: {},
-    create: {
-      codigo: 'JUGO-PINA-250',
-      nombre: 'Jugo de Piña 250ml',
-      descripcion: 'Jugo natural de piña presentación 250ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 1800,
-      precioVenta: 3200,
-      moneda: 'COP',
-      stockMinimo: 30,
-      stockActual: 80,
-      tipoProducto: 'Bebida',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: tiendaCategory.id,
-    },
-  });
-
-  const galletas = await prisma.producto.upsert({
-    where: { codigo: 'GALLETAS-CHOCO' },
-    update: {},
-    create: {
-      codigo: 'GALLETAS-CHOCO',
-      nombre: 'Galletas de Chocolate',
-      descripcion: 'Galletas rellenas de chocolate - paquete individual',
-      unidadMedida: 'Unidades',
-      precioCompra: 1500,
-      precioVenta: 2800,
-      moneda: 'COP',
-      stockMinimo: 40,
-      stockActual: 100,
-      tipoProducto: 'Alimento',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: tiendaCategory.id,
-    },
-  });
 
   //BEBIDAS GASSOL 1
   const aguaSaborisadaGas600_G1 = await prisma.producto.upsert({
@@ -2255,66 +2170,6 @@ async function main() {
   // LUBRICANTES
   console.log('🛢️ Creando lubricantes...');
 
-  const aceite20W50 = await prisma.producto.upsert({
-    where: { codigo: 'ACEITE-20W50-GAL' },
-    update: {},
-    create: {
-      codigo: 'ACEITE-20W50-GAL',
-      nombre: 'Aceite Motor 20W50 Galón',
-      descripcion: 'Aceite para motor multigrado 20W50 presentación galón',
-      unidadMedida: 'Galones',
-      precioCompra: 45000,
-      precioVenta: 65000,
-      moneda: 'COP',
-      stockMinimo: 10,
-      stockActual: 24,
-      tipoProducto: 'Lubricante',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: lubricantesCategory.id,
-    },
-  });
-
-  const aceite20W50Litro = await prisma.producto.upsert({
-    where: { codigo: 'ACEITE-20W50-1L' },
-    update: {},
-    create: {
-      codigo: 'ACEITE-20W50-1L',
-      nombre: 'Aceite Motor 20W50 1 Litro',
-      descripcion: 'Aceite para motor multigrado 20W50 presentación 1 litro',
-      unidadMedida: 'Litros',
-      precioCompra: 12000,
-      precioVenta: 18000,
-      moneda: 'COP',
-      stockMinimo: 20,
-      stockActual: 48,
-      tipoProducto: 'Lubricante',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: lubricantesCategory.id,
-    },
-  });
-
-  const aceiteDiferencial = await prisma.producto.upsert({
-    where: { codigo: 'ACEITE-DIFERENCIAL' },
-    update: {},
-    create: {
-      codigo: 'ACEITE-DIFERENCIAL',
-      nombre: 'Aceite para Diferencial 80W90',
-      descripcion: 'Aceite para diferenciales y transmisiones manuales',
-      unidadMedida: 'Litros',
-      precioCompra: 15000,
-      precioVenta: 22000,
-      moneda: 'COP',
-      stockMinimo: 15,
-      stockActual: 30,
-      tipoProducto: 'Lubricante',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: lubricantesCategory.id,
-    },
-  });
-
   //LUBRICANTE GASSOL 1
   const simonizCadenas_G1 = await prisma.producto.upsert({
     where: { codigo: 'SIMONIZ-CADENAS-UNID' },
@@ -2879,106 +2734,6 @@ async function main() {
 
   // ADITIVOS
   console.log('⚗️ Creando aditivos...');
-
-  const aditivoGasolina = await prisma.producto.upsert({
-    where: { codigo: 'ADITIVO-GASOL' },
-    update: {},
-    create: {
-      codigo: 'ADITIVO-GASOL',
-      nombre: 'Aditivo Limpiador de Gasolina',
-      descripcion: 'Aditivo limpiador de inyectores para gasolina - 250ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 8500,
-      precioVenta: 15000,
-      moneda: 'COP',
-      stockMinimo: 20,
-      stockActual: 40,
-      tipoProducto: 'Aditivo',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: aditivosCategory.id,
-    },
-  });
-
-  const aditivoDiesel = await prisma.producto.upsert({
-    where: { codigo: 'ADITIVO-DIESEL' },
-    update: {},
-    create: {
-      codigo: 'ADITIVO-DIESEL',
-      nombre: 'Aditivo Limpiador de Diesel',
-      descripcion: 'Aditivo limpiador de inyectores para diesel - 250ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 9200,
-      precioVenta: 16500,
-      moneda: 'COP',
-      stockMinimo: 15,
-      stockActual: 35,
-      tipoProducto: 'Aditivo',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: aditivosCategory.id,
-    },
-  });
-
-  const selladorFugas = await prisma.producto.upsert({
-    where: { codigo: 'SELLADOR-FUGAS' },
-    update: {},
-    create: {
-      codigo: 'SELLADOR-FUGAS',
-      nombre: 'Sellador de Fugas de Aceite',
-      descripcion: 'Sellador para fugas menores de aceite del motor - 354ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 12000,
-      precioVenta: 20000,
-      moneda: 'COP',
-      stockMinimo: 10,
-      stockActual: 25,
-      tipoProducto: 'Aditivo',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: aditivosCategory.id,
-    },
-  });
-
-  const limpiavidrios = await prisma.producto.upsert({
-    where: { codigo: 'LIMPIAVIDRIOS' },
-    update: {},
-    create: {
-      codigo: 'LIMPIAVIDRIOS',
-      nombre: 'Limpiavidrios Concentrado',
-      descripcion: 'Líquido limpiavidrios concentrado para dilución - 500ml',
-      unidadMedida: 'Unidades',
-      precioCompra: 3500,
-      precioVenta: 6500,
-      moneda: 'COP',
-      stockMinimo: 25,
-      stockActual: 60,
-      tipoProducto: 'Aditivo',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: aditivosCategory.id,
-    },
-  });
-
-  const refrigerante = await prisma.producto.upsert({
-    where: { codigo: 'REFRIGERANTE' },
-    update: {},
-    create: {
-      codigo: 'REFRIGERANTE',
-      nombre: 'Refrigerante Anticongelante',
-      descripcion: 'Refrigerante anticongelante para radiador - 1 galón',
-      unidadMedida: 'Galones',
-      precioCompra: 18000,
-      precioVenta: 28000,
-      moneda: 'COP',
-      stockMinimo: 12,
-      stockActual: 20,
-      tipoProducto: 'Aditivo',
-      codigoPlu: 0,
-      esCombustible: false,
-      categoriaId: aditivosCategory.id,
-    },
-  });
 
   //ADITIVO GASSOL 1
   const limpiadorInyNegro250_G1 = await prisma.producto.upsert({
