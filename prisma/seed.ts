@@ -484,7 +484,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUASABORISADA-600',
-      nombre: 'Agua Brisa saborisada con gas 600ml',
+      nombre: 'Agua Brisa Saborisada Con Gas 600ml',
       descripcion: 'Agua gasificada con saborisante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -495,6 +495,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21201,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -515,6 +516,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21236,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -535,6 +537,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21238,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -544,7 +547,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-1000',
-      nombre: 'Agua Cristal 1000ml',
+      nombre: 'Aagua Cristal 1000ml',
       descripcion: 'Agua natural en botella',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -555,6 +558,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21254,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -575,6 +579,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21239,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -584,7 +589,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTALGAS-330',
-      nombre: 'Agua Cristal con gas 330ml',
+      nombre: 'Agua Cristal Con Gas 330ml',
       descripcion: 'Agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -595,6 +600,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21237,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -604,7 +610,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUASABORISADA-280',
-      nombre: 'Agua Brisa saborisada con gas 280ml',
+      nombre: 'Agua Brisa Saborisada Con Gas 280ml',
       descripcion: 'Agua gasificada con saborisante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -615,6 +621,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21200,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -635,6 +642,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23251,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -655,6 +663,7 @@ async function main() {
       tipoProducto: 'Alimento',
       codigoPlu: 23264,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -664,7 +673,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRETAÑA-300',
-      nombre: 'BRETAÑA POSTOBON VIDRIO 300ML',
+      nombre: 'Bretaña Postobon Vidrio 300ml',
       descripcion: 'Bebida carbonatada de tipo soda',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -675,6 +684,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21246,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -684,7 +694,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CANADADRY-300',
-      nombre: 'CANADA DRY 300ML',
+      nombre: 'Canada Dry 300ml',
       descripcion: 'Bebida gaseosa con sabor a jengibre y dulce',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -695,6 +705,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21247,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -704,7 +715,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CHOCORRAMO-65',
-      nombre: 'CHOCORRAMO 65GR',
+      nombre: 'Chocorramo 65gr',
       descripcion: 'Ponqué rectangular tradicional cubierto de chocolate',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -715,6 +726,7 @@ async function main() {
       tipoProducto: 'Alimento',
       codigoPlu: 23267,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -724,7 +736,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-3000',
-      nombre: 'COCA COLA 3000ML',
+      nombre: 'Coca Cola 3000ml',
       descripcion: 'Bebida Coca Cola original presentación 3000ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -735,6 +747,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23214,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -744,7 +757,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-2500',
-      nombre: 'COCA COLA 2500ML',
+      nombre: 'Coca Cola 2500ml',
       descripcion: 'Bebida Coca Cola original presentación 2500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -755,6 +768,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21199,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -764,7 +778,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-1500',
-      nombre: 'COCA COLA 1500ML',
+      nombre: 'Coca Cola 1500ml',
       descripcion: 'Bebida Coca Cola original presentación 1500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -775,6 +789,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21198,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -784,7 +799,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-400',
-      nombre: 'COCA COLA 400ML',
+      nombre: 'Coca Cola 400ml',
       descripcion: 'Bebida Coca Cola original presentación 400ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -795,6 +810,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21196,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -805,7 +821,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCAZERO-400',
-      nombre: 'COCA COLA ZERO 400ML',
+      nombre: 'Coca Cola Zero 400ml',
       descripcion: 'Bebida gaseosa Coca Cola Zero presentación 400ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -816,6 +832,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21197,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -826,7 +843,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-3125',
-      nombre: 'GASEOSA POSTOBON 3125ML',
+      nombre: 'Gaseosa Postobon 3125ml',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 3125ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -837,6 +854,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21244,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -846,7 +864,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-2500',
-      nombre: 'GASEOSA POSTOBON 2500ML',
+      nombre: 'Gaseosa Postobon 2500ml',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 2500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -857,6 +875,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21243,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -867,7 +886,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-1500',
-      nombre: 'GASEOSA POSTOBON 1500ML',
+      nombre: 'Gaseosa Postobon 1500ml',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 1500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -878,6 +897,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21242,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -888,7 +908,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-400',
-      nombre: 'GASEOSA POSTOBON 400ML',
+      nombre: 'Gaseosa Postobon 400ml',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 400ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -899,6 +919,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21241,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -908,7 +929,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-1000',
-      nombre: 'GASEOSA POSTOBON 1000ML',
+      nombre: 'Gaseosa Postobon 1000ml',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 1000ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -919,6 +940,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21245,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -928,7 +950,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-250',
-      nombre: 'GASEOSA POSTOBON 250ML',
+      nombre: 'Gaseosa Postobon 250ml',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 250ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -939,6 +961,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21240,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -949,7 +972,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADE-500',
-      nombre: 'Gatorade sabores surtidos 500ml',
+      nombre: 'Gatorade Sabores Surtidos 500ml',
       descripcion: 'Bebida deportiva rehidratante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -960,6 +983,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21256,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -969,7 +993,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADEAZUL-500',
-      nombre: 'Gatorade blue ice 500ml',
+      nombre: 'Gatorade Blue Ice 500ml',
       descripcion: 'Bebida deportiva rehidratante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -980,6 +1004,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23249,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -990,7 +1015,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'HIT-500',
-      nombre: 'Jugo Hit sabores surtidos 500ml',
+      nombre: 'Jugo Hit Sabores Surtidos 500ml',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1001,6 +1026,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21252,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1010,7 +1036,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'HIT-1500',
-      nombre: 'Jugo Hit sabores surtidos 1500ml',
+      nombre: 'Jugo Hit Sabores Surtidos 1500ml',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1021,6 +1047,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21253,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1030,7 +1057,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NECTAR237',
-      nombre: 'JUGO NECTAR SABORES SURTIDOS (237ML) VIDRIO',
+      nombre: 'Jugo Nectar Sabores Surtidos (237ml) Vidrio',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1041,6 +1068,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21254,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1050,7 +1078,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MRTEA500',
-      nombre: 'MR TEA SABORES SURTIDOS (500ML) PET',
+      nombre: 'Mr Tea Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida refrescante con sabor a té',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1061,6 +1089,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21255,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1070,7 +1099,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SQUASH-500',
-      nombre: 'SQUASH SABORES SURTIDOS (500ML) PET',
+      nombre: 'Squash Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida rehidratante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1081,6 +1110,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21257,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1090,7 +1120,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-200',
-      nombre: 'NATU MALTA (200ML) PET',
+      nombre: 'Natu Malta (200ml) Pet',
       descripcion: 'Bebida con malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1101,6 +1131,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21258,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1110,7 +1141,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'QUATROTORONJA-400',
-      nombre: 'QUATRO TORONJA (400ML) PET',
+      nombre: 'Quatro Toronja (400ml) Pet',
       descripcion: 'Bebida gaseosa con sabor a Toronja',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1121,6 +1152,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23250,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1130,7 +1162,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-400',
-      nombre: 'NATU MALTA (400 ML) PET',
+      nombre: 'Natu Malta (400 Ml) Pet',
       descripcion: 'Bebida con malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1141,6 +1173,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21259,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1150,7 +1183,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-1000',
-      nombre: 'NATU MALTA (1 LITRO) PET',
+      nombre: 'Natu Malta (1 Litro) Pet',
       descripcion: 'Bebida con malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1161,6 +1194,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21260,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1170,7 +1204,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'PONYMALTA-330',
-      nombre: 'PONY MALTA LATA (330CM)',
+      nombre: 'Pony Malta Lata (330cm)',
       descripcion: 'Bebida refrescante con sabor a malta de cebada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1181,6 +1215,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23563,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1190,7 +1225,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SAVILOE-320',
-      nombre: 'SAVILOE 320 ML',
+      nombre: 'Saviloe 320 Ml',
       descripcion: 'Bebida con Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1201,6 +1236,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 24004,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1210,7 +1246,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'VIVE100-380',
-      nombre: 'VIVE100 ORIGINAL (380 ML)',
+      nombre: 'Vive100 Original (380 Ml)',
       descripcion: 'Bebida energizante con guarana',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1221,6 +1257,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 24003,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1229,7 +1266,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAXBLUE-310',
-      nombre: 'SPEED MAX BLUE (310 ML) LATA',
+      nombre: 'Speed Max Blue (310 Ml) Lata',
       descripcion: 'Bebida energizante con presentación Azul',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1240,6 +1277,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21251,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1249,7 +1287,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-473',
-      nombre: 'SPEED MAX (473ML) LATA GRANDE',
+      nombre: 'Speed Max (473ml) Lata Grande',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1260,6 +1298,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21249,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1269,7 +1308,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-310',
-      nombre: 'SPEED MAX (310ML) LATA',
+      nombre: 'Speed Max (310ml) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1280,6 +1319,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21248,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1289,7 +1329,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-250',
-      nombre: 'SPEED MAX (250ML) PET',
+      nombre: 'Speed Max (250ml) Pet',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1300,6 +1340,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21250,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1309,7 +1350,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-1000',
-      nombre: 'SPEED MAX (1 LITRO) PET',
+      nombre: 'Speed Max (1 Litro) Pet',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1320,6 +1361,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21251,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1330,7 +1372,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTALALOE-330',
-      nombre: 'AGUA CRISTAL ALOE (330ML) PET',
+      nombre: 'Agua Cristal Aloe (330ml) Pet',
       descripcion: 'Bebida de agua natural con Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1341,6 +1383,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21264,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1350,7 +1393,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CANADADRY-300',
-      nombre: 'CANADA DRY (300ML)',
+      nombre: 'Canada Dry (300ml)',
       descripcion: 'Bebida saborizada con Jengibre',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1361,6 +1404,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21272,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1370,7 +1414,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-250',
-      nombre: 'SPEED MAX (250 ML) PET',
+      nombre: 'Speed Max (250 Ml) Pet',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1381,6 +1425,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21275,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1390,7 +1435,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-1000',
-      nombre: 'SPEED MAX (1 LITRO) PET',
+      nombre: 'Speed Max (1 Litro) Pet',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1401,6 +1446,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21276,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1410,7 +1456,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'HIT-500',
-      nombre: 'HIT SABORES SURTIDOS (500ML) PET',
+      nombre: 'Hit Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1421,6 +1467,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21277,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1430,7 +1477,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'HIT-1500',
-      nombre: 'HIT SABORES SURTIDOS (1.5 LITROS) PET',
+      nombre: 'Hit Sabores Surtidos (1.5 Litros) Pet',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1441,6 +1488,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21278,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1450,7 +1498,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NECTAR-237',
-      nombre: 'JUGO NECTAR SABORES SURTIDOS (237ML) VIDRIO',
+      nombre: 'Jugo Nectar Sabores Surtidos (237ml) Vidrio',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1461,6 +1509,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21279,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1470,7 +1519,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MRTEA-500',
-      nombre: 'MR TEA SABORES SURTIDOS (500ML) PET',
+      nombre: 'Mr Tea Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida con sabor a té',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1481,6 +1530,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21280,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1490,7 +1540,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADE-SURTIDOS-500',
-      nombre: 'GATORADE SABORES SURTIDOS (500ML)',
+      nombre: 'Gatorade Sabores Surtidos (500ml)',
       descripcion: 'Bebida rehidratante con sabores surtidos',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1501,6 +1551,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21281,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1510,7 +1561,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SQUASH-500',
-      nombre: 'SQUASH SABORES SURTIDOS (500ML) PET',
+      nombre: 'Squash Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida rehidratante con sabores surtidos',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1521,6 +1572,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21282,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1530,7 +1582,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-200',
-      nombre: 'NATU MALTA (200 ML) PET',
+      nombre: 'Natu Malta (200 Ml) Pet',
       descripcion: 'Bebida con sabor a malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1541,6 +1593,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21283,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1550,7 +1603,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-ORIGINAL-400',
-      nombre: 'COCA COLA SABOR ORIGINAL (400ML) PET',
+      nombre: 'Coca Cola Sabor Original (400ml) Pet',
       descripcion: 'Bebida gaseosa refrescante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1561,6 +1614,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21289,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1570,7 +1624,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-ZERO-400',
-      nombre: 'COCA COLA ZERO (400ML) PET',
+      nombre: 'Coca Cola Zero (400ml) Pet',
       descripcion: 'Bebida gaseosa refrescante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1581,6 +1635,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21290,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1590,7 +1645,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-ORIGINAL-1500',
-      nombre: 'COCA COLA SABOR ORIGINAL (1.5 LITROS) PET',
+      nombre: 'Coca Cola Sabor Original (1.5 Litros) Pet',
       descripcion: 'Bebida gaseosa refrescante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1601,6 +1656,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21291,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1610,7 +1666,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-2500',
-      nombre: 'COCA COLA (2.5 LITROS) PET',
+      nombre: 'Coca Cola (2.5 Litros) Pet',
       descripcion: 'Bebida gaseosa refrescante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1621,6 +1677,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21292,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1630,7 +1687,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRISA-GAS-280',
-      nombre: 'AGUA SABORIZADA BRISA CON GAS (280ML) PET',
+      nombre: 'Agua Saborizada Brisa Con Gas (280ml) Pet',
       descripcion: 'Bebida saborizada con agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1641,6 +1698,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21293,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1650,7 +1708,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRISA-GAS-600',
-      nombre: 'AGUA BRISA SABORIZADA CON GAS (600ML)',
+      nombre: 'Agua Brisa Saborizada Con Gas (600ml)',
       descripcion: 'Bebida saborizada con agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1661,6 +1719,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21294,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1670,7 +1729,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-400',
-      nombre: 'NATU MALTA (400 ML) PET',
+      nombre: 'Natu Malta (400 Ml) Pet',
       descripcion: 'Bebida con sabor a mlta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1681,6 +1740,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21284,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1690,7 +1750,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRETANA-300',
-      nombre: 'BRETAÑA POSTOBON VIDRIO (300ML)',
+      nombre: 'Bretaña Postobon Vidrio (300ml)',
       descripcion: 'Bebida de soda',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1701,6 +1761,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21271,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1710,7 +1771,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-310',
-      nombre: 'SPEED MAX (310 ML) LATA',
+      nombre: 'Speed Max (310 Ml) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1721,6 +1782,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21273,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1730,7 +1792,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-3000',
-      nombre: 'COCA COLA (3 LITROS) PET',
+      nombre: 'Coca Cola (3 Litros) Pet',
       descripcion: 'Bebida gaseosa refrescante ',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1741,6 +1803,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23268,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1750,7 +1813,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADE-AZUL-500',
-      nombre: 'GATORADE AZUL (500ML) PET',
+      nombre: 'Gatorade Azul (500ml) Pet',
       descripcion: 'Bebida rehidratante blue ice',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1761,6 +1824,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23269,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1770,7 +1834,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'QUATRO-TORONJA-400',
-      nombre: 'QUATRO TORONJA PET (400ML) PET',
+      nombre: 'Quatro Toronja Pet (400ml) Pet',
       descripcion: 'Bebida gaseosa con sabor a Toronja',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1781,6 +1845,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23270,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1790,7 +1855,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AVENAALPINA-250',
-      nombre: 'AVENA ALPINA (250 GR)',
+      nombre: 'Avena Alpina (250 Gr)',
       descripcion: 'Bebida lactea con sabor a avena',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1801,6 +1866,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23271,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1810,7 +1876,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-1000',
-      nombre: 'NATU MALTA (1 LITRO) PET',
+      nombre: 'Natu Malta (1 Litro) Pet',
       descripcion: 'Bebida con sabor a malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1821,6 +1887,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21285,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1830,7 +1897,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-GAS-250',
-      nombre: 'AGUA CON GAS CRISTAL(250ML) PET',
+      nombre: 'Agua Con Gas Cristal(250ml) Pet',
       descripcion: 'Bebida con agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1841,6 +1908,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21262,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1850,7 +1918,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-300',
-      nombre: 'AGUA CRISTAL (300ML) PET',
+      nombre: 'Agua Cristal (300ml) Pet',
       descripcion: 'Bebida de agua natural',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1861,6 +1929,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21261,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1870,7 +1939,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BONYURT-170',
-      nombre: 'BONYUR ALPINA + ZUCARITAS (170GR)',
+      nombre: 'Bonyur Alpina + Zucaritas (170gr)',
       descripcion: 'Alimento combinado con yugurt y cereales',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1881,6 +1950,7 @@ async function main() {
       tipoProducto: 'Alimento',
       codigoPlu: 23272,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1890,7 +1960,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CHOCORRAMO-65',
-      nombre: 'CHOCORRAMO (65GR)',
+      nombre: 'Chocorramo (65gr)',
       descripcion: 'Ponqué rectangular tradicional cubierto de chocolate',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1901,6 +1971,7 @@ async function main() {
       tipoProducto: 'Alimento',
       codigoPlu: 23273,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1910,7 +1981,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-600',
-      nombre: 'AGUA CRISTAL (600ML) PET',
+      nombre: 'Agua Cristal (600ml) Pet',
       descripcion: 'Bebida con agua natural',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1921,6 +1992,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21238,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1930,7 +2002,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-473',
-      nombre: 'SPEED MAX (473ML) LATA GRANDE',
+      nombre: 'Speed Max (473ml) Lata Grande',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1941,6 +2013,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21249,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1950,7 +2023,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-1000',
-      nombre: 'AGUA CRISTAL (1LITRO) PET',
+      nombre: 'Agua Cristal (1litro) Pet',
       descripcion: 'Bebida con agua natural litro',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1961,6 +2034,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 22453,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1970,7 +2044,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'PONYMALTA-330',
-      nombre: 'PONY MALTA LATA (330CM)',
+      nombre: 'Pony Malta Lata (330cm)',
       descripcion: 'Bebida refrescante con sabor a malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1981,6 +2055,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 23564,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -1990,7 +2065,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SAVILOE-320',
-      nombre: 'SAVILOE X 320ML',
+      nombre: 'Saviloe X 320ml',
       descripcion: 'Bebida con agua natural y Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2001,6 +2076,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 24005,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2010,7 +2086,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'VIVE100-ORIGINAL',
-      nombre: 'VIVE100% ORIGINAL',
+      nombre: 'Vive100% Original',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2021,6 +2097,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 24006,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2030,7 +2107,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-BLUE-310',
-      nombre: 'SPEED MAX BLUE (310 ML) LATA',
+      nombre: 'Speed Max Blue (310 Ml) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2041,6 +2118,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 25566,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2050,7 +2128,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-250',
-      nombre: 'GASEOSA POSTOBON SURTIDA (250ML) PET',
+      nombre: 'Gaseosa Postobon Surtida (250ml) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2061,6 +2139,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21265,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2070,7 +2149,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-400',
-      nombre: 'GASEOSA POSTOBON SURTIDA (400ML) PET',
+      nombre: 'Gaseosa Postobon Surtida (400ml) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2081,6 +2160,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21266,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2090,7 +2170,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-1500',
-      nombre: 'GASEOSA POSTOBON SURTIDA (1.5 LITROS) PET',
+      nombre: 'Gaseosa Postobon Surtida (1.5 Litros) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2101,6 +2181,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21267,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2110,7 +2191,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-2500',
-      nombre: 'GASEOSA POSTOBON SURTIDA (2.5 LITROS) PET',
+      nombre: 'Gaseosa Postobon Surtida (2.5 Litros) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2121,6 +2202,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21268,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2130,7 +2212,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-3125',
-      nombre: 'GASEOSA POSTOBON SURTIDA (3.125 LITROS) PET',
+      nombre: 'Gaseosa Postobon Surtida (3.125 Litros) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2141,6 +2223,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21269,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2150,7 +2233,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-ECONOLITRO',
-      nombre: 'GASEOSA POSTOBON SURTIDA (ECONOLITRO)',
+      nombre: 'Gaseosa Postobon Surtida (Econolitro)',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2161,6 +2244,7 @@ async function main() {
       tipoProducto: 'Bebida',
       codigoPlu: 21270,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: tiendaCategory.id,
     },
   });
@@ -2174,7 +2258,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-CADENAS-UNID',
-      nombre: 'LUBRICANTE CADENAS SIMONIZ',
+      nombre: 'Lubricante Cadenas Simoniz',
       descripcion: 'Lubricante para cadena',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2185,6 +2269,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 2291,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2194,7 +2279,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER-20W50',
-      nombre: 'MOBIL SUPER 20W-50 MOTO 4T (LITRO)',
+      nombre: 'Mobil Super 20w-50 Moto 4t (Litro)',
       descripcion: 'Aceite motor 20W-50 para moto 4T',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2205,6 +2290,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 4215,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2214,7 +2300,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40',
-      nombre: 'MOBIL DELVAC MODERN 15W-40 FULL PROTECTION (1/4) CUARTO',
+      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (1/4) Cuarto',
       descripcion: 'Aceite diésel 15W-40',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2225,6 +2311,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 3207,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2234,7 +2321,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-25W50',
-      nombre: 'TERPEL ULTRTEK 25W50 ALTO KM GALON',
+      nombre: 'Terpel Ultrtek 25w50 Alto Km Galon',
       descripcion: 'Aceite motor 25W-50 alto kilometraje',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2245,6 +2332,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 2227,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2254,7 +2342,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-HIDRAULIC-AW68',
-      nombre: 'ACEITE MOBIL HIDRAULIC AW-68 (1/4) CUARTO',
+      nombre: 'Aceite Mobil Hidraulic Aw-68 (1/4) Cuarto',
       descripcion: 'Aceite hidráulico AW-68',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2265,6 +2353,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11276,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2274,7 +2363,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-20W50',
-      nombre: 'TERPEL CELERITY 20W-50 TITANIO MOTO 4T (LITRO)',
+      nombre: 'Terpel Celerity 20w-50 Titanio Moto 4t (Litro)',
       descripcion: 'Aceite moto 4T 20W-50 con titanio',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2285,6 +2374,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11274,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2294,7 +2384,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTREK-50',
-      nombre: 'TERPEL ULTREK 50 MONOGRADO (1/4) CUARTO',
+      nombre: 'Terpel Ultrek 50 Monogrado (1/4) Cuarto',
       descripcion: 'Aceite monogrado 50',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2305,6 +2395,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11271,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2314,7 +2405,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40-1G',
-      nombre: 'MOBIL DELVAC MODERN 15W-40 FULL PROTECTION (GALON)',
+      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (Galon)',
       descripcion: 'Aceite diésel 15W-40 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2325,6 +2416,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11051,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2334,7 +2426,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-OILTEC-50',
-      nombre: 'TERPEL OILTEC 50 MONOGRADO (1/4) CUARTO',
+      nombre: 'Terpel Oiltec 50 Monogrado (1/4) Cuarto',
       descripcion: 'Aceite monogrado 50',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2345,6 +2437,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 14504,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2354,7 +2447,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-OILTEC-50-1G',
-      nombre: 'TERPEL OILTEC 50 MONOGRADO (GALON)',
+      nombre: 'Terpel Oiltec 50 Monogrado (Galon)',
       descripcion: 'Aceite monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2365,6 +2458,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 14505,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2374,7 +2468,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-2T',
-      nombre: 'TERPEL CELERITY BIO ANTIHUMO MOTO 2T (LITRO)',
+      nombre: 'Terpel Celerity Bio Antihumo Moto 2t (Litro)',
       descripcion: 'Aceite 2T antihumo 1L',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2385,6 +2479,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11279,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2394,7 +2489,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER1000-20W50-1Q',
-      nombre: 'MOBIL SUPER 1000 20W-50 (1/4) CUARTO',
+      nombre: 'Mobil Super 1000 20w-50 (1/4) Cuarto',
       descripcion: 'Aceite motor Mobil Super 1000 20W-50 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2405,6 +2500,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 18047,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2414,7 +2510,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER1000-20W50-1G',
-      nombre: 'MOBIL SUPER 1000 20W-50 (1GALON)',
+      nombre: 'Mobil Super 1000 20w-50 (1galon)',
       descripcion: 'Aceite motor Mobil Super 1000 20W-50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2425,6 +2521,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 18048,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2434,7 +2531,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50',
-      nombre: 'TERPEL ULTRTEK 50 MONOGRADO (GALON)',
+      nombre: 'Terpel Ultrtek 50 Monogrado (Galon)',
       descripcion: 'Aceite monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2445,6 +2542,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 23928,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2455,7 +2553,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER-20W50-1L',
-      nombre: 'MOBIL SUPER 20W-50 MOTO 4T (LITRO)',
+      nombre: 'Mobil Super 20w-50 Moto 4t (Litro)',
       descripcion: 'Lubricante automotriz para moto 4T 20W-50',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2466,6 +2564,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 4215,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2475,7 +2574,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40-1Q',
-      nombre: 'MOBIL DELVAC MODERN 15W-40 FULL PROTECTION (1/4) CUARTO',
+      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (1/4) Cuarto',
       descripcion: 'Lubricante diésel 15W-40 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2486,6 +2585,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 3207,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2495,7 +2595,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40-1G',
-      nombre: 'MOBIL DELVAC MODERN 15W-40 FULL PROTECTION (1GALON)',
+      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (1galon)',
       descripcion: 'Lubricante diésel 15W-40 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2506,6 +2606,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11326,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2515,7 +2616,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-20W50-1L',
-      nombre: 'TERPEL CELERITY 20W-50 TITANIO MOTO 4T (LITRO)',
+      nombre: 'Terpel Celerity 20w-50 Titanio Moto 4t (Litro)',
       descripcion: 'Lubricante moto 4T 20W-50 con titanio',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2526,6 +2627,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11315,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2535,7 +2637,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-HIDRAULIC-AW68-1Q',
-      nombre: 'ACEITE MOBIL HIDRAULIC AW-68 (1/4) CUARTO',
+      nombre: 'Aceite Mobil Hidraulic Aw-68 (1/4) Cuarto',
       descripcion: 'Lubricante hidráulico AW-68 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2546,6 +2648,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11280,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2555,7 +2658,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-25W50-1G',
-      nombre: 'TERPEL ULTERK 25W50 ALTO KM (GALON)',
+      nombre: 'Terpel Ulterk 25w50 Alto Km (Galon)',
       descripcion: 'Lubricante 25W50 alto kilometraje galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2566,6 +2669,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11323,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2575,7 +2679,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-2T-1L',
-      nombre: 'TERPEL CELERITY BIO ANTIHUMO MOTO 2T (LITRO)',
+      nombre: 'Terpel Celerity Bio Antihumo Moto 2t (Litro)',
       descripcion: 'Lubricante 2T antihumo 1 litro',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2586,6 +2690,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11049,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2595,7 +2700,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-OILTEC-50-1Q',
-      nombre: 'TERPEL OILTEC 50 MONOGRADO (1/4) CUARTO',
+      nombre: 'Terpel Oiltec 50 Monogrado (1/4) Cuarto',
       descripcion: 'Lubricante monogrado 50 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2606,6 +2711,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 14502,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2615,7 +2721,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-OILTEC-50-1G',
-      nombre: 'TERPEL OILTEC 50 MONOGRADO (1GALON)',
+      nombre: 'Terpel Oiltec 50 Monogrado (1galon)',
       descripcion: 'Lubricante monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2626,6 +2732,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 14503,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2635,7 +2742,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-CADENAS-UNID',
-      nombre: 'LUBRICANTE CADENAS SIMONIZ',
+      nombre: 'Lubricante Cadenas Simoniz',
       descripcion: 'Lubricante para cadenas Simoniz',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2646,6 +2753,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 13131,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2655,7 +2763,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50-1Q',
-      nombre: 'TERPEL ULTRTEK 50 MONOGRADO (1/4) CUARTO',
+      nombre: 'Terpel Ultrtek 50 Monogrado (1/4) Cuarto',
       descripcion: 'Lubricante monogrado 50 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2666,6 +2774,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 11271,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2675,7 +2784,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50-1G',
-      nombre: 'TERPEL ULTRTEK 50 MONOGRADO (GALON)',
+      nombre: 'Terpel Ultrtek 50 Monogrado (Galon)',
       descripcion: 'Lubricante monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2686,6 +2795,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 23930,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2695,7 +2805,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER1000-20W50-1Q',
-      nombre: 'MOBIL SUPER 1000 20W-50 (1/4) CUARTO',
+      nombre: 'Mobil Super 1000 20w-50 (1/4) Cuarto',
       descripcion: 'Lubricante Mobil Super 1000 20W-50 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2706,6 +2816,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 18045,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2715,7 +2826,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER1000-20W50-1G',
-      nombre: 'MOBIL SUPER 1000 20W-50 (1GALON)',
+      nombre: 'Mobil Super 1000 20w-50 (1galon)',
       descripcion: 'Lubricante Mobil Super 1000 20W-50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2726,6 +2837,7 @@ async function main() {
       tipoProducto: 'Lubricante',
       codigoPlu: 18046,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2739,7 +2851,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADOR-INYECTORES-250ML',
-      nombre: 'LIMPIADOR DE INYECTORES Y CARBURADOR 250 ML (NEGRO)',
+      nombre: 'Limpiador De Inyectores Y Carburador 250 Ml (Negro)',
       descripcion: 'Limpiador de inyectores y carburador 250ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2750,6 +2862,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 8414,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2759,7 +2872,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-ROJO',
-      nombre: 'REFRIGERANTE RADIADOR (1GALON) ROJO SIMONIZ',
+      nombre: 'Refrigerante Radiador (1galon) Rojo Simoniz',
       descripcion: 'Refrigerante rojo 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2770,6 +2883,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 11277,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2779,7 +2893,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE',
-      nombre: 'REFRIGERANTE RADIADOR (1LITRO) VERDE SIMONIZ',
+      nombre: 'Refrigerante Radiador (1litro) Verde Simoniz',
       descripcion: 'Refrigerante verde 1 litro',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2790,6 +2904,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13102,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2799,7 +2914,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-ADITIVO-GASOLINA-140ML',
-      nombre: 'ADITIVO GASOLINA (140 ML) ROJO SIMONIZ',
+      nombre: 'Aditivo Gasolina (140 Ml) Rojo Simoniz',
       descripcion: 'Aditivo para gasolina 140 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2810,6 +2925,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13030,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2819,7 +2935,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1G',
-      nombre: 'REFRIGERANTE RADIADOR (GALON) VERDE SIMONIZ',
+      nombre: 'Refrigerante Radiador (Galon) Verde Simoniz',
       descripcion: 'Refrigerante verde 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2830,6 +2946,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13026,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2839,7 +2956,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADOR-INYECTORES-DIESEL-250ML',
-      nombre: 'LIMPIADOR DE INYECTORES DIESEL (250ML) AMARILLO',
+      nombre: 'Limpiador De Inyectores Diesel (250ml) Amarillo',
       descripcion: 'Limpiador de inyectores diésel 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2850,6 +2967,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13025,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2859,7 +2977,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'ACPMAX-500CK-DIESEL-UNID',
-      nombre: 'ADITIVO DIESEL ACPMAX 500 CK (MULTISNA)',
+      nombre: 'Aditivo Diesel Acpmax 500 Ck (Multisna)',
       descripcion: 'Aditivo diésel ACPMAX 500 CK',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2870,6 +2988,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 18280,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2879,7 +2998,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'OCTAMAX-375CC',
-      nombre: 'ADITIVO GASOLINA OCTAMAX 375 CC (MULTISNA)',
+      nombre: 'Aditivo Gasolina Octamax 375 Cc (Multisna)',
       descripcion: 'Aditivo gasolina Octamax 375 cc',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2890,6 +3009,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 18281,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2899,7 +3019,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'REFRIGERANTE-VERDE-1Q',
-      nombre: 'REFRIGERANTE ESTANDAR (1/4) VERDE',
+      nombre: 'Refrigerante Estandar (1/4) Verde',
       descripcion: 'Aceite refrigerante verde 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2910,6 +3030,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 23927,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2919,7 +3040,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MEJORADOR-OCTANAJE-250ML',
-      nombre: 'MEJORADOR DE OCTANAJE (250ML) NARANJA',
+      nombre: 'Mejorador De Octanaje (250ml) Naranja',
       descripcion: 'Mejorador de octanaje 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2930,6 +3051,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 23929,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2940,7 +3062,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-REFRIGERANTE-VERDE-1Q',
-      nombre: 'TERPEL REFRIGERANTE ESTÁNDAR (1/4) COLOR VERDE',
+      nombre: 'Terpel Refrigerante Estándar (1/4) Color Verde',
       descripcion: 'Aditivo refrigerante color verde presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2951,6 +3073,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 4426,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2960,7 +3083,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADOR-INYECTORES-250ML',
-      nombre: 'LIMPIADOR DE INYECTORES Y CARBURADOR 250 ML (NEGRO)',
+      nombre: 'Limpiador De Inyectores Y Carburador (250ml) (Negro)',
       descripcion: 'Aditivo limpiador de inyectores y carburador 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2971,6 +3094,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 8414,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -2980,7 +3104,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'ACPMAX-500CC',
-      nombre: 'ADITIVO DIESEL ACPMAX 500CC (MULTISNA)',
+      nombre: 'Aditivo Diesel Acpmax 500cc (Multisna)',
       descripcion: 'Aditivo diésel ACPMAX 500 cc',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2991,6 +3115,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 18315,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3000,7 +3125,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'OCTAMAX-375CC',
-      nombre: 'ADITIVO GASOLINA OCTAMAX 375 CC (MULTISNA)',
+      nombre: 'Aditivo Gasolina Octamax 375 Cc (Multisna)',
       descripcion: 'Aditivo gasolina Octamax 375 cc',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3011,6 +3136,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 18316,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3020,7 +3146,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADOR-INYECTORES-DIESEL-250ML',
-      nombre: 'LIMPIADOR DE INYECTORES DIESEL (250ML) AMARILLO',
+      nombre: 'Limpiador De Inyectores Diesel (250ml) Amarillo',
       descripcion: 'Aditivo limpiador de inyectores diésel 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3031,6 +3157,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13127,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3040,7 +3167,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1G',
-      nombre: 'REFRIGERANTE RADIADOR (1GALON) VERDE SIMONIZ',
+      nombre: 'Refrigerante Radiador (1galon) Verde Simoniz',
       descripcion: 'Aditivo refrigerante verde 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -3051,6 +3178,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13128,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3060,7 +3188,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1L',
-      nombre: 'REFRIGERANTE RADIADOR (1LITRO) VERDE SIMONIZ',
+      nombre: 'Refrigerante Radiador (1litro) Verde Simoniz',
       descripcion: 'Aditivo refrigerante verde 1 litro',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -3071,6 +3199,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13129,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3080,7 +3209,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-ADITIVO-GASOLINA-140ML',
-      nombre: 'ADITIVO GASOLINA (140ML) ROJO SIMONIZ',
+      nombre: 'Aditivo Gasolina (140ml) Rojo Simoniz',
       descripcion: 'Aditivo para gasolina 140 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3091,6 +3220,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 13130,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3100,7 +3230,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-ROJO-1G',
-      nombre: 'REFRIGERANTE RADIADOR (1GALON) ROJO SIMONIZ',
+      nombre: 'Refrigerante Radiador (1galon) Rojo Simoniz',
       descripcion: 'Aditivo refrigerante rojo 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -3111,6 +3241,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 21662,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3120,7 +3251,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MEJORADOR-OCTANAJE-250ML',
-      nombre: 'MEJORADOR DE OCTANAJE (250ML) NARANJA',
+      nombre: 'Mejorador De Octanaje (250ml) Naranja',
       descripcion: 'Aditivo mejorador de octanaje 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3131,6 +3262,7 @@ async function main() {
       tipoProducto: 'Aditivo',
       codigoPlu: 21662,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
     },
   });
@@ -3229,7 +3361,7 @@ async function main() {
         nivelActual: nivelActualCalculado,
         nivelMinimo: tanque.capacidad * 0.1, // 10% mínimo
         productoId: tanque.productoId,
-        puntoVentaId: tanque.puntoVentaId,
+      puntoVentaId: tanque.puntoVentaId,
         unidadMedida: tanque.unidadMedida,
         alturaActual: tanque.alturaActual,
       },
@@ -3537,7 +3669,7 @@ async function main() {
         activo: surtidor.activo,
         cantidadMangueras: surtidor.mangueras.length,
         fechaInstalacion: new Date('2020-01-01'),
-        puntoVentaId: surtidor.puntoVentaId,
+      puntoVentaId: surtidor.puntoVentaId,
       },
     });
 
@@ -3628,7 +3760,7 @@ async function main() {
         stockActual: inventario.stockActual,
         valorInventario: inventario.stockActual * inventario.precio, // Calcular valor total
         fechaActualizacion: new Date(),
-        puntoVentaId: inventario.puntoVentaId,
+      puntoVentaId: inventario.puntoVentaId,
         productoId: inventario.productoId,
       },
     });

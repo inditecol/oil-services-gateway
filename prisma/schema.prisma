@@ -73,7 +73,7 @@ model PuntoVenta {
   usuarios             Usuario[]          @relation("PuntoVentaToUsuario")
   entradasInventario   EntradaInventario[] // Relación con entradas de inventario
   historialVentasProductos HistorialVentasProductos[]
-  producto Producto?
+  productos Producto[]
   caja                 Caja?
 
   @@map("puntos_venta")
@@ -253,7 +253,7 @@ model Producto {
   entradasInventario EntradaInventarioProcess[]
   mangueras          MangueraSurtidor[]
   categoria          Categoria           @relation(fields: [categoriaId], references: [id])
-  puntoVentaId       String?             @unique
+  puntoVentaId       String?             
   puntoVenta         PuntoVenta?         @relation(fields: [puntoVentaId], references: [id])
   tanques            Tanque[]
   detallesVentas     DetalleVenta[]
