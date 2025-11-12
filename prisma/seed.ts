@@ -393,7 +393,6 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 800,
       stockActual: 4000,
-      tipoProducto: 'Combustible',
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -412,7 +411,6 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 1200,
       stockActual: 6000,
-      tipoProducto: 'Combustible',
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -431,7 +429,6 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 800,
       stockActual: 4000,
-      tipoProducto: 'Combustible',
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -450,7 +447,6 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 1200,
       stockActual: 6000,
-      tipoProducto: 'Combustible',
       esCombustible: true,
       categoriaId: combustibleCategory.id,
     },
@@ -469,7 +465,6 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 50,
       stockActual: 200,
-      tipoProducto: 'Aditivo',
       esCombustible: false,
       categoriaId: combustibleCategory.id,
     },
@@ -660,7 +655,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 2,
-      tipoProducto: 'Alimento',
+      tipoProducto: 'Bebida',
       codigoPlu: 23264,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -723,7 +718,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 2,
-      tipoProducto: 'Alimento',
+      tipoProducto: 'Bebida',
       codigoPlu: 23267,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -1368,10 +1363,10 @@ async function main() {
 
   //BEBIDAS GASSOL 2
   const aguaCristalAloe330_G2 = await prisma.producto.upsert({
-    where: { codigo: 'AGUACRISTALALOE-330' },
+    where: { codigo: 'AGUA-CRISTAL-ALOE-330' },
     update: {},
     create: {
-      codigo: 'AGUACRISTALALOE-330',
+      codigo: 'AGUA-CRISTAL-ALOE-330',
       nombre: 'Agua Cristal Aloe (330ml) Pet',
       descripcion: 'Bebida de agua natural con Aloe vera',
       unidadMedida: 'Unidades',
@@ -1389,10 +1384,10 @@ async function main() {
   });
 
   const canadaDry300_G2 = await prisma.producto.upsert({
-    where: { codigo: 'CANADADRY-300' },
+    where: { codigo: 'CANADA-ADRY-300' },
     update: {},
     create: {
-      codigo: 'CANADADRY-300',
+      codigo: 'CANADA-ADRY-300',
       nombre: 'Canada Dry (300ml)',
       descripcion: 'Bebida saborizada con Jengibre',
       unidadMedida: 'Unidades',
@@ -1410,10 +1405,10 @@ async function main() {
   });
 
   const speedMax250_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SPEEDMAX-250' },
+    where: { codigo: 'SPEED-MAX-250' },
     update: {},
     create: {
-      codigo: 'SPEEDMAX-250',
+      codigo: 'SPEED-MAX-250',
       nombre: 'Speed Max (250 Ml) Pet',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
@@ -1431,10 +1426,10 @@ async function main() {
   });
 
   const speedMax1000_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SPEEDMAX-1000' },
+    where: { codigo: 'SPEED-MAX-1000' },
     update: {},
     create: {
-      codigo: 'SPEEDMAX-1000',
+      codigo: 'SPEED-MAX-1000',
       nombre: 'Speed Max (1 Litro) Pet',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
@@ -1452,10 +1447,10 @@ async function main() {
   });
 
   const hit500_G2 = await prisma.producto.upsert({
-    where: { codigo: 'HIT-500' },
+    where: { codigo: 'JUGO-HIT-500' },
     update: {},
     create: {
-      codigo: 'HIT-500',
+      codigo: 'JUGO-HIT-500',
       nombre: 'Hit Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
@@ -1473,10 +1468,10 @@ async function main() {
   });
 
   const hit1500_G2 = await prisma.producto.upsert({
-    where: { codigo: 'HIT-1500' },
+    where: { codigo: 'JUGO-HIT-1500' },
     update: {},
     create: {
-      codigo: 'HIT-1500',
+      codigo: 'JUGO-HIT-1500',
       nombre: 'Hit Sabores Surtidos (1.5 Litros) Pet',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
@@ -1494,10 +1489,10 @@ async function main() {
   });
 
   const nectar237_G2 = await prisma.producto.upsert({
-    where: { codigo: 'NECTAR-237' },
+    where: { codigo: 'JUGO-NECTAR-237' },
     update: {},
     create: {
-      codigo: 'NECTAR-237',
+      codigo: 'JUGO-NECTAR-237',
       nombre: 'Jugo Nectar Sabores Surtidos (237ml) Vidrio',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
@@ -1515,10 +1510,10 @@ async function main() {
   });
 
   const mrTea500_G2 = await prisma.producto.upsert({
-    where: { codigo: 'MRTEA-500' },
+    where: { codigo: 'MR-TEA-500' },
     update: {},
     create: {
-      codigo: 'MRTEA-500',
+      codigo: 'MR-TEA-500',
       nombre: 'Mr Tea Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida con sabor a té',
       unidadMedida: 'Unidades',
@@ -1557,10 +1552,10 @@ async function main() {
   });
 
   const squash500_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SQUASH-500' },
+    where: { codigo: 'SQUASHG-500' },
     update: {},
     create: {
-      codigo: 'SQUASH-500',
+      codigo: 'SQUASHG-500',
       nombre: 'Squash Sabores Surtidos (500ml) Pet',
       descripcion: 'Bebida rehidratante con sabores surtidos',
       unidadMedida: 'Unidades',
@@ -1578,10 +1573,10 @@ async function main() {
   });
 
   const natuMalta200_G2 = await prisma.producto.upsert({
-    where: { codigo: 'NATUMALTA-200' },
+    where: { codigo: 'NATU-MALTA-200' },
     update: {},
     create: {
-      codigo: 'NATUMALTA-200',
+      codigo: 'NATU-MALTA-200',
       nombre: 'Natu Malta (200 Ml) Pet',
       descripcion: 'Bebida con sabor a malta',
       unidadMedida: 'Unidades',
@@ -1725,10 +1720,10 @@ async function main() {
   });
 
   const natuMalta400_G2 = await prisma.producto.upsert({
-    where: { codigo: 'NATUMALTA-400' },
+    where: { codigo: 'NATU-MALTA-400' },
     update: {},
     create: {
-      codigo: 'NATUMALTA-400',
+      codigo: 'NATU-MALTA-400',
       nombre: 'Natu Malta (400 Ml) Pet',
       descripcion: 'Bebida con sabor a mlta',
       unidadMedida: 'Unidades',
@@ -1767,10 +1762,10 @@ async function main() {
   });
 
   const speedMax310_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SPEEDMAX-310' },
+    where: { codigo: 'SPEED-MAX-310' },
     update: {},
     create: {
-      codigo: 'SPEEDMAX-310',
+      codigo: 'SPEED-MAX-310',
       nombre: 'Speed Max (310 Ml) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
@@ -1872,10 +1867,10 @@ async function main() {
   });
 
   const natuMalta1000_G2 = await prisma.producto.upsert({
-    where: { codigo: 'NATUMALTA-1000' },
+    where: { codigo: 'NATU-MALTA-1000' },
     update: {},
     create: {
-      codigo: 'NATUMALTA-1000',
+      codigo: 'NATU-MALTA-1000',
       nombre: 'Natu Malta (1 Litro) Pet',
       descripcion: 'Bebida con sabor a malta',
       unidadMedida: 'Unidades',
@@ -1893,10 +1888,10 @@ async function main() {
   });
 
   const aguaConGasCristal250_G2 = await prisma.producto.upsert({
-    where: { codigo: 'AGUACRISTAL-GAS-250' },
+    where: { codigo: 'AGUA-CRISTAL-GAS-250' },
     update: {},
     create: {
-      codigo: 'AGUACRISTAL-GAS-250',
+      codigo: 'AGUA-CRISTAL-GAS-250',
       nombre: 'Agua Con Gas Cristal(250ml) Pet',
       descripcion: 'Bebida con agua natural gasificada',
       unidadMedida: 'Unidades',
@@ -1914,10 +1909,10 @@ async function main() {
   });
 
   const aguaCristal300_G2 = await prisma.producto.upsert({
-    where: { codigo: 'AGUACRISTAL-300' },
+    where: { codigo: 'AGUA-CRISTAL-300' },
     update: {},
     create: {
-      codigo: 'AGUACRISTAL-300',
+      codigo: 'AGUA-CRISTAL-300',
       nombre: 'Agua Cristal (300ml) Pet',
       descripcion: 'Bebida de agua natural',
       unidadMedida: 'Unidades',
@@ -1935,10 +1930,10 @@ async function main() {
   });
 
   const bonyurt170_G2 = await prisma.producto.upsert({
-    where: { codigo: 'BONYURT-170' },
+    where: { codigo: 'BONYURT-ALPINA-170' },
     update: {},
     create: {
-      codigo: 'BONYURT-170',
+      codigo: 'BONYURT-ALPINA-170',
       nombre: 'Bonyur Alpina + Zucaritas (170gr)',
       descripcion: 'Alimento combinado con yugurt y cereales',
       unidadMedida: 'Unidades',
@@ -1947,7 +1942,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 0,
-      tipoProducto: 'Alimento',
+      tipoProducto: 'Bebida',
       codigoPlu: 23272,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -1956,10 +1951,10 @@ async function main() {
   });
 
   const chocorramo65_G2 = await prisma.producto.upsert({
-    where: { codigo: 'CHOCORRAMO-65' },
+    where: { codigo: 'CHOCORRAMO-65GR' },
     update: {},
     create: {
-      codigo: 'CHOCORRAMO-65',
+      codigo: 'CHOCORRAMO-65GR',
       nombre: 'Chocorramo (65gr)',
       descripcion: 'Ponqué rectangular tradicional cubierto de chocolate',
       unidadMedida: 'Unidades',
@@ -1968,7 +1963,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 0,
-      tipoProducto: 'Alimento',
+      tipoProducto: 'Bebida',
       codigoPlu: 23273,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -1977,10 +1972,10 @@ async function main() {
   });
 
   const aguaCristal600_G2 = await prisma.producto.upsert({
-    where: { codigo: 'AGUACRISTAL-600' },
+    where: { codigo: 'AGUA-CRISTAL-600' },
     update: {},
     create: {
-      codigo: 'AGUACRISTAL-600',
+      codigo: 'AGUA-CRISTAL-600',
       nombre: 'Agua Cristal (600ml) Pet',
       descripcion: 'Bebida con agua natural',
       unidadMedida: 'Unidades',
@@ -1998,10 +1993,10 @@ async function main() {
   });
 
   const speedMax473_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SPEEDMAX-473' },
+    where: { codigo: 'SPEED-MAX-473' },
     update: {},
     create: {
-      codigo: 'SPEEDMAX-473',
+      codigo: 'SPEED-MAX-473',
       nombre: 'Speed Max (473ml) Lata Grande',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
@@ -2019,10 +2014,10 @@ async function main() {
   });
 
   const aguaCristal1000_G2 = await prisma.producto.upsert({
-    where: { codigo: 'AGUACRISTAL-1000' },
+    where: { codigo: 'AGUA-CRISTAL-1000' },
     update: {},
     create: {
-      codigo: 'AGUACRISTAL-1000',
+      codigo: 'AGUA-CRISTAL-1000',
       nombre: 'Agua Cristal (1litro) Pet',
       descripcion: 'Bebida con agua natural litro',
       unidadMedida: 'Unidades',
@@ -2040,10 +2035,10 @@ async function main() {
   });
 
   const ponyMalta330_G2 = await prisma.producto.upsert({
-    where: { codigo: 'PONYMALTA-330' },
+    where: { codigo: 'PONY-MALTA-330' },
     update: {},
     create: {
-      codigo: 'PONYMALTA-330',
+      codigo: 'PONY-MALTA-330',
       nombre: 'Pony Malta Lata (330cm)',
       descripcion: 'Bebida refrescante con sabor a malta',
       unidadMedida: 'Unidades',
@@ -2061,10 +2056,10 @@ async function main() {
   });
 
   const saviloe320_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SAVILOE-320' },
+    where: { codigo: 'SAVILOEQ-320' },
     update: {},
     create: {
-      codigo: 'SAVILOE-320',
+      codigo: 'SAVILOEQ-320',
       nombre: 'Saviloe X 320ml',
       descripcion: 'Bebida con agua natural y Aloe vera',
       unidadMedida: 'Unidades',
@@ -2103,10 +2098,10 @@ async function main() {
   });
 
   const speedMaxBlue310_G2 = await prisma.producto.upsert({
-    where: { codigo: 'SPEEDMAX-BLUE-310' },
+    where: { codigo: 'SPEED-MAX-BLUE-310' },
     update: {},
     create: {
-      codigo: 'SPEEDMAX-BLUE-310',
+      codigo: 'SPEED-MAX-BLUE-310',
       nombre: 'Speed Max Blue (310 Ml) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
@@ -2124,10 +2119,10 @@ async function main() {
   });
 
   const postobon250_G2 = await prisma.producto.upsert({
-    where: { codigo: 'POSTOBON-250' },
+    where: { codigo: 'GASEOSA-POSTOBON-250' },
     update: {},
     create: {
-      codigo: 'POSTOBON-250',
+      codigo: 'GASEOSA-POSTOBON-250',
       nombre: 'Gaseosa Postobon Surtida (250ml) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
@@ -2145,10 +2140,10 @@ async function main() {
   });
 
   const postobon400_G2 = await prisma.producto.upsert({
-    where: { codigo: 'POSTOBON-400' },
+    where: { codigo: 'GASEOSA-POSTOBON-400' },
     update: {},
     create: {
-      codigo: 'POSTOBON-400',
+      codigo: 'GASEOSA-POSTOBON-400',
       nombre: 'Gaseosa Postobon Surtida (400ml) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
@@ -2166,10 +2161,10 @@ async function main() {
   });
 
   const postobon1500_G2 = await prisma.producto.upsert({
-    where: { codigo: 'POSTOBON-1500' },
+    where: { codigo: 'GASEOSA-POSTOBON-1500' },
     update: {},
     create: {
-      codigo: 'POSTOBON-1500',
+      codigo: 'GASEOSA-POSTOBON-1500',
       nombre: 'Gaseosa Postobon Surtida (1.5 Litros) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
@@ -2187,10 +2182,10 @@ async function main() {
   });
 
   const postobon2500_G2 = await prisma.producto.upsert({
-    where: { codigo: 'POSTOBON-2500' },
+    where: { codigo: 'GASEOSA-POSTOBON-2500' },
     update: {},
     create: {
-      codigo: 'POSTOBON-2500',
+      codigo: 'GASEOSA-POSTOBON-2500',
       nombre: 'Gaseosa Postobon Surtida (2.5 Litros) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
@@ -2208,10 +2203,10 @@ async function main() {
   });
 
   const postobon3125_G2 = await prisma.producto.upsert({
-    where: { codigo: 'POSTOBON-3125' },
+    where: { codigo: 'GASEOSA-POSTOBON-3125' },
     update: {},
     create: {
-      codigo: 'POSTOBON-3125',
+      codigo: 'GASEOSA-POSTOBON-3125',
       nombre: 'Gaseosa Postobon Surtida (3.125 Litros) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
@@ -2254,10 +2249,10 @@ async function main() {
 
   //LUBRICANTE GASSOL 1
   const simonizCadenas_G1 = await prisma.producto.upsert({
-    where: { codigo: 'SIMONIZ-CADENAS-UNID' },
+    where: { codigo: 'SIMONIZCADENAS-UNID' },
     update: {},
     create: {
-      codigo: 'SIMONIZ-CADENAS-UNID',
+      codigo: 'SIMONIZCADENAS-UNID',
       nombre: 'Lubricante Cadenas Simoniz',
       descripcion: 'Lubricante para cadena',
       unidadMedida: 'Unidades',
@@ -2275,7 +2270,7 @@ async function main() {
   });
 
   const mobilSuper20w50_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MOBIL-SUPER-20W50' },
+    where: { codigo: 'MOBILSUPER-20W50' },
     update: {},
     create: {
       codigo: 'MOBIL-SUPER-20W50',
@@ -2296,7 +2291,7 @@ async function main() {
   });
 
   const delvac15w40_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MOBIL-DELVAC-15W40' },
+    where: { codigo: 'MOBILDELVAC-15W40' },
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40',
@@ -2317,7 +2312,7 @@ async function main() {
   });
 
   const ultrtek25w50_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-ULTRTEK-25W50' },
+    where: { codigo: 'TERPELULTRTEK-25W50' },
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-25W50',
@@ -2338,7 +2333,7 @@ async function main() {
   });
 
   const mobilHydraulicAw68_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MOBIL-HIDRAULIC-AW68' },
+    where: { codigo: 'MOBILHIDRAULIC-AW68' },
     update: {},
     create: {
       codigo: 'MOBIL-HIDRAULIC-AW68',
@@ -2359,7 +2354,7 @@ async function main() {
   });
 
   const celerity20w50_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-CELERITY-20W50' },
+    where: { codigo: 'TERPELCELERITY-20W50' },
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-20W50',
@@ -2380,7 +2375,7 @@ async function main() {
   });
 
   const ultrek50_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-ULTREK-50' },
+    where: { codigo: 'TERPELULTREK-50' },
     update: {},
     create: {
       codigo: 'TERPEL-ULTREK-50',
@@ -2401,10 +2396,10 @@ async function main() {
   });
 
   const delvac1Galon15w40_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MOBIL-DELVAC-15W40-1G' },
+    where: { codigo: 'MOBILDELVAC-15W40-1G' },
     update: {},
     create: {
-      codigo: 'MOBIL-DELVAC-15W40-1G',
+      codigo: 'MOBILDELVAC-15W40-1G',
       nombre: 'Mobil Delvac Modern 15w-40 Full Protection (Galon)',
       descripcion: 'Aceite diésel 15W-40 galón',
       unidadMedida: 'Galones',
@@ -2422,7 +2417,7 @@ async function main() {
   });
 
   const oiltec50_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-OILTEC-50' },
+    where: { codigo: 'TERPELOILTEC-50' },
     update: {},
     create: {
       codigo: 'TERPEL-OILTEC-50',
@@ -2443,10 +2438,10 @@ async function main() {
   });
 
   const oiltec501Galon_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-OILTEC-50-1G' },
+    where: { codigo: 'TERPELOILTEC-50-1G' },
     update: {},
     create: {
-      codigo: 'TERPEL-OILTEC-50-1G',
+      codigo: 'TERPELOILTEC-50-1G',
       nombre: 'Terpel Oiltec 50 Monogrado (Galon)',
       descripcion: 'Aceite monogrado 50 galón',
       unidadMedida: 'Galones',
@@ -2464,7 +2459,7 @@ async function main() {
   });
 
   const celerity2t_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-CELERITY-2T' },
+    where: { codigo: 'TERPELCELERITY-2T' },
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-2T',
@@ -2485,10 +2480,10 @@ async function main() {
   });
 
   const mobilSuper1000_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MOBIL-SUPER1000-20W50-1Q' },
+    where: { codigo: 'MOBILSUPER1000-20W50-1Q' },
     update: {},
     create: {
-      codigo: 'MOBIL-SUPER1000-20W50-1Q',
+      codigo: 'MOBILSUPER1000-20W50-1Q',
       nombre: 'Mobil Super 1000 20w-50 (1/4) Cuarto',
       descripcion: 'Aceite motor Mobil Super 1000 20W-50 1/4',
       unidadMedida: 'Unidades',
@@ -2506,10 +2501,10 @@ async function main() {
   });
 
   const mobilSuper1000Ungalon_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MOBIL-SUPER1000-20W50-1G' },
+    where: { codigo: 'MOBILSUPER1000-20W50-1G' },
     update: {},
     create: {
-      codigo: 'MOBIL-SUPER1000-20W50-1G',
+      codigo: 'MOBILSUPER1000-20W50-1G',
       nombre: 'Mobil Super 1000 20w-50 (1galon)',
       descripcion: 'Aceite motor Mobil Super 1000 20W-50 galón',
       unidadMedida: 'Galones',
@@ -2527,7 +2522,7 @@ async function main() {
   });
 
   const ultrtek50_G1 = await prisma.producto.upsert({
-    where: { codigo: 'TERPEL-ULTRTEK-50' },
+    where: { codigo: 'TERPELULTRTEK-50' },
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50',
@@ -2847,10 +2842,10 @@ async function main() {
 
   //ADITIVO GASSOL 1
   const limpiadorInyNegro250_G1 = await prisma.producto.upsert({
-    where: { codigo: 'LIMPIADOR-INYECTORES-250ML' },
+    where: { codigo: 'LIMPIADORINYECTORES-250ML' },
     update: {},
     create: {
-      codigo: 'LIMPIADOR-INYECTORES-250ML',
+      codigo: 'LIMPIADORINYECTORES-250ML',
       nombre: 'Limpiador De Inyectores Y Carburador 250 Ml (Negro)',
       descripcion: 'Limpiador de inyectores y carburador 250ml',
       unidadMedida: 'Unidades',
@@ -2859,7 +2854,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 5,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 8414,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -2868,7 +2863,7 @@ async function main() {
   });
 
   const refrigRojo_G1 = await prisma.producto.upsert({
-    where: { codigo: 'SIMONIZ-REFRIGERANTE-ROJO' },
+    where: { codigo: 'SIMONIZREFRIGERANTE-ROJO' },
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-ROJO',
@@ -2880,7 +2875,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 3,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 11277,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -2889,7 +2884,7 @@ async function main() {
   });
 
   const refrigVerde_G1 = await prisma.producto.upsert({
-    where: { codigo: 'SIMONIZ-REFRIGERANTE-VERDE' },
+    where: { codigo: 'SIMONIZREFRIGERANTE-VERDE' },
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE',
@@ -2901,7 +2896,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 3,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13102,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -2910,10 +2905,10 @@ async function main() {
   });
 
   const aditivoGasolina140_G1 = await prisma.producto.upsert({
-    where: { codigo: 'SIMONIZ-ADITIVO-GASOLINA-140ML' },
+    where: { codigo: 'SIMONIZADITIVO-GASOLINA-140ML' },
     update: {},
     create: {
-      codigo: 'SIMONIZ-ADITIVO-GASOLINA-140ML',
+      codigo: 'SIMONIZADITIVO-GASOLINA-140ML',
       nombre: 'Aditivo Gasolina (140 Ml) Rojo Simoniz',
       descripcion: 'Aditivo para gasolina 140 ml',
       unidadMedida: 'Unidades',
@@ -2922,7 +2917,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 4,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13030,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -2931,10 +2926,10 @@ async function main() {
   });
 
   const refrigVerdeUnGalon_G1 = await prisma.producto.upsert({
-    where: { codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1G' },
+    where: { codigo: 'SIMONIZREFRIGERANTE-VERDE-1G' },
     update: {},
     create: {
-      codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1G',
+      codigo: 'SIMONIZREFRIGERANTE-VERDE-1G',
       nombre: 'Refrigerante Radiador (Galon) Verde Simoniz',
       descripcion: 'Refrigerante verde 1 galón',
       unidadMedida: 'Galones',
@@ -2943,7 +2938,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 0,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13026,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -2952,10 +2947,10 @@ async function main() {
   });
 
   const limpiadorInyDiesel250_G1 = await prisma.producto.upsert({
-    where: { codigo: 'LIMPIADOR-INYECTORES-DIESEL-250ML' },
+    where: { codigo: 'LIMPIADORINYECTORES-DIESEL-250ML' },
     update: {},
     create: {
-      codigo: 'LIMPIADOR-INYECTORES-DIESEL-250ML',
+      codigo: 'LIMPIADORINYECTORES-DIESEL-250ML',
       nombre: 'Limpiador De Inyectores Diesel (250ml) Amarillo',
       descripcion: 'Limpiador de inyectores diésel 250 ml',
       unidadMedida: 'Unidades',
@@ -2964,7 +2959,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 4,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13025,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -2973,7 +2968,7 @@ async function main() {
   });
 
   const acpmax500ck_G1 = await prisma.producto.upsert({
-    where: { codigo: 'ACPMAX-500CK-DIESEL-UNID' },
+    where: { codigo: 'ACPMAX500CK-DIESEL-UNID' },
     update: {},
     create: {
       codigo: 'ACPMAX-500CK-DIESEL-UNID',
@@ -2985,7 +2980,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 16,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 18280,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -3006,7 +3001,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 10,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 18281,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -3015,7 +3010,7 @@ async function main() {
   });
 
   const refrigerante_G1 = await prisma.producto.upsert({
-    where: { codigo: 'REFRIGERANTE-VERDE-1Q' },
+    where: { codigo: 'REFRIGERANTEVERDE-1Q' },
     update: {},
     create: {
       codigo: 'REFRIGERANTE-VERDE-1Q',
@@ -3027,7 +3022,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 4,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 23927,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -3036,10 +3031,10 @@ async function main() {
   });
 
   const mejoradorOctanaje250_G1 = await prisma.producto.upsert({
-    where: { codigo: 'MEJORADOR-OCTANAJE-250ML' },
+    where: { codigo: 'MEJORADOROCTANAJE-250ML' },
     update: {},
     create: {
-      codigo: 'MEJORADOR-OCTANAJE-250ML',
+      codigo: 'MEJORADOROCTANAJE-250ML',
       nombre: 'Mejorador De Octanaje (250ml) Naranja',
       descripcion: 'Mejorador de octanaje 250 ml',
       unidadMedida: 'Unidades',
@@ -3048,7 +3043,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 3,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 23929,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
@@ -3070,7 +3065,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 1,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 4426,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3091,7 +3086,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 6,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 8414,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3112,7 +3107,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 14,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 18315,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3121,10 +3116,10 @@ async function main() {
   });
 
   const octamax375cc_G2 = await prisma.producto.upsert({
-    where: { codigo: 'OCTAMAX-375CC' },
+    where: { codigo: 'OCTA-MAX-375CC' },
     update: {},
     create: {
-      codigo: 'OCTAMAX-375CC',
+      codigo: 'OCTA-MAX-375CC',
       nombre: 'Aditivo Gasolina Octamax 375 Cc (Multisna)',
       descripcion: 'Aditivo gasolina Octamax 375 cc',
       unidadMedida: 'Unidades',
@@ -3133,7 +3128,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 11,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 18316,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3154,7 +3149,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 4,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13127,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3175,7 +3170,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 0,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13128,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3196,7 +3191,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 4,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13129,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3217,7 +3212,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 2,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 13130,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3238,7 +3233,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 4,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 21662,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
@@ -3259,7 +3254,7 @@ async function main() {
       moneda: 'COP',
       stockMinimo: 0,
       stockActual: 0,
-      tipoProducto: 'Aditivo',
+      tipoProducto: 'Lubricante',
       codigoPlu: 21662,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
