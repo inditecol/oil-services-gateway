@@ -71,6 +71,21 @@ export class CreateProductInput {
   @Min(0, { message: 'El stock actual debe ser mayor o igual a 0' })
   stockActual: number = 0;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString({ message: 'El tipo de producto debe ser una cadena' })
+  tipoProducto?: string;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber({}, { message: 'El código PLU debe ser un número' })
+  codigoPlu?: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString({ message: 'El punto de venta debe ser una cadena' })
+  puntoVentaId?: string;
+
   @Field({ defaultValue: false })
   @IsOptional()
   @IsBoolean({ message: 'esCombustible debe ser un valor booleano' })

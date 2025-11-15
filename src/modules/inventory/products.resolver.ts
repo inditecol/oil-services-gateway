@@ -89,6 +89,7 @@ export class ProductsResolver {
     @Args('categoriaId', { type: () => ID, nullable: true }) categoriaId?: string,
     @Args('activo', { nullable: true }) activo?: boolean,
     @Args('esCombustible', { nullable: true }) esCombustible?: boolean,
+    @Args('puntoVentaId', { type: () => ID, nullable: true }) puntoVentaId?: string,
   ): Promise<ProductListResponse> {
     return this.productsService.findAll({
       page,
@@ -97,6 +98,7 @@ export class ProductsResolver {
       categoriaId,
       activo,
       esCombustible,
+      puntoVentaId,
     });
   }
 
@@ -121,6 +123,13 @@ export class ProductsResolver {
   @Query(() => [Producto], { name: 'productsByCategory' })
   async findProductsByCategory(@Args('categoriaId', { type: () => ID }) categoriaId: string): Promise<Producto[]> {
     return this.productsService.findByCategory(categoriaId);
+  }
+
+  @Query(() => [Producto], { name: 'productsByPointOfSale' })
+  async findProductsByPointOfSale(
+    @Args('puntoVentaId', { type: () => ID }) puntoVentaId: string,
+  ): Promise<Producto[]> {
+    return this.productsService.findByPointOfSale(puntoVentaId);
   }
 
   @Query(() => [Producto], { name: 'activeProducts' })

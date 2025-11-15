@@ -6,7 +6,7 @@ import { CreateProductInput } from './dto/create-product.input';
 import { UpdateProductInput } from './dto/update-product.input';
 import { Producto } from './entities/producto.entity';
 import { InventoryEntryInput } from './dto/inventory-entry.input';
-import { 
+import {
   InventoryEntryResponse,
   TankHeightEntryResult,
   ProductEntryResult,
@@ -37,12 +37,12 @@ export class ProductsService {
   private formatProduct(product: any): Producto {
     const precioCompra = parseFloat(product.precioCompra?.toString() || '0');
     const precioVenta = parseFloat(product.precioVenta?.toString() || '0');
-    
+
     // Calcular métricas de rentabilidad
     const utilidad = precioVenta - precioCompra;
     const margenUtilidad = precioVenta > 0 ? (utilidad / precioVenta) * 100 : 0;
     const porcentajeGanancia = precioCompra > 0 ? (utilidad / precioCompra) * 100 : 0;
-    
+
     return {
       ...product,
       precioCompra: precioCompra,
@@ -80,9 +80,12 @@ export class ProductsService {
         stockMinimo: createProductInput.stockMinimo || 0,
         stockActual: createProductInput.stockActual || 0,
         esCombustible: createProductInput.esCombustible || false,
+        tipoProducto: createProductInput.tipoProducto,
+        codigoPlu: createProductInput.codigoPlu,
         categoriaId: createProductInput.categoriaId,
+        puntoVentaId: createProductInput.puntoVentaId,
       },
-      include: { categoria: true },
+      include: { categoria: true, puntoVenta: true },
     });
 
     return this.formatProduct(producto);
@@ -95,6 +98,7 @@ export class ProductsService {
     categoriaId?: string;
     activo?: boolean;
     esCombustible?: boolean;
+    puntoVentaId?: string;
   }): Promise<{ products: Producto[]; total: number; page: number; limit: number; totalPages: number }> {
     const page = filters?.page || 1;
     const limit = filters?.limit || 10;
@@ -123,10 +127,14 @@ export class ProductsService {
       where.esCombustible = filters.esCombustible;
     }
 
+    if (filters?.puntoVentaId && filters.puntoVentaId.trim() !== '') {
+      where.puntoVentaId = filters.puntoVentaId;
+    }
+
     const [productos, total] = await Promise.all([
       this.prisma.producto.findMany({
         where,
-        include: { categoria: true },
+        include: { categoria: true, puntoVenta: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -148,7 +156,7 @@ export class ProductsService {
   async findById(id: string): Promise<Producto | null> {
     const producto = await this.prisma.producto.findUnique({
       where: { id },
-      include: { categoria: true },
+      include: { categoria: true, puntoVenta: true },
     });
 
     return producto ? this.formatProduct(producto) : null;
@@ -157,7 +165,7 @@ export class ProductsService {
   async findByCode(codigo: string): Promise<Producto | null> {
     const producto = await this.prisma.producto.findUnique({
       where: { codigo },
-      include: { categoria: true },
+      include: { categoria: true, puntoVenta: true },
     });
 
     return producto ? this.formatProduct(producto) : null;
@@ -167,6 +175,16 @@ export class ProductsService {
     const productos = await this.prisma.producto.findMany({
       where: { categoriaId },
       include: { categoria: true },
+      orderBy: { nombre: 'asc' },
+    });
+
+    return this.formatProducts(productos);
+  }
+
+  async findByPointOfSale(puntoVentaId: string): Promise<Producto[]> {
+    const productos = await this.prisma.producto.findMany({
+      where: { puntoVentaId },
+      include: { categoria: true, puntoVenta: true },
       orderBy: { nombre: 'asc' },
     });
 
@@ -225,7 +243,7 @@ export class ProductsService {
 
   async update(id: string, updateProductInput: UpdateProductInput, usuarioId?: string): Promise<Producto> {
     const existingProduct = await this.findById(id);
-    
+
     if (!existingProduct) {
       throw new NotFoundException('Producto no encontrado');
     }
@@ -262,13 +280,13 @@ export class ProductsService {
 
   async updateStock(id: string, cantidad: number, tipo: 'entrada' | 'salida'): Promise<Producto> {
     const product = await this.findById(id);
-    
+
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
     }
 
-    const newStock = tipo === 'entrada' 
-      ? product.stockActual + cantidad 
+    const newStock = tipo === 'entrada'
+      ? product.stockActual + cantidad
       : product.stockActual - cantidad;
 
     if (newStock < 0) {
@@ -286,7 +304,7 @@ export class ProductsService {
 
   async remove(id: string): Promise<Producto> {
     const existingProduct = await this.findById(id);
-    
+
     if (!existingProduct) {
       throw new NotFoundException('Producto no encontrado');
     }
@@ -310,7 +328,7 @@ export class ProductsService {
 
   async toggleProductStatus(id: string): Promise<Producto> {
     const product = await this.findById(id);
-    
+
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
     }
@@ -362,9 +380,9 @@ export class ProductsService {
     try {
       // Buscar el tanque asociado al producto
       const tanque = await this.prisma.tanque.findFirst({
-        where: { 
+        where: {
           productoId: productoId,
-          activo: true 
+          activo: true
         },
       });
 
@@ -374,8 +392,8 @@ export class ProductsService {
 
       // Calcular nuevo nivel
       const nivelActualDecimal = parseFloat(tanque.nivelActual.toString());
-      const nuevoNivel = tipo === 'entrada' 
-        ? nivelActualDecimal + cantidad 
+      const nuevoNivel = tipo === 'entrada'
+        ? nivelActualDecimal + cantidad
         : nivelActualDecimal - cantidad;
 
       // Verificar que no exceda la capacidad
@@ -392,7 +410,7 @@ export class ProductsService {
       // Actualizar el tanque
       await this.prisma.tanque.update({
         where: { id: tanque.id },
-        data: { 
+        data: {
           nivelActual: nuevoNivel,
           updatedAt: new Date()
         },
@@ -409,10 +427,10 @@ export class ProductsService {
     try {
       // Buscar el tanque específico del punto de venta para este producto
       const tanque = await this.prisma.tanque.findFirst({
-        where: { 
+        where: {
           productoId: productoId,
           puntoVentaId: puntoVentaId,
-          activo: true 
+          activo: true
         },
         include: {
           producto: true,
@@ -429,8 +447,8 @@ export class ProductsService {
 
       // Calcular nuevo nivel
       const nivelActualDecimal = parseFloat(tanque.nivelActual.toString());
-      const nuevoNivel = tipo === 'entrada' 
-        ? nivelActualDecimal + cantidad 
+      const nuevoNivel = tipo === 'entrada'
+        ? nivelActualDecimal + cantidad
         : nivelActualDecimal - cantidad;
 
       console.log(`[TANQUE] Nivel actual: ${nivelActualDecimal}L, Cantidad: ${cantidad}L (${tipo}), Nuevo nivel: ${nuevoNivel}L`);
@@ -449,7 +467,7 @@ export class ProductsService {
       // Actualizar el tanque
       const tanqueActualizado = await this.prisma.tanque.update({
         where: { id: tanque.id },
-        data: { 
+        data: {
           nivelActual: nuevoNivel,
           updatedAt: new Date()
         },
@@ -468,14 +486,14 @@ export class ProductsService {
   async getTankStatus() {
     const tanks = await this.prisma.producto.findMany({
       where: { esCombustible: true },
-            select: {
+      select: {
         id: true,
-              codigo: true,
-              nombre: true,
+        codigo: true,
+        nombre: true,
         stockActual: true,
         stockMinimo: true
       }
-      });
+    });
 
     return tanks.map(tank => ({
       ...tank,
@@ -557,11 +575,11 @@ export class ProductsService {
     const utilidadTotalProyectada = productos.reduce((sum, p) => sum + p.utilidadProyectada, 0);
     const margenPromedio = productos.reduce((sum, p) => sum + p.margenUtilidad, 0) / productos.length;
 
-    const productoMasRentable = productos.reduce((max, p) => 
+    const productoMasRentable = productos.reduce((max, p) =>
       p.margenUtilidad > max.margenUtilidad ? p : max
     );
 
-    const productoMenosRentable = productos.reduce((min, p) => 
+    const productoMenosRentable = productos.reduce((min, p) =>
       p.margenUtilidad < min.margenUtilidad ? p : min
     );
 
@@ -580,17 +598,17 @@ export class ProductsService {
    */
   async suggestOptimalPricing(productoId: string, margenObjetivo: number = 25): Promise<any> {
     const producto = await this.findById(productoId);
-    
+
     if (!producto) {
       throw new NotFoundException('Producto no encontrado');
     }
 
     const precioCompra = producto.precioCompra;
     const precioVentaActual = producto.precioVenta;
-    
+
     // Calcular precio óptimo basado en margen objetivo
     const precioVentaOptimo = precioCompra / (1 - (margenObjetivo / 100));
-    
+
     // Calcular diferentes escenarios
     const escenarios = [
       {
@@ -624,7 +642,7 @@ export class ProductsService {
         utilidadPorUnidad: Math.round((e.precioVenta - precioCompra) * 100) / 100,
         diferenciaPrecioActual: Math.round((e.precioVenta - precioVentaActual) * 100) / 100,
       })),
-      recomendacion: margenObjetivo <= producto.margenUtilidad 
+      recomendacion: margenObjetivo <= producto.margenUtilidad
         ? 'El margen actual ya cumple o supera el objetivo'
         : `Considere ajustar el precio de venta a $${Math.round(precioVentaOptimo * 100) / 100} ${producto.moneda}`,
     };
@@ -756,8 +774,8 @@ export class ProductsService {
           totalVentasLitros: parseFloat(cierre.totalVentasLitros.toString()),
           totalVentasGalones: parseFloat(cierre.totalVentasGalones.toString()),
           valorTotalGeneral: parseFloat(cierre.valorTotalGeneral.toString()),
-          resumenSurtidores: typeof cierre.resumenSurtidores === 'string' 
-            ? JSON.parse(cierre.resumenSurtidores) 
+          resumenSurtidores: typeof cierre.resumenSurtidores === 'string'
+            ? JSON.parse(cierre.resumenSurtidores)
             : cierre.resumenSurtidores
         })),
         total,
@@ -795,8 +813,8 @@ export class ProductsService {
         totalVentasLitros: parseFloat(cierre.totalVentasLitros.toString()),
         totalVentasGalones: parseFloat(cierre.totalVentasGalones.toString()),
         valorTotalGeneral: parseFloat(cierre.valorTotalGeneral.toString()),
-        resumenSurtidores: typeof cierre.resumenSurtidores === 'string' 
-          ? JSON.parse(cierre.resumenSurtidores) 
+        resumenSurtidores: typeof cierre.resumenSurtidores === 'string'
+          ? JSON.parse(cierre.resumenSurtidores)
           : cierre.resumenSurtidores
       };
     } catch (error) {
@@ -869,7 +887,7 @@ export class ProductsService {
 
         // Calcular el valor de la pérdida
         const valorPerdida = Number(producto.precioCompra) * item.cantidad;
-        
+
         // Actualizar el stock
         const nuevoStock = producto.stockActual - item.cantidad;
         const productoActualizado = await this.prisma.producto.update({
@@ -998,20 +1016,20 @@ export class ProductsService {
     return await this.prisma.$transaction(async (prisma) => {
       const errores: string[] = [];
       const advertencias: string[] = [];
-    
-    // Resultados de procesamiento
-    const resumenTanques: TankHeightEntryResult[] = [];
-    const resumenProductos: ProductEntryResult[] = [];
-    const resumenCarrotanques: CarrotanqueEntryResult[] = [];
 
-    let costoTotalTanques = 0;
-    let costoTotalProductos = 0;
-    let costoTotalCarrotanques = 0;
-    let volumenTotalLitros = 0;
-    let volumenTotalGalones = 0;
-    let cantidadTanquesActualizados = 0;
-    let cantidadProductosIngresados = 0;
-    let cantidadCarrotanquesDescargados = 0;
+      // Resultados de procesamiento
+      const resumenTanques: TankHeightEntryResult[] = [];
+      const resumenProductos: ProductEntryResult[] = [];
+      const resumenCarrotanques: CarrotanqueEntryResult[] = [];
+
+      let costoTotalTanques = 0;
+      let costoTotalProductos = 0;
+      let costoTotalCarrotanques = 0;
+      let volumenTotalLitros = 0;
+      let volumenTotalGalones = 0;
+      let cantidadTanquesActualizados = 0;
+      let cantidadProductosIngresados = 0;
+      let cantidadCarrotanquesDescargados = 0;
 
       // Crear primero la entrada de inventario (código del proceso)
       let entradaInventario;
@@ -1032,480 +1050,480 @@ export class ProductsService {
         throw new ConflictException(`Error creando entrada de inventario: ${error.message}`);
       }
 
-    try {
-      // 1. PROCESAR LECTURAS DE TANQUES
-      if (entryInput.lecturasTanques && entryInput.lecturasTanques.length > 0) {
-        for (const lecturaInput of entryInput.lecturasTanques) {
-          try {
-            // Buscar el tanque
-            const tanque = await prisma.tanque.findUnique({
-              where: { id: lecturaInput.tanqueId },
-              include: { 
-                producto: true,
-                tablaAforo: { orderBy: { altura: 'asc' } }
-              }
-            });
-
-            if (!tanque) {
-              errores.push(`Tanque ${lecturaInput.tanqueId} no encontrado`);
-              continue;
-            }
-
-            // Calcular volumen basado en diferencia de altura
-            const diferenciaAltura = lecturaInput.alturaFluidoNueva - lecturaInput.alturaFluidoAnterior;
-            
-            // Validaciones especiales para altura nueva = 0
-            if (lecturaInput.alturaFluidoNueva === 0) {
-              if (lecturaInput.alturaFluidoAnterior > 0) {
-                errores.push(`Tanque ${tanque.nombre}: No se puede establecer altura nueva en 0cm cuando la altura anterior es ${lecturaInput.alturaFluidoAnterior}cm. Esto indicaría vaciado del tanque, no entrada de inventario.`);
-                continue;
-              } else if (lecturaInput.alturaFluidoAnterior === 0) {
-                // Caso especial: tanque vacío que sigue vacío (no hay entrada)
-                advertencias.push(`Tanque ${tanque.nombre}: Tanque permanece vacío (0cm → 0cm). No hay entrada de inventario.`);
-                continue;
-              }
-            }
-            
-            if (diferenciaAltura <= 0) {
-              advertencias.push(`Tanque ${tanque.nombre}: No hay incremento de altura (${diferenciaAltura})`);
-            }
-
-            // Calcular volumen usando tabla de aforo si existe
-            let volumenCalculado = 0;
-            if (tanque.tablaAforo && tanque.tablaAforo.length > 0) {
-              try {
-                // Interpolar volumen usando tabla de aforo
-                const volumenAnterior = await this.tanquesService.getVolumeByHeight(lecturaInput.tanqueId, lecturaInput.alturaFluidoAnterior);
-                const volumenNuevo = await this.tanquesService.getVolumeByHeight(lecturaInput.tanqueId, lecturaInput.alturaFluidoNueva);
-                volumenCalculado = volumenNuevo - volumenAnterior;
-              } catch (error) {
-                // Si es un error de validación de altura, agregarlo a errores y continuar con el siguiente tanque
-                if (error.message.includes('excede la altura máxima') || error.message.includes('menor que la altura mínima')) {
-                  errores.push(`Tanque ${tanque.nombre}: ${error.message}`);
-                  continue;
-                } else {
-                  // Para otros errores, re-lanzar
-                  throw error;
-                }
-              }
-            } else {
-              // Calcular aproximado basado en capacidad y altura máxima
-              const alturaMaxima = Number(tanque.capacidadTotal) ? Math.sqrt(Number(tanque.capacidadTotal) / Math.PI) : 200; // Aproximación
-              volumenCalculado = (diferenciaAltura / alturaMaxima) * (Number(tanque.capacidadTotal) || 0);
-            }
-
-            // Usar el volumen calculado directamente en su unidad original
-            const volumenFinal = Math.max(0, volumenCalculado);
-            
-            // Buscar producto por código si se proporcionó
-            let productoAsociado = tanque.producto;
-            if (lecturaInput.codigoProducto && (!productoAsociado || productoAsociado.codigo !== lecturaInput.codigoProducto)) {
-              productoAsociado = await prisma.producto.findUnique({
-                where: { codigo: lecturaInput.codigoProducto }
-              });
-              
-              if (!productoAsociado) {
-                errores.push(`Producto ${lecturaInput.codigoProducto} no encontrado para tanque ${tanque.nombre}`);
-                productoAsociado = tanque.producto; // Usar el producto del tanque como fallback
-              }
-            }
-
-            // Calcular costo total del combustible ingresado
-            const precioCompra = lecturaInput.precioCompra || 0;
-            const costoTotalCombustible = volumenFinal * precioCompra;
-
-            // Calcular volumen real usando tabla de aforo
-            let volumenReal = 0;
+      try {
+        // 1. PROCESAR LECTURAS DE TANQUES
+        if (entryInput.lecturasTanques && entryInput.lecturasTanques.length > 0) {
+          for (const lecturaInput of entryInput.lecturasTanques) {
             try {
-              volumenReal = await this.tanquesService.getVolumeByHeight(tanque.id, lecturaInput.alturaFluidoNueva);
-            } catch (error) {
-              console.warn(`No se pudo calcular volumen por tabla de aforo para tanque ${tanque.id}:`, error.message);
-              // Usar cálculo aproximado si no hay tabla de aforo
-              volumenReal = volumenFinal;
-            }
-
-            // Actualizar nivel del tanque con volumen real calculado
-            await prisma.tanque.update({
-              where: { id: tanque.id },
-              data: {
-                nivelActual: volumenReal,
-                alturaActual: lecturaInput.alturaFluidoNueva
-              }
-            });
-
-            // Actualizar stock del producto combustible si existe
-            if (productoAsociado && volumenFinal > 0) {
-              await prisma.producto.update({
-                where: { id: productoAsociado.id },
-                data: {
-                  stockActual: {
-                    increment: volumenFinal
-                  },
-                  // Actualizar precio de compra si se proporcionó
-                  ...(precioCompra > 0 && { precioCompra: precioCompra })
+              // Buscar el tanque
+              const tanque = await prisma.tanque.findUnique({
+                where: { id: lecturaInput.tanqueId },
+                include: {
+                  producto: true,
+                  tablaAforo: { orderBy: { altura: 'asc' } }
                 }
               });
-            }
 
-            // Registrar el movimiento de inventario completo con toda la trazabilidad
-            if (productoAsociado) {
+              if (!tanque) {
+                errores.push(`Tanque ${lecturaInput.tanqueId} no encontrado`);
+                continue;
+              }
+
+              // Calcular volumen basado en diferencia de altura
+              const diferenciaAltura = lecturaInput.alturaFluidoNueva - lecturaInput.alturaFluidoAnterior;
+
+              // Validaciones especiales para altura nueva = 0
+              if (lecturaInput.alturaFluidoNueva === 0) {
+                if (lecturaInput.alturaFluidoAnterior > 0) {
+                  errores.push(`Tanque ${tanque.nombre}: No se puede establecer altura nueva en 0cm cuando la altura anterior es ${lecturaInput.alturaFluidoAnterior}cm. Esto indicaría vaciado del tanque, no entrada de inventario.`);
+                  continue;
+                } else if (lecturaInput.alturaFluidoAnterior === 0) {
+                  // Caso especial: tanque vacío que sigue vacío (no hay entrada)
+                  advertencias.push(`Tanque ${tanque.nombre}: Tanque permanece vacío (0cm → 0cm). No hay entrada de inventario.`);
+                  continue;
+                }
+              }
+
+              if (diferenciaAltura <= 0) {
+                advertencias.push(`Tanque ${tanque.nombre}: No hay incremento de altura (${diferenciaAltura})`);
+              }
+
+              // Calcular volumen usando tabla de aforo si existe
+              let volumenCalculado = 0;
+              if (tanque.tablaAforo && tanque.tablaAforo.length > 0) {
+                try {
+                  // Interpolar volumen usando tabla de aforo
+                  const volumenAnterior = await this.tanquesService.getVolumeByHeight(lecturaInput.tanqueId, lecturaInput.alturaFluidoAnterior);
+                  const volumenNuevo = await this.tanquesService.getVolumeByHeight(lecturaInput.tanqueId, lecturaInput.alturaFluidoNueva);
+                  volumenCalculado = volumenNuevo - volumenAnterior;
+                } catch (error) {
+                  // Si es un error de validación de altura, agregarlo a errores y continuar con el siguiente tanque
+                  if (error.message.includes('excede la altura máxima') || error.message.includes('menor que la altura mínima')) {
+                    errores.push(`Tanque ${tanque.nombre}: ${error.message}`);
+                    continue;
+                  } else {
+                    // Para otros errores, re-lanzar
+                    throw error;
+                  }
+                }
+              } else {
+                // Calcular aproximado basado en capacidad y altura máxima
+                const alturaMaxima = Number(tanque.capacidadTotal) ? Math.sqrt(Number(tanque.capacidadTotal) / Math.PI) : 200; // Aproximación
+                volumenCalculado = (diferenciaAltura / alturaMaxima) * (Number(tanque.capacidadTotal) || 0);
+              }
+
+              // Usar el volumen calculado directamente en su unidad original
+              const volumenFinal = Math.max(0, volumenCalculado);
+
+              // Buscar producto por código si se proporcionó
+              let productoAsociado = tanque.producto;
+              if (lecturaInput.codigoProducto && (!productoAsociado || productoAsociado.codigo !== lecturaInput.codigoProducto)) {
+                productoAsociado = await prisma.producto.findUnique({
+                  where: { codigo: lecturaInput.codigoProducto }
+                });
+
+                if (!productoAsociado) {
+                  errores.push(`Producto ${lecturaInput.codigoProducto} no encontrado para tanque ${tanque.nombre}`);
+                  productoAsociado = tanque.producto; // Usar el producto del tanque como fallback
+                }
+              }
+
+              // Calcular costo total del combustible ingresado
+              const precioCompra = lecturaInput.precioCompra || 0;
+              const costoTotalCombustible = volumenFinal * precioCompra;
+
+              // Calcular volumen real usando tabla de aforo
+              let volumenReal = 0;
+              try {
+                volumenReal = await this.tanquesService.getVolumeByHeight(tanque.id, lecturaInput.alturaFluidoNueva);
+              } catch (error) {
+                console.warn(`No se pudo calcular volumen por tabla de aforo para tanque ${tanque.id}:`, error.message);
+                // Usar cálculo aproximado si no hay tabla de aforo
+                volumenReal = volumenFinal;
+              }
+
+              // Actualizar nivel del tanque con volumen real calculado
+              await prisma.tanque.update({
+                where: { id: tanque.id },
+                data: {
+                  nivelActual: volumenReal,
+                  alturaActual: lecturaInput.alturaFluidoNueva
+                }
+              });
+
+              // Actualizar stock del producto combustible si existe
+              if (productoAsociado && volumenFinal > 0) {
+                await prisma.producto.update({
+                  where: { id: productoAsociado.id },
+                  data: {
+                    stockActual: {
+                      increment: volumenFinal
+                    },
+                    // Actualizar precio de compra si se proporcionó
+                    ...(precioCompra > 0 && { precioCompra: precioCompra })
+                  }
+                });
+              }
+
+              // Registrar el movimiento de inventario completo con toda la trazabilidad
+              if (productoAsociado) {
+                await prisma.entradaInventarioProcess.create({
+                  data: {
+                    entradaInventarioId: entradaInventario.id, // Referencia al código de entrada
+                    productoId: productoAsociado.id,
+                    codigoProducto: lecturaInput.codigoProducto || productoAsociado.codigo,
+                    cantidad: volumenFinal,
+                    unidadMedida: tanque.unidadMedida || 'GALONES', // Usar la unidad del tanque, defaultear a galones
+                    tipoMovimiento: 'entrada',
+                    estadoMovimiento: 'COMPLETADO',
+                    precioUnitario: precioCompra,
+                    costoTotal: costoTotalCombustible,
+
+                    // Información específica de tanques
+                    tanqueId: tanque.id,
+                    alturaFluidoAnterior: lecturaInput.alturaFluidoAnterior,
+                    alturaFluidoNueva: lecturaInput.alturaFluidoNueva,
+                    volumenCalculado: volumenFinal,
+
+                    // Información del producto específico (en EntradaInventarioProcess)
+                    lote: null, // Para combustibles normalmente no hay lote
+                    fechaVencimiento: null, // Para combustibles normalmente no hay vencimiento
+
+                    // Trazabilidad completa
+                    observaciones: `Tanque: ${tanque.nombre} | Producto: ${lecturaInput.codigoProducto || productoAsociado.codigo} | Altura: ${lecturaInput.alturaFluidoAnterior}→${lecturaInput.alturaFluidoNueva}cm | Volumen: ${volumenFinal.toFixed(2)}L | Precio: $${precioCompra}/L | ${lecturaInput.observaciones || ''}`,
+                    fechaMovimiento: new Date()
+                  }
+                });
+              }
+
+              // Sumar al costo total de tanques
+              costoTotalTanques += costoTotalCombustible;
+
+              resumenTanques.push({
+                tanqueId: tanque.id,
+                nombreTanque: tanque.nombre,
+                alturaFluidoAnterior: lecturaInput.alturaFluidoAnterior,
+                alturaFluidoNueva: lecturaInput.alturaFluidoNueva,
+                diferenciaAltura,
+                volumenCalculadoLitros: volumenFinal,
+                volumenCalculadoGalones: volumenFinal,
+                procesadoExitosamente: true,
+                observaciones: lecturaInput.observaciones
+              });
+
+              volumenTotalLitros += volumenFinal;
+              volumenTotalGalones += volumenFinal;
+              cantidadTanquesActualizados++;
+
+            } catch (error) {
+              errores.push(`Error procesando tanque ${lecturaInput.tanqueId}: ${error.message}`);
+              resumenTanques.push({
+                tanqueId: lecturaInput.tanqueId,
+                nombreTanque: lecturaInput.nombreTanque || 'ERROR',
+                alturaFluidoAnterior: lecturaInput.alturaFluidoAnterior,
+                alturaFluidoNueva: lecturaInput.alturaFluidoNueva,
+                diferenciaAltura: 0,
+                volumenCalculadoLitros: 0,
+                volumenCalculadoGalones: 0,
+                procesadoExitosamente: false,
+                error: error.message,
+                observaciones: lecturaInput.observaciones
+              });
+            }
+          }
+        }
+
+        // 2. PROCESAR INGRESOS DE PRODUCTOS
+        if (entryInput.ingresosProductos && entryInput.ingresosProductos.length > 0) {
+          for (const ingresoInput of entryInput.ingresosProductos) {
+            try {
+              // Buscar el producto
+              const producto = await prisma.producto.findUnique({
+                where: { codigo: ingresoInput.codigoProducto },
+                include: { categoria: true }
+              });
+
+              if (!producto) {
+                errores.push(`Producto ${ingresoInput.codigoProducto} no encontrado`);
+                continue;
+              }
+
+              // Validar que cantidad * precio = costo total
+              const costoEsperado = ingresoInput.cantidadIngresada * ingresoInput.precioCompra;
+              if (Math.abs(costoEsperado - ingresoInput.costoTotal) > 0.01) {
+                advertencias.push(`${ingresoInput.codigoProducto}: Costo total no coincide (esperado: ${costoEsperado}, recibido: ${ingresoInput.costoTotal})`);
+              }
+
+              const stockAnterior = producto.stockActual;
+              const stockNuevo = stockAnterior + ingresoInput.cantidadIngresada;
+
+              // Actualizar stock del producto
+              await prisma.producto.update({
+                where: { id: producto.id },
+                data: {
+                  stockActual: stockNuevo,
+                  precioCompra: ingresoInput.precioCompra // Actualizar precio de compra
+                }
+              });
+
+              // Registrar entrada de inventario con trazabilidad completa
               await prisma.entradaInventarioProcess.create({
                 data: {
                   entradaInventarioId: entradaInventario.id, // Referencia al código de entrada
-                  productoId: productoAsociado.id,
-                  codigoProducto: lecturaInput.codigoProducto || productoAsociado.codigo,
-                  cantidad: volumenFinal,
-                  unidadMedida: tanque.unidadMedida || 'GALONES', // Usar la unidad del tanque, defaultear a galones
+                  productoId: producto.id,
+                  codigoProducto: ingresoInput.codigoProducto,
+                  cantidad: ingresoInput.cantidadIngresada,
+                  unidadMedida: ingresoInput.unidadMedida,
                   tipoMovimiento: 'entrada',
                   estadoMovimiento: 'COMPLETADO',
-                  precioUnitario: precioCompra,
-                  costoTotal: costoTotalCombustible,
-                  
-                  // Información específica de tanques
-                  tanqueId: tanque.id,
-                  alturaFluidoAnterior: lecturaInput.alturaFluidoAnterior,
-                  alturaFluidoNueva: lecturaInput.alturaFluidoNueva,
-                  volumenCalculado: volumenFinal,
-                  
-                  // Información del producto específico (en EntradaInventarioProcess)
-                  lote: null, // Para combustibles normalmente no hay lote
-                  fechaVencimiento: null, // Para combustibles normalmente no hay vencimiento
-                  
+                  precioUnitario: ingresoInput.precioCompra,
+                  costoTotal: ingresoInput.costoTotal,
+
+                  // Información del producto específico
+                  lote: ingresoInput.lote,
+                  fechaVencimiento: ingresoInput.fechaVencimiento ? new Date(ingresoInput.fechaVencimiento) : null,
+
+                  // No aplican para productos no combustibles
+                  alturaFluidoAnterior: null,
+                  alturaFluidoNueva: null,
+                  volumenCalculado: null,
+                  tanqueId: null,
+                  carrotanqueId: null,
+
                   // Trazabilidad completa
-                  observaciones: `Tanque: ${tanque.nombre} | Producto: ${lecturaInput.codigoProducto || productoAsociado.codigo} | Altura: ${lecturaInput.alturaFluidoAnterior}→${lecturaInput.alturaFluidoNueva}cm | Volumen: ${volumenFinal.toFixed(2)}L | Precio: $${precioCompra}/L | ${lecturaInput.observaciones || ''}`,
+                  observaciones: `Producto: ${producto.nombre} | Código: ${ingresoInput.codigoProducto} | Cantidad: ${ingresoInput.cantidadIngresada} ${ingresoInput.unidadMedida} | Precio: $${ingresoInput.precioCompra} | Lote: ${ingresoInput.lote || 'N/A'} | Proveedor: ${ingresoInput.proveedor || 'N/A'} | ${ingresoInput.observaciones || ''}`,
                   fechaMovimiento: new Date()
                 }
               });
-            }
 
-            // Sumar al costo total de tanques
-            costoTotalTanques += costoTotalCombustible;
-
-            resumenTanques.push({
-              tanqueId: tanque.id,
-              nombreTanque: tanque.nombre,
-              alturaFluidoAnterior: lecturaInput.alturaFluidoAnterior,
-              alturaFluidoNueva: lecturaInput.alturaFluidoNueva,
-              diferenciaAltura,
-              volumenCalculadoLitros: volumenFinal,
-              volumenCalculadoGalones: volumenFinal,
-              procesadoExitosamente: true,
-              observaciones: lecturaInput.observaciones
-            });
-
-            volumenTotalLitros += volumenFinal;
-            volumenTotalGalones += volumenFinal;
-            cantidadTanquesActualizados++;
-
-          } catch (error) {
-            errores.push(`Error procesando tanque ${lecturaInput.tanqueId}: ${error.message}`);
-            resumenTanques.push({
-              tanqueId: lecturaInput.tanqueId,
-              nombreTanque: lecturaInput.nombreTanque || 'ERROR',
-              alturaFluidoAnterior: lecturaInput.alturaFluidoAnterior,
-              alturaFluidoNueva: lecturaInput.alturaFluidoNueva,
-              diferenciaAltura: 0,
-              volumenCalculadoLitros: 0,
-              volumenCalculadoGalones: 0,
-              procesadoExitosamente: false,
-              error: error.message,
-              observaciones: lecturaInput.observaciones
-            });
-          }
-        }
-      }
-
-      // 2. PROCESAR INGRESOS DE PRODUCTOS
-      if (entryInput.ingresosProductos && entryInput.ingresosProductos.length > 0) {
-        for (const ingresoInput of entryInput.ingresosProductos) {
-          try {
-            // Buscar el producto
-            const producto = await prisma.producto.findUnique({
-              where: { codigo: ingresoInput.codigoProducto },
-              include: { categoria: true }
-            });
-
-            if (!producto) {
-              errores.push(`Producto ${ingresoInput.codigoProducto} no encontrado`);
-              continue;
-            }
-
-            // Validar que cantidad * precio = costo total
-            const costoEsperado = ingresoInput.cantidadIngresada * ingresoInput.precioCompra;
-            if (Math.abs(costoEsperado - ingresoInput.costoTotal) > 0.01) {
-              advertencias.push(`${ingresoInput.codigoProducto}: Costo total no coincide (esperado: ${costoEsperado}, recibido: ${ingresoInput.costoTotal})`);
-            }
-
-            const stockAnterior = producto.stockActual;
-            const stockNuevo = stockAnterior + ingresoInput.cantidadIngresada;
-
-            // Actualizar stock del producto
-            await prisma.producto.update({
-              where: { id: producto.id },
-              data: {
-                stockActual: stockNuevo,
-                precioCompra: ingresoInput.precioCompra // Actualizar precio de compra
-              }
-            });
-
-            // Registrar entrada de inventario con trazabilidad completa
-            await prisma.entradaInventarioProcess.create({
-              data: {
-                entradaInventarioId: entradaInventario.id, // Referencia al código de entrada
-                productoId: producto.id,
-                codigoProducto: ingresoInput.codigoProducto,
-                cantidad: ingresoInput.cantidadIngresada,
+              resumenProductos.push({
+                codigoProducto: producto.codigo,
+                nombreProducto: producto.nombre,
                 unidadMedida: ingresoInput.unidadMedida,
-                tipoMovimiento: 'entrada',
-                estadoMovimiento: 'COMPLETADO',
-                precioUnitario: ingresoInput.precioCompra,
+                cantidadIngresada: ingresoInput.cantidadIngresada,
+                stockAnterior,
+                stockNuevo,
+                precioCompra: ingresoInput.precioCompra,
                 costoTotal: ingresoInput.costoTotal,
-                
-                // Información del producto específico
+                procesadoExitosamente: true,
                 lote: ingresoInput.lote,
-                fechaVencimiento: ingresoInput.fechaVencimiento ? new Date(ingresoInput.fechaVencimiento) : null,
-                
-                // No aplican para productos no combustibles
-                alturaFluidoAnterior: null,
-                alturaFluidoNueva: null,
-                volumenCalculado: null,
-                tanqueId: null,
-                carrotanqueId: null,
-                
-                // Trazabilidad completa
-                observaciones: `Producto: ${producto.nombre} | Código: ${ingresoInput.codigoProducto} | Cantidad: ${ingresoInput.cantidadIngresada} ${ingresoInput.unidadMedida} | Precio: $${ingresoInput.precioCompra} | Lote: ${ingresoInput.lote || 'N/A'} | Proveedor: ${ingresoInput.proveedor || 'N/A'} | ${ingresoInput.observaciones || ''}`,
-                fechaMovimiento: new Date()
-              }
-            });
+                fechaVencimiento: ingresoInput.fechaVencimiento,
+                proveedor: ingresoInput.proveedor,
+                numeroFactura: ingresoInput.numeroFactura,
+                observaciones: ingresoInput.observaciones
+              });
 
-            resumenProductos.push({
-              codigoProducto: producto.codigo,
-              nombreProducto: producto.nombre,
-              unidadMedida: ingresoInput.unidadMedida,
-              cantidadIngresada: ingresoInput.cantidadIngresada,
-              stockAnterior,
-              stockNuevo,
-              precioCompra: ingresoInput.precioCompra,
-              costoTotal: ingresoInput.costoTotal,
-              procesadoExitosamente: true,
-              lote: ingresoInput.lote,
-              fechaVencimiento: ingresoInput.fechaVencimiento,
-              proveedor: ingresoInput.proveedor,
-              numeroFactura: ingresoInput.numeroFactura,
-              observaciones: ingresoInput.observaciones
-            });
+              costoTotalProductos += ingresoInput.costoTotal;
+              cantidadProductosIngresados++;
 
-            costoTotalProductos += ingresoInput.costoTotal;
-            cantidadProductosIngresados++;
-
-          } catch (error) {
-            errores.push(`Error procesando producto ${ingresoInput.codigoProducto}: ${error.message}`);
-            resumenProductos.push({
-              codigoProducto: ingresoInput.codigoProducto,
-              nombreProducto: 'ERROR',
-              unidadMedida: ingresoInput.unidadMedida,
-              cantidadIngresada: 0,
-              stockAnterior: 0,
-              stockNuevo: 0,
-              precioCompra: ingresoInput.precioCompra,
-              costoTotal: 0,
-              procesadoExitosamente: false,
-              error: error.message,
-              observaciones: ingresoInput.observaciones
-            });
+            } catch (error) {
+              errores.push(`Error procesando producto ${ingresoInput.codigoProducto}: ${error.message}`);
+              resumenProductos.push({
+                codigoProducto: ingresoInput.codigoProducto,
+                nombreProducto: 'ERROR',
+                unidadMedida: ingresoInput.unidadMedida,
+                cantidadIngresada: 0,
+                stockAnterior: 0,
+                stockNuevo: 0,
+                precioCompra: ingresoInput.precioCompra,
+                costoTotal: 0,
+                procesadoExitosamente: false,
+                error: error.message,
+                observaciones: ingresoInput.observaciones
+              });
+            }
           }
         }
-      }
 
-      // 3. PROCESAR DESCARGAS DE CARROTANQUES
-      if (entryInput.descargasCarrotanques && entryInput.descargasCarrotanques.length > 0) {
-        for (const descargaInput of entryInput.descargasCarrotanques) {
-          try {
-            // Buscar el carrotanque
-            const carrotanque = await prisma.carrotanque.findUnique({
-              where: { id: descargaInput.carrotanqueId },
-              include: { tablaAforo: true }
-            });
+        // 3. PROCESAR DESCARGAS DE CARROTANQUES
+        if (entryInput.descargasCarrotanques && entryInput.descargasCarrotanques.length > 0) {
+          for (const descargaInput of entryInput.descargasCarrotanques) {
+            try {
+              // Buscar el carrotanque
+              const carrotanque = await prisma.carrotanque.findUnique({
+                where: { id: descargaInput.carrotanqueId },
+                include: { tablaAforo: true }
+              });
 
-            if (!carrotanque) {
-              errores.push(`Carrotanque ${descargaInput.carrotanqueId} no encontrado`);
-              continue;
-            }
-
-            // Buscar el producto
-            const producto = await prisma.producto.findUnique({
-              where: { codigo: descargaInput.codigoProducto }
-            });
-
-            if (!producto) {
-              errores.push(`Producto ${descargaInput.codigoProducto} no encontrado para carrotanque ${carrotanque.placa}`);
-              continue;
-            }
-
-            // Validar que cantidad * precio = costo total
-            const costoEsperado = descargaInput.cantidadDescargada * descargaInput.precioCompra;
-            if (Math.abs(costoEsperado - descargaInput.costoTotal) > 0.01) {
-              advertencias.push(`Carrotanque ${carrotanque.placa}: Costo total no coincide (esperado: ${costoEsperado}, recibido: ${descargaInput.costoTotal})`);
-            }
-
-            const nivelAnterior = carrotanque.nivelActual;
-            const nivelNuevo = Math.max(0, Number(nivelAnterior) - descargaInput.cantidadDescargada);
-
-            // Actualizar nivel del carrotanque
-            await prisma.carrotanque.update({
-              where: { id: carrotanque.id },
-              data: {
-                nivelActual: nivelNuevo,
-                alturaActual: nivelNuevo
+              if (!carrotanque) {
+                errores.push(`Carrotanque ${descargaInput.carrotanqueId} no encontrado`);
+                continue;
               }
-            });
 
-            // Actualizar stock del producto
-            await prisma.producto.update({
-              where: { id: producto.id },
-              data: {
-                stockActual: {
-                  increment: descargaInput.cantidadDescargada
-                },
-                // Actualizar precio de compra
-                precioCompra: descargaInput.precioCompra
+              // Buscar el producto
+              const producto = await prisma.producto.findUnique({
+                where: { codigo: descargaInput.codigoProducto }
+              });
+
+              if (!producto) {
+                errores.push(`Producto ${descargaInput.codigoProducto} no encontrado para carrotanque ${carrotanque.placa}`);
+                continue;
               }
-            });
 
-            // Registrar entrada de inventario para el producto descargado con trazabilidad completa
-            await prisma.entradaInventarioProcess.create({
-              data: {
-                entradaInventarioId: entradaInventario.id, // Referencia al código de entrada
-                productoId: producto.id,
-                codigoProducto: descargaInput.codigoProducto,
-                cantidad: descargaInput.cantidadDescargada,
-                unidadMedida: descargaInput.unidadMedida,
-                tipoMovimiento: 'entrada',
-                estadoMovimiento: 'COMPLETADO',
-                precioUnitario: descargaInput.precioCompra,
-                costoTotal: descargaInput.costoTotal,
-                
-                // Información específica del carrotanque
+              // Validar que cantidad * precio = costo total
+              const costoEsperado = descargaInput.cantidadDescargada * descargaInput.precioCompra;
+              if (Math.abs(costoEsperado - descargaInput.costoTotal) > 0.01) {
+                advertencias.push(`Carrotanque ${carrotanque.placa}: Costo total no coincide (esperado: ${costoEsperado}, recibido: ${descargaInput.costoTotal})`);
+              }
+
+              const nivelAnterior = carrotanque.nivelActual;
+              const nivelNuevo = Math.max(0, Number(nivelAnterior) - descargaInput.cantidadDescargada);
+
+              // Actualizar nivel del carrotanque
+              await prisma.carrotanque.update({
+                where: { id: carrotanque.id },
+                data: {
+                  nivelActual: nivelNuevo,
+                  alturaActual: nivelNuevo
+                }
+              });
+
+              // Actualizar stock del producto
+              await prisma.producto.update({
+                where: { id: producto.id },
+                data: {
+                  stockActual: {
+                    increment: descargaInput.cantidadDescargada
+                  },
+                  // Actualizar precio de compra
+                  precioCompra: descargaInput.precioCompra
+                }
+              });
+
+              // Registrar entrada de inventario para el producto descargado con trazabilidad completa
+              await prisma.entradaInventarioProcess.create({
+                data: {
+                  entradaInventarioId: entradaInventario.id, // Referencia al código de entrada
+                  productoId: producto.id,
+                  codigoProducto: descargaInput.codigoProducto,
+                  cantidad: descargaInput.cantidadDescargada,
+                  unidadMedida: descargaInput.unidadMedida,
+                  tipoMovimiento: 'entrada',
+                  estadoMovimiento: 'COMPLETADO',
+                  precioUnitario: descargaInput.precioCompra,
+                  costoTotal: descargaInput.costoTotal,
+
+                  // Información específica del carrotanque
+                  carrotanqueId: carrotanque.id,
+
+                  // Información del producto (si aplica)
+                  lote: null, // Normalmente los carrotanques no manejan lotes específicos
+                  fechaVencimiento: null, // Normalmente combustibles no tienen vencimiento
+
+                  // No aplican para carrotanques
+                  alturaFluidoAnterior: null,
+                  alturaFluidoNueva: null,
+                  volumenCalculado: null,
+                  tanqueId: null,
+
+                  // Trazabilidad completa
+                  observaciones: `Carrotanque: ${carrotanque.placa} | Producto: ${descargaInput.codigoProducto} | Cantidad: ${descargaInput.cantidadDescargada} ${descargaInput.unidadMedida} | Precio: $${descargaInput.precioCompra} | Nivel: ${Number(nivelAnterior)}→${nivelNuevo} | Remisión: ${descargaInput.numeroRemision || 'N/A'} | ${descargaInput.observaciones || ''}`,
+                  fechaMovimiento: new Date()
+                }
+              });
+
+              resumenCarrotanques.push({
                 carrotanqueId: carrotanque.id,
-                
-                // Información del producto (si aplica)
-                lote: null, // Normalmente los carrotanques no manejan lotes específicos
-                fechaVencimiento: null, // Normalmente combustibles no tienen vencimiento
-                
-                // No aplican para carrotanques
-                alturaFluidoAnterior: null,
-                alturaFluidoNueva: null,
-                volumenCalculado: null,
-                tanqueId: null,
-                
-                // Trazabilidad completa
-                observaciones: `Carrotanque: ${carrotanque.placa} | Producto: ${descargaInput.codigoProducto} | Cantidad: ${descargaInput.cantidadDescargada} ${descargaInput.unidadMedida} | Precio: $${descargaInput.precioCompra} | Nivel: ${Number(nivelAnterior)}→${nivelNuevo} | Remisión: ${descargaInput.numeroRemision || 'N/A'} | ${descargaInput.observaciones || ''}`,
-                fechaMovimiento: new Date()
+                placa: carrotanque.placa,
+                codigoProducto: producto.codigo,
+                nombreProducto: producto.nombre,
+                cantidadDescargada: descargaInput.cantidadDescargada,
+                unidadMedida: descargaInput.unidadMedida,
+                precioCompra: descargaInput.precioCompra,
+                costoTotal: descargaInput.costoTotal,
+                nivelAnterior: Number(nivelAnterior),
+                nivelNuevo,
+                procesadoExitosamente: true,
+                numeroRemision: descargaInput.numeroRemision,
+                observaciones: descargaInput.observaciones
+              });
+
+              costoTotalCarrotanques += descargaInput.costoTotal;
+              cantidadCarrotanquesDescargados++;
+
+              // Sumar al volumen total si es combustible
+              if (descargaInput.unidadMedida === 'litros') {
+                volumenTotalLitros += descargaInput.cantidadDescargada;
+                volumenTotalGalones += descargaInput.cantidadDescargada / 3.78541;
+              } else if (descargaInput.unidadMedida === 'galones') {
+                volumenTotalGalones += descargaInput.cantidadDescargada;
+                volumenTotalLitros += descargaInput.cantidadDescargada * 3.78541;
               }
-            });
 
-            resumenCarrotanques.push({
-              carrotanqueId: carrotanque.id,
-              placa: carrotanque.placa,
-              codigoProducto: producto.codigo,
-              nombreProducto: producto.nombre,
-              cantidadDescargada: descargaInput.cantidadDescargada,
-              unidadMedida: descargaInput.unidadMedida,
-              precioCompra: descargaInput.precioCompra,
-              costoTotal: descargaInput.costoTotal,
-              nivelAnterior: Number(nivelAnterior),
-              nivelNuevo,
-              procesadoExitosamente: true,
-              numeroRemision: descargaInput.numeroRemision,
-              observaciones: descargaInput.observaciones
-            });
-
-            costoTotalCarrotanques += descargaInput.costoTotal;
-            cantidadCarrotanquesDescargados++;
-
-            // Sumar al volumen total si es combustible
-            if (descargaInput.unidadMedida === 'litros') {
-              volumenTotalLitros += descargaInput.cantidadDescargada;
-              volumenTotalGalones += descargaInput.cantidadDescargada / 3.78541;
-            } else if (descargaInput.unidadMedida === 'galones') {
-              volumenTotalGalones += descargaInput.cantidadDescargada;
-              volumenTotalLitros += descargaInput.cantidadDescargada * 3.78541;
+            } catch (error) {
+              errores.push(`Error procesando carrotanque ${descargaInput.carrotanqueId}: ${error.message}`);
+              resumenCarrotanques.push({
+                carrotanqueId: descargaInput.carrotanqueId,
+                placa: 'ERROR',
+                codigoProducto: descargaInput.codigoProducto,
+                nombreProducto: 'ERROR',
+                cantidadDescargada: 0,
+                unidadMedida: descargaInput.unidadMedida,
+                precioCompra: descargaInput.precioCompra,
+                costoTotal: 0,
+                nivelAnterior: 0,
+                nivelNuevo: 0,
+                procesadoExitosamente: false,
+                error: error.message,
+                observaciones: descargaInput.observaciones
+              });
             }
-
-          } catch (error) {
-            errores.push(`Error procesando carrotanque ${descargaInput.carrotanqueId}: ${error.message}`);
-            resumenCarrotanques.push({
-              carrotanqueId: descargaInput.carrotanqueId,
-              placa: 'ERROR',
-              codigoProducto: descargaInput.codigoProducto,
-              nombreProducto: 'ERROR',
-              cantidadDescargada: 0,
-              unidadMedida: descargaInput.unidadMedida,
-              precioCompra: descargaInput.precioCompra,
-              costoTotal: 0,
-              nivelAnterior: 0,
-              nivelNuevo: 0,
-              procesadoExitosamente: false,
-              error: error.message,
-              observaciones: descargaInput.observaciones
-            });
           }
         }
+
+        const costoTotalGeneral = costoTotalTanques + costoTotalProductos + costoTotalCarrotanques;
+        const totalMovimientos = cantidadTanquesActualizados + cantidadProductosIngresados + cantidadCarrotanquesDescargados;
+        const estadoFinal = errores.length > 0 ? (totalMovimientos > 0 ? 'COMPLETADO_CON_ERRORES' : 'ERROR') : 'COMPLETADO_EXITOSAMENTE';
+
+        // Actualizar entrada de inventario con estadísticas finales
+        await prisma.entradaInventario.update({
+          where: { id: entradaInventario.id },
+          data: {
+            estado: estadoFinal,
+            costoTotalProceso: costoTotalGeneral,
+            totalMovimientos,
+            movimientosExitosos: totalMovimientos - (errores.length > 0 ? 1 : 0),
+            movimientosConError: errores.length > 0 ? 1 : 0,
+            fechaFin: finishTime
+          }
+        });
+
+        return {
+          resumenTanques: resumenTanques.length > 0 ? resumenTanques : null,
+          resumenProductos: resumenProductos.length > 0 ? resumenProductos : null,
+          resumenCarrotanques: resumenCarrotanques.length > 0 ? resumenCarrotanques : null,
+          resumenFinanciero: {
+            costoTotalTanques,
+            costoTotalProductos,
+            costoTotalCarrotanques,
+            costoTotalGeneral,
+            cantidadTanquesActualizados,
+            cantidadProductosIngresados,
+            cantidadCarrotanquesDescargados,
+            observaciones: `Procesado: ${cantidadTanquesActualizados} tanques, ${cantidadProductosIngresados} productos, ${cantidadCarrotanquesDescargados} carrotanques`
+          },
+          resumenInventario: {
+            volumenTotalIngresadoLitros: volumenTotalLitros,
+            volumenTotalIngresadoGalones: volumenTotalGalones,
+            productosNocombustiblesIngresados: cantidadProductosIngresados,
+            valorInventarioIncrementado: costoTotalGeneral,
+            observaciones: `Incremento total en inventario: ${volumenTotalLitros.toFixed(2)} L, ${volumenTotalGalones.toFixed(2)} Gal`
+          },
+          fechaProceso: new Date(),
+          entradaId: entradaInventario.id,
+          responsable: entryInput.responsable || 'Sistema',
+          estado: errores.length > 0 ? 'COMPLETADO_CON_ERRORES' : 'COMPLETADO_EXITOSAMENTE',
+          errores: errores.length > 0 ? errores : null,
+          advertencias: advertencias.length > 0 ? advertencias : null,
+          observacionesGenerales: entryInput.observacionesGenerales
+        };
+
+      } catch (error) {
+        // En caso de error crítico, la transacción automáticamente hace ROLLBACK
+        // No necesitamos actualizar estados porque los registros se deshacen automáticamente
+        console.error('Error en transacción de inventario:', error);
+        throw new ConflictException(`Error procesando entrada de inventario: ${error.message}`);
       }
-
-      const costoTotalGeneral = costoTotalTanques + costoTotalProductos + costoTotalCarrotanques;
-      const totalMovimientos = cantidadTanquesActualizados + cantidadProductosIngresados + cantidadCarrotanquesDescargados;
-      const estadoFinal = errores.length > 0 ? (totalMovimientos > 0 ? 'COMPLETADO_CON_ERRORES' : 'ERROR') : 'COMPLETADO_EXITOSAMENTE';
-
-      // Actualizar entrada de inventario con estadísticas finales
-      await prisma.entradaInventario.update({
-        where: { id: entradaInventario.id },
-        data: {
-          estado: estadoFinal,
-          costoTotalProceso: costoTotalGeneral,
-          totalMovimientos,
-          movimientosExitosos: totalMovimientos - (errores.length > 0 ? 1 : 0),
-          movimientosConError: errores.length > 0 ? 1 : 0,
-          fechaFin: finishTime
-        }
-      });
-
-      return {
-        resumenTanques: resumenTanques.length > 0 ? resumenTanques : null,
-        resumenProductos: resumenProductos.length > 0 ? resumenProductos : null,
-        resumenCarrotanques: resumenCarrotanques.length > 0 ? resumenCarrotanques : null,
-        resumenFinanciero: {
-          costoTotalTanques,
-          costoTotalProductos,
-          costoTotalCarrotanques,
-          costoTotalGeneral,
-          cantidadTanquesActualizados,
-          cantidadProductosIngresados,
-          cantidadCarrotanquesDescargados,
-          observaciones: `Procesado: ${cantidadTanquesActualizados} tanques, ${cantidadProductosIngresados} productos, ${cantidadCarrotanquesDescargados} carrotanques`
-        },
-        resumenInventario: {
-          volumenTotalIngresadoLitros: volumenTotalLitros,
-          volumenTotalIngresadoGalones: volumenTotalGalones,
-          productosNocombustiblesIngresados: cantidadProductosIngresados,
-          valorInventarioIncrementado: costoTotalGeneral,
-          observaciones: `Incremento total en inventario: ${volumenTotalLitros.toFixed(2)} L, ${volumenTotalGalones.toFixed(2)} Gal`
-        },
-        fechaProceso: new Date(),
-        entradaId: entradaInventario.id,
-        responsable: entryInput.responsable || 'Sistema',
-        estado: errores.length > 0 ? 'COMPLETADO_CON_ERRORES' : 'COMPLETADO_EXITOSAMENTE',
-        errores: errores.length > 0 ? errores : null,
-        advertencias: advertencias.length > 0 ? advertencias : null,
-        observacionesGenerales: entryInput.observacionesGenerales
-      };
-
-    } catch (error) {
-      // En caso de error crítico, la transacción automáticamente hace ROLLBACK
-      // No necesitamos actualizar estados porque los registros se deshacen automáticamente
-      console.error('Error en transacción de inventario:', error);
-      throw new ConflictException(`Error procesando entrada de inventario: ${error.message}`);
-    }
     }); // Fin de la transacción
   }
 
@@ -1514,10 +1532,10 @@ export class ProductsService {
    * Procesa una entrada de inventario usando la estructura separada de proceso y movimientos
    */
   async processInventoryProcess(
-    processInput: InventoryProcessInput, 
+    processInput: InventoryProcessInput,
     user: any
   ): Promise<InventoryProcessResponse> {
-    
+
     try {
       // Validar que el punto de venta existe
       const puntoVenta = await this.prisma.puntoVenta.findUnique({
@@ -1616,21 +1634,21 @@ export class ProductsService {
     fechaDesde?: string;
     fechaHasta?: string;
   }): Promise<InventoryProcessResult[]> {
-    
+
     const where: any = {};
-    
+
     if (filters.puntoVentaId) {
       where.puntoVentaId = filters.puntoVentaId;
     }
-    
+
     if (filters.estado) {
       where.estado = filters.estado;
     }
-    
+
     if (filters.tipoEntrada) {
       where.tipoEntrada = filters.tipoEntrada;
     }
-    
+
     if (filters.fechaDesde || filters.fechaHasta) {
       where.fechaInicio = {};
       if (filters.fechaDesde) {
@@ -1675,7 +1693,7 @@ export class ProductsService {
   private async generateProcessCodeInTransaction(puntoVentaId: string, prisma: any): Promise<string> {
     // Generar UUID único
     const uuid = randomUUID();
-    
+
     // Formato: INV-YYYYMMDD-UUID
     return `INV-${uuid}`;
   }
