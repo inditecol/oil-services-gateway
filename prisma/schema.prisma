@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["clientes", "configuracion", "inventario", "reportes", "turnos", "usuarios", "ventas"]
+  schemas  = ["clientes", "configuracion", "inventario", "reportes", "turnos", "usuarios", "ventas", "gastos"]
 }
 
 model Empresa {
@@ -75,6 +75,8 @@ model PuntoVenta {
   historialVentasProductos HistorialVentasProductos[]
   productos Producto[]
   caja                 Caja?
+  gastos               Gasto[]
+  presupuestosGastos   PresupuestoGasto[]
 
   @@map("puntos_venta")
   @@schema("configuracion")
@@ -120,6 +122,7 @@ model Usuario {
   historialPrecios  HistorialPrecios[]
   puntosVenta       PuntoVenta[]       @relation("PuntoVentaToUsuario")
   historialVentasProductos HistorialVentasProductos[]
+  gastosAprobados   Gasto[]            @relation("GastosAprobados")
 
   @@map("usuarios")
   @@schema("usuarios")
@@ -696,4 +699,77 @@ model Caja {
   
   @@map("cajas")
   @@schema("configuracion")
+}
+
+// ==========================================
+// MÓDULO DE GASTOS Y CONTROL FINANCIERO
+// ==========================================
+
+// Categorías de gastos (nómina, proveedores, servicios, etc.)
+model CategoriaGasto {
+  id                 String             @id @default(cuid())
+  nombre             String             @unique
+  descripcion        String?
+  activo             Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  
+  gastos             Gasto[]
+  presupuestos       PresupuestoGasto[]
+  
+  @@map("categorias_gastos")
+  @@schema("gastos")
+}
+
+// Registro detallado de gastos operacionales
+model Gasto {
+  id                 String          @id @default(cuid())
+  puntoVentaId       String
+  categoriaGastoId   String
+  concepto           String          // Descripción corta del gasto
+  monto              Decimal         @db.Decimal(10, 2)
+  fecha              DateTime
+  metodoPago         String          // Efectivo, Transferencia, Cheque, etc.
+  numeroComprobante  String?         // Número de factura o comprobante
+  proveedor          String?         // Nombre del proveedor
+  empleado           String?         // Nombre del empleado (para gastos de nómina)
+  descripcion        String?         // Descripción detallada
+  comprobante        String?         // URL del documento escaneado
+  aprobado           Boolean         @default(false)
+  aprobadoPor        String?
+  fechaAprobacion    DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  
+  puntoVenta         PuntoVenta      @relation(fields: [puntoVentaId], references: [id])
+  categoria          CategoriaGasto  @relation(fields: [categoriaGastoId], references: [id])
+  aprobador          Usuario?        @relation("GastosAprobados", fields: [aprobadoPor], references: [id])
+  
+  @@index([puntoVentaId])
+  @@index([categoriaGastoId])
+  @@index([fecha])
+  @@index([aprobado])
+  @@map("gastos")
+  @@schema("gastos")
+}
+
+// Presupuestos mensuales por categoría de gasto
+model PresupuestoGasto {
+  id                 String          @id @default(cuid())
+  puntoVentaId       String
+  categoriaGastoId   String
+  mes                Int             // 1-12
+  anio               Int
+  montoPresupuestado Decimal         @db.Decimal(10, 2)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  
+  puntoVenta         PuntoVenta      @relation(fields: [puntoVentaId], references: [id])
+  categoria          CategoriaGasto  @relation(fields: [categoriaGastoId], references: [id])
+  
+  @@unique([puntoVentaId, categoriaGastoId, mes, anio])
+  @@index([puntoVentaId])
+  @@index([mes, anio])
+  @@map("presupuestos_gastos")
+  @@schema("gastos")
 }
