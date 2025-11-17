@@ -15,6 +15,8 @@ import { CarrotanquesResolver } from './carrotanques.resolver';
 // Nuevos servicios para el sistema de ventas de productos
 import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
+import { ProcessShiftResolver } from './process-shift.resolver';
+import { ProcessShiftService } from './services/process-shift.service';
 
 @Module({
   providers: [
@@ -33,6 +35,8 @@ import { HistorialVentasService } from './services/historial-ventas.service';
     // Nuevos servicios
     MetodosPagoService,
     HistorialVentasService,
+    ProcessShiftService,
+    ProcessShiftResolver,
   ],
   exports: [
     InventoryService, 

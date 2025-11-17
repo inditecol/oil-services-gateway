@@ -416,7 +416,6 @@ async function main() {
     },
   });
 
-
   const dieselGasol2 = await prisma.producto.upsert({
     where: { codigo: 'DIESEL-Gasol-2' },
     update: {},
@@ -457,7 +456,7 @@ async function main() {
     where: { codigo: 'HIDROBLUE-Gasol-1' },
     update: {},
     create: {
-      codigo: 'HIDROBLUE',
+      codigo: 'HIDROBLUE-Gasol-1',
       nombre: 'Hidroblue (AdBlue)',
       descripcion: 'Líquido reductor de emisiones para motores diesel',
       unidadMedida: 'Litros',
@@ -474,62 +473,72 @@ async function main() {
   // PRODUCTOS DE TIENDA
   console.log('🏪 Creando productos de tienda...');
 
-  const cocaCola350 = await prisma.producto.upsert({
-    where: { codigo: 'COCA-350' },
+  //BEBIDAS GASSOL 1
+  const aguaSaborisadaGas600_G1 = await prisma.producto.upsert({
+    where: { codigo: 'AGUASABORISADA-600' },
     update: {},
     create: {
       codigo: 'AGUASABORISADA-600',
       nombre: 'Agua Brisa Saborisada Con Gas (600ML)',
       descripcion: 'Agua gasificada con saborisante',
       unidadMedida: 'Unidades',
-      precioCompra: 2500,  // Precio de compra en COP
-      precioVenta: 4000,   // Precio de venta en COP
+      precioCompra: 0,
+      precioVenta: 3000,
       moneda: 'COP',
-      stockMinimo: 50,
-      stockActual: 120,    // Stock inicial
+      stockMinimo: 0,
+      stockActual: 0,
+      tipoProducto: 'Bebida',
+      codigoPlu: 21201,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
 
-  const agua600 = await prisma.producto.upsert({
-    where: { codigo: 'AGUA-600' },
+  const aguaCristal300_G1 = await prisma.producto.upsert({
+    where: { codigo: 'AGUACRISTAL-300' },
     update: {},
     create: {
       codigo: 'AGUACRISTAL-300',
       nombre: 'Agua Cristal (300ML) Pet',
       descripcion: 'Agua natural en botella',
       unidadMedida: 'Unidades',
-      precioCompra: 1200,  // Precio de compra en COP
-      precioVenta: 2500,   // Precio de venta en COP
+      precioCompra: 0,
+      precioVenta: 1000,
       moneda: 'COP',
-      stockMinimo: 100,
-      stockActual: 200,    // Stock inicial
+      stockMinimo: 0,
+      stockActual: 0,
+      tipoProducto: 'Bebida',
+      codigoPlu: 21236,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
 
-  const jugoPiña = await prisma.producto.upsert({
-    where: { codigo: 'JUGO-PINA-250' },
+  const aguaCristal600_G1 = await prisma.producto.upsert({
+    where: { codigo: 'AGUACRISTAL-600' },
     update: {},
     create: {
       codigo: 'AGUACRISTAL-600',
       nombre: 'Agua Cristal (600ML) Pet',
       descripcion: 'Agua natural en botella',
       unidadMedida: 'Unidades',
-      precioCompra: 1800,
-      precioVenta: 3200,
+      precioCompra: 0,
+      precioVenta: 2000,
       moneda: 'COP',
-      stockMinimo: 30,
-      stockActual: 80,
+      stockMinimo: 0,
+      stockActual: 14,
+      tipoProducto: 'Bebida',
+      codigoPlu: 21238,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
     },
   });
 
-  const galletas = await prisma.producto.upsert({
-    where: { codigo: 'GALLETAS-CHOCO' },
+  const aguaCristal1Litro_G1 = await prisma.producto.upsert({
+    where: { codigo: 'AGUACRISTAL-1000' },
     update: {},
     create: {
       codigo: 'AGUACRISTAL-1000',
@@ -1279,8 +1288,10 @@ async function main() {
       precioCompra: 0,
       precioVenta: 2800,
       moneda: 'COP',
-      stockMinimo: 40,
-      stockActual: 100,
+      stockMinimo: 0,
+      stockActual: 0,
+      tipoProducto: 'Bebida',
+      codigoPlu: 21249,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
@@ -2236,8 +2247,9 @@ async function main() {
   // LUBRICANTES
   console.log('🛢️ Creando lubricantes...');
 
-  const aceite20W50 = await prisma.producto.upsert({
-    where: { codigo: 'ACEITE-20W50-GAL' },
+  //LUBRICANTE GASSOL 1
+  const simonizCadenas_G1 = await prisma.producto.upsert({
+    where: { codigo: 'SIMONIZCADENAS-UNID' },
     update: {},
     create: {
       codigo: 'SIMONIZCADENAS-UNID',
@@ -2307,18 +2319,21 @@ async function main() {
       nombre: 'Terpel Ultrek 25W50 Alto Km Galon',
       descripcion: 'Aceite motor 25W-50 alto kilometraje',
       unidadMedida: 'Galones',
-      precioCompra: 45000,
-      precioVenta: 65000,
+      precioCompra: 0,
+      precioVenta: 90000,
       moneda: 'COP',
-      stockMinimo: 10,
-      stockActual: 24,
+      stockMinimo: 0,
+      stockActual: 2,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 2227,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
 
-  const aceite20W50Litro = await prisma.producto.upsert({
-    where: { codigo: 'ACEITE-20W50-1L' },
+  const mobilHydraulicAw68_G1 = await prisma.producto.upsert({
+    where: { codigo: 'MOBILHIDRAULIC-AW68' },
     update: {},
     create: {
       codigo: 'MOBIL-HIDRAULIC-AW68',
@@ -2346,18 +2361,21 @@ async function main() {
       nombre: 'Terpel Celerity 20W-50 Titanio Moto 4T (Litro)',
       descripcion: 'Aceite moto 4T 20W-50 con titanio',
       unidadMedida: 'Litros',
-      precioCompra: 12000,
-      precioVenta: 18000,
+      precioCompra: 0,
+      precioVenta: 25000,
       moneda: 'COP',
-      stockMinimo: 20,
-      stockActual: 48,
+      stockMinimo: 0,
+      stockActual: 9,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 11274,
       esCombustible: false,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: lubricantesCategory.id,
     },
   });
 
-  const aceiteDiferencial = await prisma.producto.upsert({
-    where: { codigo: 'ACEITE-DIFERENCIAL' },
+  const ultrek50_G1 = await prisma.producto.upsert({
+    where: { codigo: 'TERPELULTREK-50' },
     update: {},
     create: {
       codigo: 'TERPEL-ULTREK-50',
@@ -2683,8 +2701,10 @@ async function main() {
       precioCompra: 0,
       precioVenta: 22000,
       moneda: 'COP',
-      stockMinimo: 15,
-      stockActual: 30,
+      stockMinimo: 0,
+      stockActual: 7,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 14502,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
@@ -2820,26 +2840,30 @@ async function main() {
   // ADITIVOS
   console.log('⚗️ Creando aditivos...');
 
-  const aditivoGasolina = await prisma.producto.upsert({
-    where: { codigo: 'ADITIVO-GASOL' },
+  //ADITIVO GASSOL 1
+  const limpiadorInyNegro250_G1 = await prisma.producto.upsert({
+    where: { codigo: 'LIMPIADORINYECTORES-250ML' },
     update: {},
     create: {
       codigo: 'LIMPIADORINYECTORES-250ML',
       nombre: 'Limpiador De Inyectores Y Carburador 250 ML (Negro)',
       descripcion: 'Limpiador de inyectores y carburador 250ml',
       unidadMedida: 'Unidades',
-      precioCompra: 8500,
-      precioVenta: 15000,
+      precioCompra: 0,
+      precioVenta: 16000,
       moneda: 'COP',
-      stockMinimo: 20,
-      stockActual: 40,
+      stockMinimo: 0,
+      stockActual: 5,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 8414,
       esCombustible: false,
-      categoriaId: aditivosCategory.id,
+      puntoVentaId: puntoVentaGasol1.id,
+      categoriaId: lubricantesCategory.id,
     },
   });
 
-  const aditivoDiesel = await prisma.producto.upsert({
-    where: { codigo: 'ADITIVO-DIESEL' },
+  const refrigRojo_G1 = await prisma.producto.upsert({
+    where: { codigo: 'SIMONIZREFRIGERANTE-ROJO' },
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-ROJO',
@@ -2888,18 +2912,21 @@ async function main() {
       nombre: 'Aditivo Gasolina (140 ML) Rojo Simoniz',
       descripcion: 'Aditivo para gasolina 140 ml',
       unidadMedida: 'Unidades',
-      precioCompra: 9200,
-      precioVenta: 16500,
+      precioCompra: 0,
+      precioVenta: 10000,
       moneda: 'COP',
-      stockMinimo: 15,
-      stockActual: 35,
+      stockMinimo: 0,
+      stockActual: 4,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 13030,
       esCombustible: false,
-      categoriaId: aditivosCategory.id,
+      puntoVentaId: puntoVentaGasol1.id,
+      categoriaId: lubricantesCategory.id,
     },
   });
 
-  const selladorFugas = await prisma.producto.upsert({
-    where: { codigo: 'SELLADOR-FUGAS' },
+  const refrigVerdeUnGalon_G1 = await prisma.producto.upsert({
+    where: { codigo: 'SIMONIZREFRIGERANTE-VERDE-1G' },
     update: {},
     create: {
       codigo: 'SIMONIZREFRIGERANTE-VERDE-1G',
@@ -2927,36 +2954,42 @@ async function main() {
       nombre: 'Limpiador De Inyectores Diesel (250ML) Amarillo',
       descripcion: 'Limpiador de inyectores diésel 250 ml',
       unidadMedida: 'Unidades',
-      precioCompra: 12000,
-      precioVenta: 20000,
+      precioCompra: 0,
+      precioVenta: 18000,
       moneda: 'COP',
-      stockMinimo: 10,
-      stockActual: 25,
+      stockMinimo: 0,
+      stockActual: 4,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 13025,
       esCombustible: false,
-      categoriaId: aditivosCategory.id,
+      puntoVentaId: puntoVentaGasol1.id,
+      categoriaId: lubricantesCategory.id,
     },
   });
 
-  const limpiavidrios = await prisma.producto.upsert({
-    where: { codigo: 'LIMPIAVIDRIOS' },
+  const acpmax500ck_G1 = await prisma.producto.upsert({
+    where: { codigo: 'ACPMAX500CK-DIESEL-UNID' },
     update: {},
     create: {
       codigo: 'ACPMAX-500CC-DIESEL-UNID',
       nombre: 'Aditivo Diesel Acpmax 500 CC (Multinsa)',
       descripcion: 'Aditivo diésel ACPMAX 500 CK',
       unidadMedida: 'Unidades',
-      precioCompra: 3500,
-      precioVenta: 6500,
+      precioCompra: 0,
+      precioVenta: 18000,
       moneda: 'COP',
-      stockMinimo: 25,
-      stockActual: 60,
+      stockMinimo: 0,
+      stockActual: 16,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 18280,
       esCombustible: false,
-      categoriaId: aditivosCategory.id,
+      puntoVentaId: puntoVentaGasol1.id,
+      categoriaId: lubricantesCategory.id,
     },
   });
 
-  const refrigerante = await prisma.producto.upsert({
-    where: { codigo: 'REFRIGERANTE' },
+  const octamax375cc_G1 = await prisma.producto.upsert({
+    where: { codigo: 'OCTAMAX-375CC' },
     update: {},
     create: {
       codigo: 'OCTAMAX-375CC',
@@ -3132,13 +3165,16 @@ async function main() {
       nombre: 'Refrigerante Radiador (1Galon) Verde Simoniz',
       descripcion: 'Aditivo refrigerante verde 1 galón',
       unidadMedida: 'Galones',
-      precioCompra: 18000,
-      precioVenta: 28000,
+      precioCompra: 0,
+      precioVenta: 22000,
       moneda: 'COP',
-      stockMinimo: 12,
-      stockActual: 20,
+      stockMinimo: 0,
+      stockActual: 0,
+      tipoProducto: 'Lubricante',
+      codigoPlu: 13128,
       esCombustible: false,
-      categoriaId: aditivosCategory.id,
+      puntoVentaId: puntoVentaGasol2.id,
+      categoriaId: lubricantesCategory.id,
     },
   });
 
@@ -3233,11 +3269,11 @@ async function main() {
   console.log('⛽ Creando tanques...');
 
   // Función helper para cargar archivos JSON de aforo
-  function loadAforoData(filePath: string): Array<{altura: number, volumen: number}> {
+  function loadAforoData(filePath: string): Array<{ altura: number, volumen: number }> {
     try {
       const fullPath = path.join(__dirname, '..', 'tablas aforo gasol', filePath);
       const fileContent = fs.readFileSync(fullPath, 'utf8');
-      
+
       // Algunos archivos tienen formato diferente (sin comillas en las propiedades)
       // Intentar parsear directamente primero, si falla, limpiar el formato
       try {
@@ -3257,12 +3293,12 @@ async function main() {
   }
 
   // Función helper para obtener volumen desde altura usando tabla de aforo
-  function getVolumeFromAforo(aforoData: Array<{altura: number, volumen: number}>, altura: number): number {
+  function getVolumeFromAforo(aforoData: Array<{ altura: number, volumen: number }>, altura: number): number {
     if (aforoData.length === 0) return 0;
-    
+
     // Ordenar por altura para búsqueda binaria o lineal
     const sortedData = [...aforoData].sort((a, b) => a.altura - b.altura);
-    
+
     // Buscar el valor exacto o el más cercano
     for (let i = 0; i < sortedData.length; i++) {
       if (sortedData[i].altura >= altura) {
@@ -3288,7 +3324,7 @@ async function main() {
     // Tanques Punto de Venta gasol 1
     { nombre: 'Tanque 5000G gasol 1 gasolina', puntoVentaId: puntoVentaGasol1.id, productoId: gasolina90Gasol1.id, capacidad: 5000, unidadMedida: 'Galones', alturaActual: 59.7, aforoFile: 'gasol 1/tabla-aforo-tanque-5000gal.json' },
     { nombre: 'Tanque 15000 gasol 1 diesel', puntoVentaId: puntoVentaGasol1.id, productoId: dieselGasol1.id, capacidad: 15000, unidadMedida: 'Galones', alturaActual: 19.3, aforoFile: 'gasol 1/tabla-aforo-tanque-15000gal.json' },
-  
+
     // Tanques Punto de Venta gasol 2
     { nombre: 'Tanque 5000G gasol 2 gasolina', puntoVentaId: puntoVentaGasol2.id, productoId: gasolina90Gasol2.id, capacidad: 5000, unidadMedida: 'Galones', alturaActual: 35.4, aforoFile: 'gasol 2/tabla-aforo-tanque-5000gal gasol 2.json' },
     { nombre: 'Tanque 15000 gasol 2 diesel', puntoVentaId: puntoVentaGasol2.id, productoId: dieselGasol2.id, capacidad: 15000, unidadMedida: 'Galones', alturaActual: 57.4, aforoFile: 'gasol 2/tabla-aforo-tanque-15000 gal.json' },
@@ -3298,7 +3334,7 @@ async function main() {
   for (const tanque of tanques) {
     // Cargar tabla de aforo para este tanque
     const aforoData = loadAforoData(tanque.aforoFile);
-    
+
     // Calcular el nivel actual basado en la altura y la tabla de aforo
     let nivelActualCalculado = tanque.capacidad * 0.7; // valor por defecto
     if (aforoData.length > 0) {
@@ -3320,7 +3356,7 @@ async function main() {
         nivelActual: nivelActualCalculado,
         nivelMinimo: tanque.capacidad * 0.1, // 10% mínimo
         productoId: tanque.productoId,
-        puntoVentaId: tanque.puntoVentaId,
+      puntoVentaId: tanque.puntoVentaId,
         unidadMedida: tanque.unidadMedida,
         alturaActual: tanque.alturaActual,
       },
@@ -3416,7 +3452,7 @@ async function main() {
 
       // Cargar datos de aforo
       const aforoData = loadAforoData(mapping.aforoFile);
-      
+
       if (aforoData.length === 0) {
         console.warn(`⚠️ No se encontraron datos de aforo para: ${mapping.tanqueNombre}`);
         continue;
@@ -3464,7 +3500,7 @@ async function main() {
 
       // Cargar datos de aforo
       const aforoData = loadAforoData(mapping.aforoFile);
-      
+
       if (aforoData.length === 0) {
         console.warn(`⚠️ No se encontraron datos de aforo para: ${mapping.carrotanqueNombre}`);
         continue;
@@ -3509,10 +3545,10 @@ async function main() {
       nombre: 'Surtidor Principal 1',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 0 },
       ],
       activo: false,
     },
@@ -3521,10 +3557,10 @@ async function main() {
       nombre: 'Surtidor Principal 2',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:0 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual:0 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 0 },
       ],
       activo: false,
     },
@@ -3535,10 +3571,10 @@ async function main() {
       nombre: 'Surtidor Principal 3',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual: 55156.75},
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual: 25430.98 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual: 49945.34 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true,lecturaActual: 39645.59 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 55156.75 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 25430.98 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 49945.34 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 39645.59 },
       ]
     },
     {
@@ -3546,10 +3582,10 @@ async function main() {
       nombre: 'Surtidor Principal 4',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual: 241203.90 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false,lecturaActual: 0  },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true,lecturaActual:238344.81 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false,lecturaActual:0 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 241203.90 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false, lecturaActual: 0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 238344.81 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false, lecturaActual: 0 },
       ]
     },
     {
@@ -3557,10 +3593,10 @@ async function main() {
       nombre: 'Surtidor Principal 1',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 0 },
       ],
       activo: false,
     },
@@ -3569,10 +3605,10 @@ async function main() {
       nombre: 'Surtidor Principal 2',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:0 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:0 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 0 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 0 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 0 },
       ],
       activo: false,
     },
@@ -3581,10 +3617,10 @@ async function main() {
       nombre: 'Surtidor Principal 3',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:53949},
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:22866.41 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:46557.55 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true,lecturaActual:32676.75 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 53949 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 22866.41 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 46557.55 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 32676.75 },
       ],
       activo: true,
     },
@@ -3593,10 +3629,10 @@ async function main() {
       nombre: 'Surtidor Principal 4',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:269786.29},
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false,lecturaActual:0 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true,lecturaActual:229180.93 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false,lecturaActual:0 },
+        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 269786.29 },
+        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false, lecturaActual: 0 },
+        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 229180.93 },
+        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false, lecturaActual: 0 },
       ],
       activo: true,
     },
@@ -3605,7 +3641,7 @@ async function main() {
       nombre: 'Surtidor Hidroblue',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Azul', productoId: hidroblue.id, activo: true, lecturaActual:15603.3 },
+        { numero: '1', color: 'Azul', productoId: hidroblue.id, activo: true, lecturaActual: 15603.3 },
       ],
       activo: true,
     }
@@ -3628,7 +3664,7 @@ async function main() {
         activo: surtidor.activo,
         cantidadMangueras: surtidor.mangueras.length,
         fechaInstalacion: new Date('2020-01-01'),
-        puntoVentaId: surtidor.puntoVentaId,
+      puntoVentaId: surtidor.puntoVentaId,
       },
     });
 
@@ -3719,7 +3755,7 @@ async function main() {
         stockActual: inventario.stockActual,
         valorInventario: inventario.stockActual * inventario.precio, // Calcular valor total
         fechaActualizacion: new Date(),
-        puntoVentaId: inventario.puntoVentaId,
+      puntoVentaId: inventario.puntoVentaId,
         productoId: inventario.productoId,
       },
     });
@@ -3821,6 +3857,15 @@ async function main() {
       esTarjeta: false,
       esDigital: false,
       orden: 9
+    },
+    {
+      codigo: 'Bonos vive terpel',
+      nombre: 'Bonos vive terpel',
+      descripcion: 'Pago con Bonos vive terpel',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: false,
+      orden: 10
     }
   ];
 

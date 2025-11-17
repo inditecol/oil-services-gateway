@@ -73,6 +73,7 @@ model PuntoVenta {
   usuarios             Usuario[]          @relation("PuntoVentaToUsuario")
   entradasInventario   EntradaInventario[] // Relación con entradas de inventario
   historialVentasProductos HistorialVentasProductos[]
+  productos Producto[]
   caja                 Caja?
 
   @@map("puntos_venta")
@@ -242,6 +243,8 @@ model Producto {
   moneda             String              @default("COP") // Código ISO de moneda (COP = Peso Colombiano)
   stockMinimo        Int                 @default(0)
   stockActual        Int                 @default(0)
+  tipoProducto       String?              // Lubricante, bebida, alimento, etc
+  codigoPlu          Int?                 //Codigo del producto 
   esCombustible      Boolean             @default(false)
   activo             Boolean             @default(true)
   createdAt          DateTime            @default(now())
@@ -250,6 +253,8 @@ model Producto {
   entradasInventario EntradaInventarioProcess[]
   mangueras          MangueraSurtidor[]
   categoria          Categoria           @relation(fields: [categoriaId], references: [id])
+  puntoVentaId       String?             
+  puntoVenta         PuntoVenta?         @relation(fields: [puntoVentaId], references: [id])
   tanques            Tanque[]
   detallesVentas     DetalleVenta[]
   historialVentasProductos HistorialVentasProductos[]

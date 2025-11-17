@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
 import { Categoria } from './categoria.entity';
+import { PointOfSale } from '../../point-of-sale/entities/point-of-sale.entity';
 
 @ObjectType()
 export class Producto {
@@ -42,6 +43,18 @@ export class Producto {
 
   @Field(() => Int)
   stockActual: number;
+
+  @Field(() => String, { nullable: true })
+  tipoProducto?: string;
+
+  @Field(() => Int, { nullable: true })
+  codigoPlu?: number;
+
+  @Field({ nullable: true })
+  puntoVentaId?: string;
+
+  @Field(() => PointOfSale, { nullable: true })
+  puntoVenta?: PointOfSale;
 
   @Field()
   esCombustible: boolean;

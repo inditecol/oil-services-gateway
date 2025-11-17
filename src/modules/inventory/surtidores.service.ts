@@ -361,7 +361,8 @@ export class SurtidoresService {
     finishTime?: Date,
     observaciones?: string,
     cierreTurnoId?: string,
-    fechaLectura?: Date
+    fechaLectura?: Date,
+    puntoVentaId?: string
   ): Promise<{ success: boolean; cantidadVendida: number; valorVenta: number; historialId?: string }> {
     console.log(`[SURTIDORES] updateMangueraReadingsWithHistory iniciado:`, {
       numeroSurtidor,
@@ -370,20 +371,29 @@ export class SurtidoresService {
       precio,
       tipoOperacion,
       usuarioId,
-      startTime: startTime ? new Date(startTime) : new Date(),  // ← aquí
+      puntoVentaId,
+      startTime: startTime ? new Date(startTime) : new Date(),
       finishTime: finishTime ? new Date(finishTime) : new Date()
     });
 
     try {
-      const manguera = await this.prisma.mangueraSurtidor.findFirst({
-        where: {
-          numero: numeroManguera,
-          surtidor: {
-            numero: numeroSurtidor,
-            activo: true,
-          },
+      // Construir el filtro where con puntoVentaId si se proporciona
+      const whereClause: any = {
+        numero: numeroManguera,
+        surtidor: {
+          numero: numeroSurtidor,
           activo: true,
         },
+        activo: true,
+      };
+
+      // Agregar filtro por puntoVentaId si se proporciona
+      if (puntoVentaId) {
+        whereClause.surtidor.puntoVentaId = puntoVentaId;
+      }
+
+      const manguera = await this.prisma.mangueraSurtidor.findFirst({
+        where: whereClause,
         include: {
           producto: true,
         },
