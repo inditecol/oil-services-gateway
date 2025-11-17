@@ -479,7 +479,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUASABORISADA-600',
-      nombre: 'Agua Brisa Saborisada Con Gas 600ml',
+      nombre: 'Agua Brisa Saborisada Con Gas (600ML)',
       descripcion: 'Agua gasificada con saborisante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -500,7 +500,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-300',
-      nombre: 'Agua Cristal 300ml',
+      nombre: 'Agua Cristal (300ML) Pet',
       descripcion: 'Agua natural en botella',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -521,7 +521,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-600',
-      nombre: 'Agua Cristal 600ml',
+      nombre: 'Agua Cristal (600ML) Pet',
       descripcion: 'Agua natural en botella',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -542,7 +542,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTAL-1000',
-      nombre: 'Aagua Cristal 1000ml',
+      nombre: 'Agua Cristal (1Litro) Pet',
       descripcion: 'Agua natural en botella',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -551,7 +551,7 @@ async function main() {
       stockMinimo: 0,
       stockActual: 6,
       tipoProducto: 'Bebida',
-      codigoPlu: 21254,
+      codigoPlu: 22454,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol1.id,
       categoriaId: tiendaCategory.id,
@@ -563,7 +563,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUACRISTALALOE-330',
-      nombre: 'Agua Cristal Aloe 330ml',
+      nombre: 'Agua Cristal Aloe (330ML) Pet',
       descripcion: 'Agua natural con Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -580,11 +580,11 @@ async function main() {
   });
 
   const aguaCristalGas250_G1 = await prisma.producto.upsert({
-    where: { codigo: 'AGUACRISTALGAS-330' },
+    where: { codigo: 'AGUACRISTALGAS-250' },
     update: {},
     create: {
       codigo: 'AGUACRISTALGAS-330',
-      nombre: 'Agua Cristal Con Gas 330ml',
+      nombre: 'Agua Cristal Con Gas (250ML) Pet',
       descripcion: 'Agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -605,7 +605,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUASABORISADA-280',
-      nombre: 'Agua Brisa Saborisada Con Gas 280ml',
+      nombre: 'Agua Saborizada Brisa Con Gas (280ML)',
       descripcion: 'Agua gasificada con saborisante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -626,7 +626,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AVENA-250',
-      nombre: 'Avena Alpina 250gr',
+      nombre: 'Avena Alpina (250GR)',
       descripcion: 'Bebida lactea con leche y avena',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -647,7 +647,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BONYURT-170',
-      nombre: 'Bonyurt Alpina + Zucaritas 170gr',
+      nombre: 'Bonyurt Alpina + Zucaritas (170GR)',
       descripcion: 'Bebida lactea con leche y avena',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -668,7 +668,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRETAÑA-300',
-      nombre: 'Bretaña Postobon Vidrio 300ml',
+      nombre: 'Bretaña Postobon Vidrio (300ML)',
       descripcion: 'Bebida carbonatada de tipo soda',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -689,7 +689,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CANADADRY-300',
-      nombre: 'Canada Dry 300ml',
+      nombre: 'Canada Dry (300ML)',
       descripcion: 'Bebida gaseosa con sabor a jengibre y dulce',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -710,7 +710,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CHOCORRAMO-65',
-      nombre: 'Chocorramo 65gr',
+      nombre: 'Chocorramo (65GR)',
       descripcion: 'Ponqué rectangular tradicional cubierto de chocolate',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -731,7 +731,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-3000',
-      nombre: 'Coca Cola 3000ml',
+      nombre: 'Coca Cola (3 Litros) Pet',
       descripcion: 'Bebida Coca Cola original presentación 3000ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -752,7 +752,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-2500',
-      nombre: 'Coca Cola 2500ml',
+      nombre: 'Coca Cola (2.5 Litros) Pet',
       descripcion: 'Bebida Coca Cola original presentación 2500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -773,7 +773,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-1500',
-      nombre: 'Coca Cola 1500ml',
+      nombre: 'Coca Cola Sabor Original (1.5 Litros) Pet',
       descripcion: 'Bebida Coca Cola original presentación 1500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -794,7 +794,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCACOLA-400',
-      nombre: 'Coca Cola 400ml',
+      nombre: 'Coca Cola Sabor Original (400ML) Pet',
       descripcion: 'Bebida Coca Cola original presentación 400ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -816,7 +816,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCAZERO-400',
-      nombre: 'Coca Cola Zero 400ml',
+      nombre: 'Coca Cola Zero (400ML) Pet',
       descripcion: 'Bebida gaseosa Coca Cola Zero presentación 400ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -838,7 +838,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-3125',
-      nombre: 'Gaseosa Postobon 3125ml',
+      nombre: 'Gaseosa Postobon Surtida (3.125 Litros) Pet',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 3125ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -859,7 +859,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-2500',
-      nombre: 'Gaseosa Postobon 2500ml',
+      nombre: 'Gaseosa Postobon Surtida (2.5 Litros) Pet',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 2500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -881,7 +881,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-1500',
-      nombre: 'Gaseosa Postobon 1500ml',
+      nombre: 'Gaseosa Postobon Surtida (1.5 Litros) Pet',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 1500ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -903,7 +903,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-400',
-      nombre: 'Gaseosa Postobon 400ml',
+      nombre: 'Gaseosa Postobon Surtida (400ML) Pet',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 400ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -924,7 +924,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-1000',
-      nombre: 'Gaseosa Postobon 1000ml',
+      nombre: 'Gaseosa Postobon Surtida (Econolitro)',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 1000ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -945,7 +945,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'POSTOBON-250',
-      nombre: 'Gaseosa Postobon 250ml',
+      nombre: 'Gaseosa Postobon Surtida (250ML) Pet',
       descripcion: 'Bebida gaseosa Postobon surtida presentación 250ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -967,7 +967,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADE-500',
-      nombre: 'Gatorade Sabores Surtidos 500ml',
+      nombre: 'Gatorade Sabores Surtidos (500ML)',
       descripcion: 'Bebida deportiva rehidratante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -988,7 +988,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADEAZUL-500',
-      nombre: 'Gatorade Blue Ice 500ml',
+      nombre: 'Gatorade Azul (500ML) Pet',
       descripcion: 'Bebida deportiva rehidratante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1010,7 +1010,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'HIT-500',
-      nombre: 'Jugo Hit Sabores Surtidos 500ml',
+      nombre: 'Hit Sabores Surtidos (500ML) Pet',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1031,7 +1031,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'HIT-1500',
-      nombre: 'Jugo Hit Sabores Surtidos 1500ml',
+      nombre: 'Hit Sabores Surtidos (1.5 Litros) Pet',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1052,7 +1052,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NECTAR237',
-      nombre: 'Jugo Nectar Sabores Surtidos (237ml) Vidrio',
+      nombre: 'Jugo Nectar Sabores Surtidos (237ML) Vidrio',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1073,7 +1073,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MRTEA500',
-      nombre: 'Mr Tea Sabores Surtidos (500ml) Pet',
+      nombre: 'Mr Tea Sabores Surtidos (500ML) Pet',
       descripcion: 'Bebida refrescante con sabor a té',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1094,7 +1094,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SQUASH-500',
-      nombre: 'Squash Sabores Surtidos (500ml) Pet',
+      nombre: 'Squash Sabores Surtidos (500ML) Pet',
       descripcion: 'Bebida rehidratante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1115,7 +1115,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-200',
-      nombre: 'Natu Malta (200ml) Pet',
+      nombre: 'Natu Malta (200ML) Pet',
       descripcion: 'Bebida con malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1136,7 +1136,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'QUATROTORONJA-400',
-      nombre: 'Quatro Toronja (400ml) Pet',
+      nombre: 'Quatro Toronja (400ML) Pet',
       descripcion: 'Bebida gaseosa con sabor a Toronja',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1157,7 +1157,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATUMALTA-400',
-      nombre: 'Natu Malta (400 Ml) Pet',
+      nombre: 'Natu Malta (400 ML) Pet',
       descripcion: 'Bebida con malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1199,7 +1199,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'PONYMALTA-330',
-      nombre: 'Pony Malta Lata (330cm)',
+      nombre: 'Pony Malta Lata (330CM)',
       descripcion: 'Bebida refrescante con sabor a malta de cebada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1220,7 +1220,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SAVILOE-320',
-      nombre: 'Saviloe 320 Ml',
+      nombre: 'Saviloe 320 ML',
       descripcion: 'Bebida con Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1241,7 +1241,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'VIVE100-380',
-      nombre: 'Vive100 Original (380 Ml)',
+      nombre: 'Vive100% Original (380 ML)',
       descripcion: 'Bebida energizante con guarana',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1261,7 +1261,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAXBLUE-310',
-      nombre: 'Speed Max Blue (310 Ml) Lata',
+      nombre: 'Speed Max Blue (310 ML) Lata',
       descripcion: 'Bebida energizante con presentación Azul',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1282,7 +1282,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-473',
-      nombre: 'Speed Max (473ml) Lata Grande',
+      nombre: 'Speed Max (473ML) Lata Grande',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1303,7 +1303,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-310',
-      nombre: 'Speed Max (310ml) Lata',
+      nombre: 'Speed Max (310ML) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1324,7 +1324,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEEDMAX-250',
-      nombre: 'Speed Max (250ml) Pet',
+      nombre: 'Speed Max (250ML) Pet',
       descripcion: 'Bebida con jugo de nectar de frutas',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1367,7 +1367,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUA-CRISTAL-ALOE-330',
-      nombre: 'Agua Cristal Aloe (330ml) Pet',
+      nombre: 'Agua Cristal Aloe (330ML) Pet',
       descripcion: 'Bebida de agua natural con Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1388,7 +1388,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CANADA-ADRY-300',
-      nombre: 'Canada Dry (300ml)',
+      nombre: 'Canada Dry (300ML)',
       descripcion: 'Bebida saborizada con Jengibre',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1409,7 +1409,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEED-MAX-250',
-      nombre: 'Speed Max (250 Ml) Pet',
+      nombre: 'Speed Max (250 ML) Pet',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1451,7 +1451,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'JUGO-HIT-500',
-      nombre: 'Hit Sabores Surtidos (500ml) Pet',
+      nombre: 'Hit Sabores Surtidos (500ML) Pet',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1472,7 +1472,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'JUGO-HIT-1500',
-      nombre: 'Hit Sabores Surtidos (1.5 Litros) Pet',
+      nombre: 'Hit Sabores Surtidos (15 Litros) Pet',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1493,7 +1493,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'JUGO-NECTAR-237',
-      nombre: 'Jugo Nectar Sabores Surtidos (237ml) Vidrio',
+      nombre: 'Jugo Nectar Sabores Surtidos (237ML) Vidrio',
       descripcion: 'Bebida con jugo nectar',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1514,7 +1514,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MR-TEA-500',
-      nombre: 'Mr Tea Sabores Surtidos (500ml) Pet',
+      nombre: 'Mr Tea Sabores Surtidos (500ML) Pet',
       descripcion: 'Bebida con sabor a té',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1535,7 +1535,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADE-SURTIDOS-500',
-      nombre: 'Gatorade Sabores Surtidos (500ml)',
+      nombre: 'Gatorade Sabores Surtidos (500ML)',
       descripcion: 'Bebida rehidratante con sabores surtidos',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1556,7 +1556,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SQUASHG-500',
-      nombre: 'Squash Sabores Surtidos (500ml) Pet',
+      nombre: 'Squash Sabores Surtidos (500ML) Pet',
       descripcion: 'Bebida rehidratante con sabores surtidos',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1577,7 +1577,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATU-MALTA-200',
-      nombre: 'Natu Malta (200 Ml) Pet',
+      nombre: 'Natu Malta (200 ML) Pet',
       descripcion: 'Bebida con sabor a malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1598,7 +1598,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-ORIGINAL-400',
-      nombre: 'Coca Cola Sabor Original (400ml) Pet',
+      nombre: 'Coca Cola Sabor Original (400ML) Pet',
       descripcion: 'Bebida gaseosa refrescante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1619,7 +1619,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'COCA-ZERO-400',
-      nombre: 'Coca Cola Zero (400ml) Pet',
+      nombre: 'Coca Cola Zero (400ML) Pet',
       descripcion: 'Bebida gaseosa refrescante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1682,7 +1682,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRISA-GAS-280',
-      nombre: 'Agua Saborizada Brisa Con Gas (280ml) Pet',
+      nombre: 'Agua Saborizada Brisa Con Gas (280ML) Pet',
       descripcion: 'Bebida saborizada con agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1703,7 +1703,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRISA-GAS-600',
-      nombre: 'Agua Brisa Saborizada Con Gas (600ml)',
+      nombre: 'Agua Brisa Saborizada Con Gas (600ML)',
       descripcion: 'Bebida saborizada con agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1724,7 +1724,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'NATU-MALTA-400',
-      nombre: 'Natu Malta (400 Ml) Pet',
+      nombre: 'Natu Malta (400 ML) Pet',
       descripcion: 'Bebida con sabor a mlta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1745,7 +1745,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BRETANA-300',
-      nombre: 'Bretaña Postobon Vidrio (300ml)',
+      nombre: 'Bretaña Postobon Vidrio (300ML)',
       descripcion: 'Bebida de soda',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1766,7 +1766,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEED-MAX-310',
-      nombre: 'Speed Max (310 Ml) Lata',
+      nombre: 'Speed Max (310 ML) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1808,7 +1808,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GATORADE-AZUL-500',
-      nombre: 'Gatorade Azul (500ml) Pet',
+      nombre: 'Gatorade Azul (500ML) Pet',
       descripcion: 'Bebida rehidratante blue ice',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1829,7 +1829,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'QUATRO-TORONJA-400',
-      nombre: 'Quatro Toronja Pet (400ml) Pet',
+      nombre: 'Quatro Toronja Pet (400ML) Pet',
       descripcion: 'Bebida gaseosa con sabor a Toronja',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1850,7 +1850,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AVENAALPINA-250',
-      nombre: 'Avena Alpina (250 Gr)',
+      nombre: 'Avena Alpina (250 GR)',
       descripcion: 'Bebida lactea con sabor a avena',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1892,7 +1892,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUA-CRISTAL-GAS-250',
-      nombre: 'Agua Con Gas Cristal(250ml) Pet',
+      nombre: 'Agua Con Gas Cristal(250ML) Pet',
       descripcion: 'Bebida con agua natural gasificada',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1913,7 +1913,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUA-CRISTAL-300',
-      nombre: 'Agua Cristal (300ml) Pet',
+      nombre: 'Agua Cristal (300ML) Pet',
       descripcion: 'Bebida de agua natural',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1934,7 +1934,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'BONYURT-ALPINA-170',
-      nombre: 'Bonyur Alpina + Zucaritas (170gr)',
+      nombre: 'Bonyur Alpina + Zucaritas (170GR)',
       descripcion: 'Alimento combinado con yugurt y cereales',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1955,7 +1955,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'CHOCORRAMO-65GR',
-      nombre: 'Chocorramo (65gr)',
+      nombre: 'Chocorramo (65GR)',
       descripcion: 'Ponqué rectangular tradicional cubierto de chocolate',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1976,7 +1976,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUA-CRISTAL-600',
-      nombre: 'Agua Cristal (600ml) Pet',
+      nombre: 'Agua Cristal (600ML) Pet',
       descripcion: 'Bebida con agua natural',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -1997,7 +1997,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEED-MAX-473',
-      nombre: 'Speed Max (473ml) Lata Grande',
+      nombre: 'Speed Max (473ML) Lata Grande',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2018,7 +2018,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'AGUA-CRISTAL-1000',
-      nombre: 'Agua Cristal (1litro) Pet',
+      nombre: 'Agua Cristal (1Litro) Pet',
       descripcion: 'Bebida con agua natural litro',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2039,7 +2039,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'PONY-MALTA-330',
-      nombre: 'Pony Malta Lata (330cm)',
+      nombre: 'Pony Malta Lata (330CM)',
       descripcion: 'Bebida refrescante con sabor a malta',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2060,7 +2060,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SAVILOEQ-320',
-      nombre: 'Saviloe X 320ml',
+      nombre: 'Saviloe X 320ML',
       descripcion: 'Bebida con agua natural y Aloe vera',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2102,7 +2102,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SPEED-MAX-BLUE-310',
-      nombre: 'Speed Max Blue (310 Ml) Lata',
+      nombre: 'Speed Max Blue (310 ML) Lata',
       descripcion: 'Bebida energizante',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2123,7 +2123,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GASEOSA-POSTOBON-250',
-      nombre: 'Gaseosa Postobon Surtida (250ml) Pet',
+      nombre: 'Gaseosa Postobon Surtida (250ML) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2144,7 +2144,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'GASEOSA-POSTOBON-400',
-      nombre: 'Gaseosa Postobon Surtida (400ml) Pet',
+      nombre: 'Gaseosa Postobon Surtida (400ML) Pet',
       descripcion: 'Bebida gaseosa con sabor surtido',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2274,7 +2274,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER-20W50',
-      nombre: 'Mobil Super 20w-50 Moto 4t (Litro)',
+      nombre: 'Mobil Super 20W-50 Moto 4T (Litro)',
       descripcion: 'Aceite motor 20W-50 para moto 4T',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2295,7 +2295,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40',
-      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (1/4) Cuarto',
+      nombre: 'Mobil Delvac Modern 15W-40 Full Protection (1/4) Cuarto',
       descripcion: 'Aceite diésel 15W-40',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2316,7 +2316,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-25W50',
-      nombre: 'Terpel Ultrtek 25w50 Alto Km Galon',
+      nombre: 'Terpel Ultrek 25W50 Alto Km Galon',
       descripcion: 'Aceite motor 25W-50 alto kilometraje',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2337,7 +2337,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-HIDRAULIC-AW68',
-      nombre: 'Aceite Mobil Hidraulic Aw-68 (1/4) Cuarto',
+      nombre: 'Aceite Mobil Hidraulic AW-68 (1/4) Cuarto',
       descripcion: 'Aceite hidráulico AW-68',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2358,7 +2358,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-20W50',
-      nombre: 'Terpel Celerity 20w-50 Titanio Moto 4t (Litro)',
+      nombre: 'Terpel Celerity 20W-50 Titanio Moto 4T (Litro)',
       descripcion: 'Aceite moto 4T 20W-50 con titanio',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2400,7 +2400,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBILDELVAC-15W40-1G',
-      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (Galon)',
+      nombre: 'Mobil Delvac Modern 15W-40 Full Protection (Galon)',
       descripcion: 'Aceite diésel 15W-40 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2463,7 +2463,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-2T',
-      nombre: 'Terpel Celerity Bio Antihumo Moto 2t (Litro)',
+      nombre: 'Terpel Celerity Bio Antihumo Moto 2T (Litro)',
       descripcion: 'Aceite 2T antihumo 1L',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2484,7 +2484,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBILSUPER1000-20W50-1Q',
-      nombre: 'Mobil Super 1000 20w-50 (1/4) Cuarto',
+      nombre: 'Mobil Super 1000 20W-50 (1/4) Cuarto',
       descripcion: 'Aceite motor Mobil Super 1000 20W-50 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2505,7 +2505,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBILSUPER1000-20W50-1G',
-      nombre: 'Mobil Super 1000 20w-50 (1galon)',
+      nombre: 'Mobil Super 1000 20W-50 (1Galon)',
       descripcion: 'Aceite motor Mobil Super 1000 20W-50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2526,7 +2526,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50',
-      nombre: 'Terpel Ultrtek 50 Monogrado (Galon)',
+      nombre: 'Terpel Ultrek 50 Monogrado (Galon)',
       descripcion: 'Aceite monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2548,7 +2548,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER-20W50-1L',
-      nombre: 'Mobil Super 20w-50 Moto 4t (Litro)',
+      nombre: 'Mobil Super 20W-50 Moto 4T (Litro)',
       descripcion: 'Lubricante automotriz para moto 4T 20W-50',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2569,7 +2569,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40-1Q',
-      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (1/4) Cuarto',
+      nombre: 'Mobil Delvac Modern 15W-40 Full Protection (1/4) Cuarto',
       descripcion: 'Lubricante diésel 15W-40 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2590,7 +2590,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-DELVAC-15W40-1G',
-      nombre: 'Mobil Delvac Modern 15w-40 Full Protection (1galon)',
+      nombre: 'Mobil Delvac Modern 15W-40 Full Protection (1Galon)',
       descripcion: 'Lubricante diésel 15W-40 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2611,7 +2611,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-20W50-1L',
-      nombre: 'Terpel Celerity 20w-50 Titanio Moto 4t (Litro)',
+      nombre: 'Terpel Celerity 20W-50 Titanio Moto 4T (Litro)',
       descripcion: 'Lubricante moto 4T 20W-50 con titanio',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2632,7 +2632,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-HIDRAULIC-AW68-1Q',
-      nombre: 'Aceite Mobil Hidraulic Aw-68 (1/4) Cuarto',
+      nombre: 'Aceite Mobil Hidraulic AW-68 (1/4) Cuarto',
       descripcion: 'Lubricante hidráulico AW-68 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2653,7 +2653,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-25W50-1G',
-      nombre: 'Terpel Ulterk 25w50 Alto Km (Galon)',
+      nombre: 'Terpel Ultrek 25W-50 Alto Km (Galon)',
       descripcion: 'Lubricante 25W50 alto kilometraje galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2674,7 +2674,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-CELERITY-2T-1L',
-      nombre: 'Terpel Celerity Bio Antihumo Moto 2t (Litro)',
+      nombre: 'Terpel Celerity Bio Antihumo Moto 2T (Litro)',
       descripcion: 'Lubricante 2T antihumo 1 litro',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2716,7 +2716,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-OILTEC-50-1G',
-      nombre: 'Terpel Oiltec 50 Monogrado (1galon)',
+      nombre: 'Terpel Oiltec 50 Monogrado (1Galon)',
       descripcion: 'Lubricante monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2758,7 +2758,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50-1Q',
-      nombre: 'Terpel Ultrtek 50 Monogrado (1/4) Cuarto',
+      nombre: 'Terpel Ultrek 50 Monogrado (1/4) Cuarto',
       descripcion: 'Lubricante monogrado 50 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2779,7 +2779,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'TERPEL-ULTRTEK-50-1G',
-      nombre: 'Terpel Ultrtek 50 Monogrado (Galon)',
+      nombre: 'Terpel Ultrek 50 Monogrado (Galon)',
       descripcion: 'Lubricante monogrado 50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2800,7 +2800,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER1000-20W50-1Q',
-      nombre: 'Mobil Super 1000 20w-50 (1/4) Cuarto',
+      nombre: 'Mobil Super 1000 20W-50 (1/4) Cuarto',
       descripcion: 'Lubricante Mobil Super 1000 20W-50 presentación 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2821,7 +2821,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MOBIL-SUPER1000-20W50-1G',
-      nombre: 'Mobil Super 1000 20w-50 (1galon)',
+      nombre: 'Mobil Super 1000 20W-50 (1Galon)',
       descripcion: 'Lubricante Mobil Super 1000 20W-50 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2846,7 +2846,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADORINYECTORES-250ML',
-      nombre: 'Limpiador De Inyectores Y Carburador 250 Ml (Negro)',
+      nombre: 'Limpiador De Inyectores Y Carburador 250 ML (Negro)',
       descripcion: 'Limpiador de inyectores y carburador 250ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2867,7 +2867,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-ROJO',
-      nombre: 'Refrigerante Radiador (1galon) Rojo Simoniz',
+      nombre: 'Refrigerante Radiador (1Galon) Rojo Simoniz',
       descripcion: 'Refrigerante rojo 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -2888,7 +2888,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE',
-      nombre: 'Refrigerante Radiador (1litro) Verde Simoniz',
+      nombre: 'Refrigerante Radiador (1Litro) Verde Simoniz',
       descripcion: 'Refrigerante verde 1 litro',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -2909,7 +2909,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZADITIVO-GASOLINA-140ML',
-      nombre: 'Aditivo Gasolina (140 Ml) Rojo Simoniz',
+      nombre: 'Aditivo Gasolina (140 ML) Rojo Simoniz',
       descripcion: 'Aditivo para gasolina 140 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2951,7 +2951,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADORINYECTORES-DIESEL-250ML',
-      nombre: 'Limpiador De Inyectores Diesel (250ml) Amarillo',
+      nombre: 'Limpiador De Inyectores Diesel (250ML) Amarillo',
       descripcion: 'Limpiador de inyectores diésel 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2971,8 +2971,8 @@ async function main() {
     where: { codigo: 'ACPMAX500CK-DIESEL-UNID' },
     update: {},
     create: {
-      codigo: 'ACPMAX-500CK-DIESEL-UNID',
-      nombre: 'Aditivo Diesel Acpmax 500 Ck (Multisna)',
+      codigo: 'ACPMAX-500CC-DIESEL-UNID',
+      nombre: 'Aditivo Diesel Acpmax 500 CC (Multinsa)',
       descripcion: 'Aditivo diésel ACPMAX 500 CK',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -2993,7 +2993,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'OCTAMAX-375CC',
-      nombre: 'Aditivo Gasolina Octamax 375 Cc (Multisna)',
+      nombre: 'Aditivo Gasolina Octamax 375 CC (Multinsa)',
       descripcion: 'Aditivo gasolina Octamax 375 cc',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3014,7 +3014,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'REFRIGERANTE-VERDE-1Q',
-      nombre: 'Refrigerante Estandar (1/4) Verde',
+      nombre: 'Terpel Refrigerante Estandar (1/4) Verde',
       descripcion: 'Aceite refrigerante verde 1/4',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3035,7 +3035,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MEJORADOROCTANAJE-250ML',
-      nombre: 'Mejorador De Octanaje (250ml) Naranja',
+      nombre: 'Mejorador De Octanaje (250ML) Naranja',
       descripcion: 'Mejorador de octanaje 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3078,7 +3078,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADOR-INYECTORES-250ML',
-      nombre: 'Limpiador De Inyectores Y Carburador (250ml) (Negro)',
+      nombre: 'Limpiador De Inyectores Y Carburador (250ML) (Negro)',
       descripcion: 'Aditivo limpiador de inyectores y carburador 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3099,7 +3099,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'ACPMAX-500CC',
-      nombre: 'Aditivo Diesel Acpmax 500cc (Multisna)',
+      nombre: 'Aditivo Diesel Acpmax 500CC (Multinsa)',
       descripcion: 'Aditivo diésel ACPMAX 500 cc',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3120,7 +3120,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'OCTA-MAX-375CC',
-      nombre: 'Aditivo Gasolina Octamax 375 Cc (Multisna)',
+      nombre: 'Aditivo Gasolina Octamax 375 CC (Multinsa)',
       descripcion: 'Aditivo gasolina Octamax 375 cc',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3141,7 +3141,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'LIMPIADOR-INYECTORES-DIESEL-250ML',
-      nombre: 'Limpiador De Inyectores Diesel (250ml) Amarillo',
+      nombre: 'Limpiador De Inyectores Diesel (250ML) Amarillo',
       descripcion: 'Aditivo limpiador de inyectores diésel 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3162,7 +3162,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1G',
-      nombre: 'Refrigerante Radiador (1galon) Verde Simoniz',
+      nombre: 'Refrigerante Radiador (1Galon) Verde Simoniz',
       descripcion: 'Aditivo refrigerante verde 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -3183,7 +3183,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-VERDE-1L',
-      nombre: 'Refrigerante Radiador (1litro) Verde Simoniz',
+      nombre: 'Refrigerante Radiador (1Litro) Verde Simoniz',
       descripcion: 'Aditivo refrigerante verde 1 litro',
       unidadMedida: 'Litros',
       precioCompra: 0,
@@ -3204,7 +3204,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-ADITIVO-GASOLINA-140ML',
-      nombre: 'Aditivo Gasolina (140ml) Rojo Simoniz',
+      nombre: 'Aditivo Gasolina (140ML) Rojo Simoniz',
       descripcion: 'Aditivo para gasolina 140 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3225,7 +3225,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'SIMONIZ-REFRIGERANTE-ROJO-1G',
-      nombre: 'Refrigerante Radiador (1galon) Rojo Simoniz',
+      nombre: 'Refrigerante Radiador (1Galon) Rojo Simoniz',
       descripcion: 'Aditivo refrigerante rojo 1 galón',
       unidadMedida: 'Galones',
       precioCompra: 0,
@@ -3246,7 +3246,7 @@ async function main() {
     update: {},
     create: {
       codigo: 'MEJORADOR-OCTANAJE-250ML',
-      nombre: 'Mejorador De Octanaje (250ml) Naranja',
+      nombre: 'Mejorador De Octanaje (250ML) Naranja',
       descripcion: 'Aditivo mejorador de octanaje 250 ml',
       unidadMedida: 'Unidades',
       precioCompra: 0,
@@ -3255,7 +3255,7 @@ async function main() {
       stockMinimo: 0,
       stockActual: 0,
       tipoProducto: 'Lubricante',
-      codigoPlu: 21662,
+      codigoPlu: 23931,
       esCombustible: false,
       puntoVentaId: puntoVentaGasol2.id,
       categoriaId: lubricantesCategory.id,
