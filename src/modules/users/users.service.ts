@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
+import { UpdateProfileInput } from './dto/update-profile.input';
 import { FilterUsersInput } from './dto/filter-users.input';
 import { User } from './entities/user.entity';
 import { UserListResponse } from './entities/user-list-response.entity';
@@ -356,6 +357,62 @@ export class UsersService {
     return this.formatUser(user);
   }
 
+  async updateProfile(userId: string, updateProfileInput: UpdateProfileInput): Promise<User> {
+    const existingUser = await this.findById(userId);
+
+    if (!existingUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Si se está actualizando el email, verificar que no exista
+    if (updateProfileInput.email && updateProfileInput.email !== existingUser.email) {
+      const emailExists = await this.prisma.usuario.findUnique({
+        where: { email: updateProfileInput.email },
+      });
+
+      if (emailExists) {
+        throw new ConflictException('El email ya está en uso');
+      }
+    }
+
+    // Si se está actualizando el username, verificar que no exista
+    if (updateProfileInput.username && updateProfileInput.username !== existingUser.username) {
+      const usernameExists = await this.prisma.usuario.findUnique({
+        where: { username: updateProfileInput.username },
+      });
+
+      if (usernameExists) {
+        throw new ConflictException('El nombre de usuario ya está en uso');
+      }
+    }
+
+    // Solo actualizar los campos permitidos del perfil
+    const user = await this.prisma.usuario.update({
+      where: { id: userId },
+      data: {
+        ...(updateProfileInput.email && { email: updateProfileInput.email }),
+        ...(updateProfileInput.username && { username: updateProfileInput.username }),
+        ...(updateProfileInput.nombre && { nombre: updateProfileInput.nombre }),
+        ...(updateProfileInput.apellido && { apellido: updateProfileInput.apellido }),
+        ...(updateProfileInput.telefono !== undefined && { telefono: updateProfileInput.telefono }),
+        ...(updateProfileInput.tipoDeDocumento && { tipoDeDocumento: updateProfileInput.tipoDeDocumento }),
+        ...(updateProfileInput.numeroDeIdentificacion !== undefined && { 
+          numeroDeIdentificacion: BigInt(updateProfileInput.numeroDeIdentificacion) 
+        }),
+      },
+      include: {
+        rol: true,
+        puntosVenta: {
+          include: {
+            empresa: true
+          }
+        }
+      },
+    });
+
+    return this.formatUser(user);
+  }
+
   async remove(id: string): Promise<User> {
     const existingUser = await this.findById(id);
 
@@ -496,6 +553,8 @@ export class UsersService {
       nombre: user.nombre,
       apellido: user.apellido,
       telefono: user.telefono,
+      tipoDeDocumento: user.tipoDeDocumento,
+      numeroDeIdentificacion: user.numeroDeIdentificacion ? user.numeroDeIdentificacion.toString() : null,
       activo: user.activo,
       emailVerified: user.emailVerified,
       ultimoLogin: user.ultimoLogin,

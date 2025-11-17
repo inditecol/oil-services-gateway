@@ -193,6 +193,8 @@ export class AuthService {
       nombre: user.nombre,
       apellido: user.apellido,
       telefono: user.telefono,
+      tipoDeDocumento: user.tipoDeDocumento,
+      numeroDeIdentificacion: user.numeroDeIdentificacion ? user.numeroDeIdentificacion.toString() : null,
       activo: user.activo,
       emailVerified: user.emailVerified,
       ultimoLogin: user.ultimoLogin,

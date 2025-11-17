@@ -25,6 +25,12 @@ export class User {
   @Field({ nullable: true })
   telefono?: string;
 
+  @Field({ nullable: true })
+  tipoDeDocumento?: string;
+
+  @Field(() => String, { nullable: true })
+  numeroDeIdentificacion?: string;
+
   @Field()
   activo: boolean;
 

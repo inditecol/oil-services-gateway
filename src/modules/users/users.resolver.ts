@@ -10,6 +10,7 @@ import { User } from './entities/user.entity';
 import { UserListResponse } from './entities/user-list-response.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
+import { UpdateProfileInput } from './dto/update-profile.input';
 import { FilterUsersInput } from './dto/filter-users.input';
 
 @Resolver(() => User)
@@ -84,6 +85,14 @@ export class UsersResolver {
     @Args('newPassword') newPassword: string,
   ): Promise<boolean> {
     return this.usersService.changePassword(user.id, newPassword);
+  }
+
+  @Mutation(() => User)
+  async updateMyProfile(
+    @CurrentUser() user: User,
+    @Args('updateProfileInput') updateProfileInput: UpdateProfileInput,
+  ): Promise<User> {
+    return this.usersService.updateProfile(user.id, updateProfileInput);
   }
 
   @Query(() => UserListResponse, { name: 'usersWithFilters' })
