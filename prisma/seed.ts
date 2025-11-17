@@ -3917,6 +3917,72 @@ async function main() {
 
   console.log('✅ Cajas creadas para cada punto de venta');
 
+  // ==========================================
+  // CATEGORÍAS DE GASTOS
+  // ==========================================
+  console.log('\n💸 Creando categorías de gastos...');
+
+  const categoriasGastos = [
+    {
+      nombre: 'Nómina',
+      descripcion: 'Sueldos y salarios de empleados',
+    },
+    {
+      nombre: 'Seguridad Social',
+      descripcion: 'Aportes a seguridad social (EPS, AFP, ARL)',
+    },
+    {
+      nombre: 'Proveedores',
+      descripcion: 'Pago a proveedores de productos y combustible',
+    },
+    {
+      nombre: 'Servicios Públicos',
+      descripcion: 'Agua, luz, gas, internet, teléfono',
+    },
+    {
+      nombre: 'Mantenimiento',
+      descripcion: 'Reparaciones y mantenimiento de equipos',
+    },
+    {
+      nombre: 'Transporte',
+      descripcion: 'Gastos de transporte y combustible administrativo',
+    },
+    {
+      nombre: 'Arriendo',
+      descripcion: 'Pago de arriendo del local',
+    },
+    {
+      nombre: 'Impuestos',
+      descripcion: 'Impuestos, tasas y contribuciones',
+    },
+    {
+      nombre: 'Marketing',
+      descripcion: 'Publicidad y promoción',
+    },
+    {
+      nombre: 'Seguros',
+      descripcion: 'Pólizas de seguro',
+    },
+    {
+      nombre: 'Papelería y Suministros',
+      descripcion: 'Material de oficina y suministros',
+    },
+    {
+      nombre: 'Otros Gastos',
+      descripcion: 'Otros gastos operacionales',
+    },
+  ];
+
+  for (const catGasto of categoriasGastos) {
+    await prisma.categoriaGasto.upsert({
+      where: { nombre: catGasto.nombre },
+      update: {},
+      create: catGasto,
+    });
+  }
+
+  console.log('✅ Categorías de gastos creadas');
+
   console.log('\n🎉 Seed completo ejecutado exitosamente!');
   console.log('\n📋 RESUMEN DE DATOS CREADOS:');
   console.log(`🏢 Empresas: ${empresaPrincipal.nombre}`);
@@ -3935,6 +4001,7 @@ async function main() {
   console.log(`🕐 Turnos: 3 de ejemplo (2 activos, 1 completado)`);
   console.log(`📈 Inventario: Configurado para todos los puntos de venta`);
   console.log(`💳 Métodos de Pago: 8 métodos configurados (Efectivo, Tarjetas, Digitales)`);
+  console.log(`💸 Categorías de Gastos: 12 categorías (Nómina, Proveedores, Servicios, etc.)`);
 
   console.log('\n💰 EJEMPLOS DE PRECIOS (COP):');
   console.log('🏪 Tienda:');
