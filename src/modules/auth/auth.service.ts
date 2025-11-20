@@ -66,6 +66,9 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       rol: user.rol.nombre,
+      role: user.rol.nombre, // Alias para compatibilidad con frontend
+      rolId: user.rolId,
+      username: user.username,
     };
 
     const access_token = this.jwtService.sign(payload);

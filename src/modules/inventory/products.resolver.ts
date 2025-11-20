@@ -1342,7 +1342,7 @@ export class ProductsResolver {
    */
   @Mutation(() => InventoryEntryResponse)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'manager', 'operator')
+  @Roles('admin', 'manager', 'operator', 'employee')
   async processInventoryEntry(
     @Args('inventoryEntryInput') inventoryEntryInput: InventoryEntryInput,
     @CurrentUser() user: any,
