@@ -84,7 +84,7 @@ export class CarrotanquesResolver {
 
   @Query(() => CarrotanquesSummary, { name: 'carrotanquesSummary' })
   @UseGuards(RolesGuard)
-  @Roles('admin', 'manager', 'supervisor')
+  @Roles('admin', 'manager', 'supervisor', 'employee')
   async getActiveCarrotanquesSummary(): Promise<CarrotanquesSummary> {
     return this.carrotanquesService.getActiveCarrotanquesSummary();
   }

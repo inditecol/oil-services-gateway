@@ -22,7 +22,7 @@ export class InventoryResolver {
    */
   @Mutation(() => InventoryEntryResponse)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'manager', 'operator')
+  @Roles('admin', 'manager', 'operator', 'employee')
   async processInventoryEntry(
     @Args('inventoryEntryInput') inventoryEntryInput: InventoryEntryInput,
     @CurrentUser() user: any,
@@ -36,7 +36,7 @@ export class InventoryResolver {
    */
   @Mutation(() => InventoryProcessResponse)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'manager', 'operator')
+  @Roles('admin', 'manager', 'operator', 'employee')
   async processInventoryProcess(
     @Args('inventoryProcessInput') inventoryProcessInput: InventoryProcessInput,
     @CurrentUser() user: any,
