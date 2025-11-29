@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../config/prisma/prisma.service';
 import { CierreTurnoInput } from '../dto/shift-closure.input';
 import { ProductsService } from '../products.service';
@@ -1160,35 +1160,62 @@ export class ProcessShiftService {
 
       // GUARDAR EN BASE DE DATOS - OPERACIÓN TRANSACCIONAL
       const resultado = await this.prisma.$transaction(async (prisma) => {
-        // Crear o encontrar un turno para este punto de venta
-        // (El punto de venta ya fue validado al inicio del método)
-        let turno = await prisma.turno.findFirst({
+        // Función auxiliar para extraer hora en formato HH:mm
+        const extraerHoraEnFormatoHHmm = (isoString: string): string => {
+          const date = new Date(isoString);
+          const hours = date.getUTCHours().toString().padStart(2, '0');
+          const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+          return `${hours}:${minutes}`;
+        };
+
+        // Extraer fecha y horas de startTime y finishTime
+        const fechaInicio = new Date(cierreTurnoInput.startTime);
+        const fechaFin = new Date(cierreTurnoInput.finishTime);
+        const fechaInicioSolo = fechaInicio.toISOString().split('T')[0]; // Solo la fecha "2025-09-01"
+        const horaInicio = extraerHoraEnFormatoHHmm(cierreTurnoInput.startTime); // "06:00"
+        const horaFin = extraerHoraEnFormatoHHmm(cierreTurnoInput.finishTime); // "14:00"
+
+        // Normalizar fechaInicio para comparar solo la fecha (sin hora)
+        const fechaInicioInicio = new Date(fechaInicio);
+        fechaInicioInicio.setUTCHours(0, 0, 0, 0);
+        const fechaInicioFin = new Date(fechaInicio);
+        fechaInicioFin.setUTCHours(23, 59, 59, 999);
+
+        // Buscar turno existente considerando TODOS los campos únicos
+        // Criterio de unicidad: fechaInicio (solo fecha) + puntoVentaId + horaInicio + horaFin
+        const turnoExistente = await prisma.turno.findFirst({
           where: {
+            fechaInicio: {
+              gte: fechaInicioInicio,
+              lte: fechaInicioFin,
+            },
             puntoVentaId: cierreTurnoInput.puntoVentaId,
-            activo: true,
+            horaInicio: horaInicio,
+            horaFin: horaFin,
           },
-          orderBy: { fechaInicio: 'desc' },
         });
 
-        // Si no existe un turno, crear uno temporal
-        if (!turno) {
-          turno = await prisma.turno.create({
+        // SIEMPRE crear nuevo turno, NUNCA actualizar existente
+        // Si existe un turno con los mismos datos, lanzar error
+        if (turnoExistente) {
+          throw new ConflictException(
+            `Ya existe un turno para esta fecha (${fechaInicioSolo}), punto de venta y horas (${horaInicio} - ${horaFin}). Turno ID: ${turnoExistente.id}`
+          );
+        }
+
+        // Crear NUEVO turno
+        const turno = await prisma.turno.create({
             data: {
-              fechaInicio: new Date(cierreTurnoInput.startTime),
-              fechaFin: new Date(cierreTurnoInput.finishTime),
-              horaInicio: new Date(
-                cierreTurnoInput.startTime,
-              ).toLocaleTimeString(),
-              horaFin: new Date(
-                cierreTurnoInput.finishTime,
-              ).toLocaleTimeString(),
-              observaciones: `Turno automático para cierre de ${cierreTurnoInput.puntoVentaId}`,
-              activo: true,
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin,
+            horaInicio: horaInicio, // Formato "HH:mm" (ej: "06:00", "14:00")
+            horaFin: horaFin, // Formato "HH:mm" (ej: "14:00", "22:00")
               puntoVentaId: cierreTurnoInput.puntoVentaId,
               usuarioId: user.id,
+            observaciones: cierreTurnoInput.observacionesGenerales || `Turno automático para cierre de ${cierreTurnoInput.puntoVentaId}`,
+            activo: true,
             },
           });
-        }
 
         // CREAR ESTRUCTURA COMPLETA CON TODA LA INFORMACIÓN
         const datosCompletosCierre = {
@@ -1310,6 +1337,8 @@ export class ProcessShiftService {
             totalEfectivo: resumenFinanciero.totalEfectivo,
             totalTarjetas: resumenFinanciero.totalTarjetas,
             totalTransferencias: resumenFinanciero.totalTransferencias,
+            totalRumbo: resumenFinanciero.totalRumbo,
+            totalBonosViveTerpel: resumenFinanciero.totalBonosViveTerpel,
             totalOtros: resumenFinanciero.totalOtros,
             observacionesFinancieras: resumenFinanciero.observaciones,
 
@@ -1612,6 +1641,8 @@ export class ProcessShiftService {
       totalEfectivo: 0,
       totalTarjetas: 0,
       totalTransferencias: 0,
+      totalRumbo: 0,
+      totalBonosViveTerpel: 0,
       totalOtros: 0,
       observaciones: 'No se procesaron métodos de pago',
     };
@@ -1673,6 +1704,8 @@ export class ProcessShiftService {
     let totalEfectivo = 0;
     let totalTarjetas = 0;
     let totalTransferencias = 0;
+    let totalRumbo = 0;
+    let totalBonosViveTerpel = 0;
     let totalOtros = 0;
 
     const metodosPagoResumen = resumenVentas.metodosPago.map((pago: any) => {
@@ -1691,6 +1724,12 @@ export class ProcessShiftService {
           break;
         case 'TRANSFERENCIA':
           totalTransferencias += monto;
+          break;
+        case 'Rumbo':
+          totalRumbo += monto;
+          break;
+        case 'Bonos vive terpel':
+          totalBonosViveTerpel += monto;
           break;
         default:
           totalOtros += monto;
@@ -1712,6 +1751,8 @@ export class ProcessShiftService {
       totalEfectivo: Math.round(totalEfectivo * 100) / 100,
       totalTarjetas: Math.round(totalTarjetas * 100) / 100,
       totalTransferencias: Math.round(totalTransferencias * 100) / 100,
+      totalRumbo: Math.round(totalRumbo * 100) / 100,
+      totalBonosViveTerpel: Math.round(totalBonosViveTerpel * 100) / 100,
       totalOtros: Math.round(totalOtros * 100) / 100,
       observaciones: resumenVentas.observaciones,
     };
