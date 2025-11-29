@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args, ID, Int, Float } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, UnauthorizedException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -1451,9 +1451,22 @@ export class ProductsResolver {
   @UseGuards(RolesGuard)
   @Roles('admin', 'manager', 'employee')
   async getAllProductsSalesConsolidatedReport(
-    @Args('filtros') filtros: FiltrosReporteVentasInput
+    @Args('filtros') filtros: FiltrosReporteVentasInput,
+    @CurrentUser() user: any,
   ): Promise<ResumenVentasProductos> {
-    return this.historialVentasService.obtenerResumenVentasPorPeriodo(filtros);
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: user.id },
+      select: { empresaId: true },
+    });
+
+    if (!usuario || !usuario.empresaId) {
+      throw new UnauthorizedException('Usuario no tiene empresa asociada');
+    }
+
+    return this.historialVentasService.obtenerResumenVentasPorPeriodo(
+      filtros,
+      usuario.empresaId,
+    );
   }
 
   /**

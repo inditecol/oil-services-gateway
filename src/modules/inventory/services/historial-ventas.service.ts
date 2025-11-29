@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../config/prisma/prisma.service';
 import { HistorialVentasProductos as HistorialVentasProductosGraphQL } from '../entities/historial-ventas-productos.entity';
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from '../entities/consolidado-productos-ventas.entity';
@@ -164,9 +164,55 @@ export class HistorialVentasService {
     });
   }
 
-  async obtenerResumenVentasPorPeriodo(filtros: FiltrosReporteVentasInput): Promise<ResumenVentasProductos> {
+  async obtenerResumenVentasPorPeriodo(filtros: FiltrosReporteVentasInput, empresaId?: string): Promise<ResumenVentasProductos> {
     const GALONES_TO_LITROS = 3.78541;
     const LITROS_TO_GALONES = 0.264172;
+
+    let puntoVentaIdFiltro: string | undefined = filtros.puntoVentaId;
+    let puntosVentaIds: string[] | undefined = undefined;
+
+    if (filtros.codigoPuntoVenta) {
+      const cleanedCodigoPuntoVenta = filtros.codigoPuntoVenta.trim();
+      let puntoVenta = await this.prisma.puntoVenta.findUnique({
+        where: { codigo: cleanedCodigoPuntoVenta },
+        select: { id: true, empresaId: true },
+      });
+
+      if (!puntoVenta) {
+        const puntosVentaFuzzy = await this.prisma.puntoVenta.findMany({
+          where: {
+            codigo: {
+              contains: cleanedCodigoPuntoVenta,
+              mode: 'insensitive',
+            },
+          },
+          select: { id: true, codigo: true, empresaId: true },
+        });
+
+        if (puntosVentaFuzzy.length === 1) {
+          puntoVenta = puntosVentaFuzzy[0];
+        } else if (puntosVentaFuzzy.length > 1) {
+          throw new BadRequestException(
+            `Múltiples puntos de venta encontrados con código similar a "${filtros.codigoPuntoVenta}". Use el código exacto.`,
+          );
+        } else {
+          throw new NotFoundException(
+            `Punto de venta con código "${filtros.codigoPuntoVenta}" no encontrado. Verifique que el código sea correcto.`,
+          );
+        }
+      }
+
+      if (empresaId && puntoVenta.empresaId !== empresaId) {
+        throw new UnauthorizedException('No tiene permisos para acceder a este punto de venta');
+      }
+      puntoVentaIdFiltro = puntoVenta.id;
+    } else if (empresaId && !filtros.puntoVentaId) {
+      const puntosVentaEmpresa = await this.prisma.puntoVenta.findMany({
+        where: { empresaId: empresaId },
+        select: { id: true },
+      });
+      puntosVentaIds = puntosVentaEmpresa.map((pv) => pv.id);
+    }
 
     // === VENTAS DE PRODUCTOS DE TIENDA ===
     const whereTienda: any = {};
@@ -175,8 +221,10 @@ export class HistorialVentasService {
       whereTienda.productoId = filtros.productoId;
     }
 
-    if (filtros.puntoVentaId) {
-      whereTienda.puntoVentaId = filtros.puntoVentaId;
+    if (puntoVentaIdFiltro) {
+      whereTienda.puntoVentaId = puntoVentaIdFiltro;
+    } else if (puntosVentaIds && puntosVentaIds.length > 0) {
+      whereTienda.puntoVentaId = { in: puntosVentaIds };
     }
 
     if (filtros.fechaInicio) {
@@ -223,9 +271,18 @@ export class HistorialVentasService {
     };
 
     // Filtrar por punto de venta a través de la relación manguera -> surtidor -> puntoVenta
-    if (filtros.puntoVentaId) {
+    if (puntoVentaIdFiltro) {
       whereCombustibleManguera.surtidor = {
-        puntoVentaId: filtros.puntoVentaId
+        puntoVentaId: puntoVentaIdFiltro,
+      };
+    } else if (puntosVentaIds && puntosVentaIds.length > 0) {
+      whereCombustibleManguera.surtidor = {
+        puntoVentaId: { in: puntosVentaIds },
+      };
+    } else if (empresaId && puntosVentaIds && puntosVentaIds.length === 0) {
+      // Si no hay puntos de venta, no habrá ventas de combustible
+      whereCombustibleManguera.surtidor = {
+        puntoVentaId: { in: [] }, // Filtro que no devolverá resultados
       };
     }
 
