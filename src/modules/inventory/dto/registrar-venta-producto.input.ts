@@ -118,6 +118,10 @@ export class FiltrosReporteVentasInput {
   @IsUUID()
   puntoVentaId?: string;
 
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  codigoPuntoVenta?: string;
+
   @Field(() => Date, { nullable: true })
   @IsOptional()
   fechaInicio?: Date;

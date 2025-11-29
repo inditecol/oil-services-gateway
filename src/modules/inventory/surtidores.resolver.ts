@@ -1,9 +1,11 @@
 import { Resolver, Query, Mutation, Args, ID, Int, Float } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SurtidoresService } from './surtidores.service';
+import { PrismaService } from '../../config/prisma/prisma.service';
 import { Surtidor, SurtidorListResponse } from './entities/surtidor.entity';
 import { CreateSurtidorInput } from './dto/create-surtidor.input';
 import { UpdateSurtidorInput } from './dto/update-surtidor.input';
@@ -17,7 +19,10 @@ import { ConsolidadoVentasGeneral } from './entities/consolidado-ventas.entity';
 @Resolver(() => Surtidor)
 @UseGuards(JwtAuthGuard)
 export class SurtidoresResolver {
-  constructor(private readonly surtidoresService: SurtidoresService) {}
+  constructor(
+    private readonly surtidoresService: SurtidoresService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Mutation(() => Surtidor)
   @UseGuards(RolesGuard)
@@ -320,20 +325,89 @@ export class SurtidoresResolver {
   @UseGuards(RolesGuard)
   @Roles('admin', 'manager', 'employee')
   async getAllPumpsSalesConsolidatedReport(
+    @CurrentUser() user: any,
     @Args('fechaDesde', { nullable: true }) fechaDesde?: Date,
     @Args('fechaHasta', { nullable: true }) fechaHasta?: Date,
     @Args('incluirInactivos', { type: () => Boolean, defaultValue: false }) incluirInactivos: boolean = false,
+    @Args('codigoPuntoVenta', { nullable: true }) codigoPuntoVenta?: string,
   ): Promise<ConsolidadoVentasGeneral> {
     try {
       // Constantes de conversión (datos almacenados en litros, convertir a galones como primario)
       const LITROS_TO_GALONES = 0.264172;
 
+      // Obtener empresaId del usuario para validación de permisos
+      const usuario = await this.prisma.usuario.findUnique({
+        where: { id: user.id },
+        select: { empresaId: true },
+      });
+
+      if (!usuario || !usuario.empresaId) {
+        throw new UnauthorizedException('Usuario no tiene empresa asociada');
+      }
+
+      let puntoVentaIdFiltro: string | undefined = undefined;
+      let puntosVentaIdsEmpresa: string[] | undefined = undefined;
+
+      if (codigoPuntoVenta) {
+        const cleanedCodigoPuntoVenta = codigoPuntoVenta.trim();
+        let puntoVenta = await this.prisma.puntoVenta.findUnique({
+          where: { codigo: cleanedCodigoPuntoVenta },
+          select: { id: true, empresaId: true },
+        });
+
+        if (!puntoVenta) {
+          // Intentar búsqueda case-insensitive si no se encuentra exacto
+          const puntosVentaFuzzy = await this.prisma.puntoVenta.findMany({
+            where: {
+              codigo: {
+                contains: cleanedCodigoPuntoVenta,
+                mode: 'insensitive',
+              },
+            },
+            select: { id: true, codigo: true, empresaId: true },
+          });
+
+          if (puntosVentaFuzzy.length === 1) {
+            puntoVenta = puntosVentaFuzzy[0];
+          } else if (puntosVentaFuzzy.length > 1) {
+            throw new BadRequestException(
+              `Múltiples puntos de venta encontrados con código similar a "${codigoPuntoVenta}". Use el código exacto.`,
+            );
+          } else {
+            throw new NotFoundException(
+              `Punto de venta con código "${codigoPuntoVenta}" no encontrado. Verifique que el código sea correcto.`,
+            );
+          }
+        }
+
+        if (puntoVenta.empresaId !== usuario.empresaId) {
+          throw new UnauthorizedException(
+            'No tiene permisos para acceder a este punto de venta',
+          );
+        }
+        puntoVentaIdFiltro = puntoVenta.id;
+      } else {
+        // Si no se proporciona codigoPuntoVenta, obtener todos los puntos de venta de la empresa del usuario
+        const puntosVenta = await this.prisma.puntoVenta.findMany({
+          where: { empresaId: usuario.empresaId },
+          select: { id: true },
+        });
+        puntosVentaIdsEmpresa = puntosVenta.map((pv) => pv.id);
+      }
+
       // Obtener todos los surtidores según el filtro
       // Si incluirInactivos es true, obtener todos (undefined)
       // Si incluirInactivos es false, obtener solo activos (true)
       const activoFilter = incluirInactivos ? undefined : true;
-      const surtidoresResponse = await this.surtidoresService.findAll(1, -1, activoFilter);
-      const surtidores = surtidoresResponse.surtidores;
+      let surtidoresResponse = await this.surtidoresService.findAll(1, -1, activoFilter);
+      let surtidores = surtidoresResponse.surtidores;
+
+      // Filtrar por punto de venta si se especificó
+      if (puntoVentaIdFiltro) {
+        surtidores = surtidores.filter((s) => s.puntoVenta?.id === puntoVentaIdFiltro);
+      } else if (puntosVentaIdsEmpresa && puntosVentaIdsEmpresa.length > 0) {
+        surtidores = surtidores.filter((s) => s.puntoVenta?.id && puntosVentaIdsEmpresa.includes(s.puntoVenta.id));
+      }
 
       console.log(`[CONSOLIDADO] Obtenidos ${surtidores.length} surtidores (incluirInactivos: ${incluirInactivos})`);
       console.log('[CONSOLIDADO] Surtidores:', surtidores.map(s => `${s.numero} (${s.nombre}) - Activo: ${s.activo}`));
