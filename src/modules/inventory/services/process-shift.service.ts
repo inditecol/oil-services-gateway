@@ -1359,7 +1359,7 @@ export class ProcessShiftService {
         }
 
         // Registrar movimientos de efectivo
-        const movimientosEfectivo = [];
+        let movimientosEfectivo = [];
 
         // 1. Registrar ingreso de efectivo por ventas (si existe)
         if (resumenFinanciero.totalEfectivo > 0) {
@@ -1385,6 +1385,58 @@ export class ProcessShiftService {
               observaciones: movimiento.observaciones,
             });
           });
+        }
+
+        // Validación: Comparar montos del BACKEND vs FRONTEND
+        // Reglas:
+        // - Si los montos son iguales: solo se guarda el movimiento del frontend
+        // - Si los montos son diferentes: no se guarda ningún movimiento de INGRESO
+        if (resumenFinanciero.totalEfectivo > 0) {
+          // Paso 1: Buscar el movimiento automático del backend
+          const indiceMovimientoBackend = movimientosEfectivo.findIndex(
+            (movimiento) =>
+              movimiento.tipo === 'INGRESO' &&
+              movimiento.observaciones === 'Total de ventas en efectivo registrado en el cierre',
+          );
+
+          // Paso 2: Buscar los movimientos de INGRESO del frontend (excluyendo el del backend)
+          const movimientosIngresoFrontend = movimientosEfectivo.filter(
+            (movimiento, indice) =>
+              movimiento.tipo === 'INGRESO' && indice !== indiceMovimientoBackend,
+          );
+
+          // Paso 3: Validar si hay movimientos del frontend y del backend para comparar
+          const hayMovimientosParaComparar =
+            indiceMovimientoBackend !== -1 && movimientosIngresoFrontend.length > 0;
+
+          if (hayMovimientosParaComparar) {
+            // Paso 4: Comparar si algún movimiento del frontend tiene el mismo monto que el backend
+            const montoBackend = Number(resumenFinanciero.totalEfectivo);
+            const hayMontoIgual = movimientosIngresoFrontend.some((movimiento) => {
+              const montoFrontend = Number(movimiento.monto);
+              const diferencia = Math.abs(montoFrontend - montoBackend);
+              return diferencia < 0.01; // Tolerancia para comparación de decimales
+            });
+
+            if (hayMontoIgual) {
+              // CASO 1: Los montos son iguales → Solo guardar el del frontend
+              movimientosEfectivo = movimientosEfectivo.filter(
+                (movimiento, indice) => indice !== indiceMovimientoBackend,
+              );
+              console.log(
+                `[CIERRE_TURNO] Montos iguales detectados: solo se guarda el movimiento del frontend ($${resumenFinanciero.totalEfectivo}). Movimiento automático del backend omitido.`,
+              );
+            } else {
+              // CASO 2: Los montos son diferentes → No guardar ningún movimiento de INGRESO
+              const montosFrontend = movimientosIngresoFrontend.map((m) => m.monto).join(', $');
+              movimientosEfectivo = movimientosEfectivo.filter(
+                (movimiento) => movimiento.tipo !== 'INGRESO',
+              );
+              console.log(
+                `[CIERRE_TURNO] Montos diferentes detectados: Frontend ($${montosFrontend}) vs Backend ($${resumenFinanciero.totalEfectivo}). No se guarda ningún movimiento de efectivo.`,
+              );
+            }
+          }
         }
 
         // 3. Crear los registros de movimientos de efectivo en la base de datos
