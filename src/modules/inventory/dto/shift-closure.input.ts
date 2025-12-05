@@ -1,6 +1,34 @@
-import { InputType, Field, Float, Int } from '@nestjs/graphql';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, IsArray, ValidateNested, IsDate } from 'class-validator';
+import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, IsArray, ValidateNested, IsDate, IsUUID, ValidateBy, ValidationOptions } from 'class-validator';
 import { Type } from 'class-transformer';
+
+// Validador personalizado para aceptar UUIDs y CUIDs de Prisma
+function IsUUIDOrCUID(validationOptions?: ValidationOptions) {
+  return ValidateBy(
+    {
+      name: 'isUUIDOrCUID',
+      validator: {
+        validate(value: any) {
+          if (typeof value !== 'string') return false;
+          
+          // Validar UUID (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(value)) return true;
+          
+          // Validar CUID de Prisma (25 caracteres, empieza con 'c', solo alfanuméricos en minúsculas)
+          const cuidRegex = /^c[0-9a-z]{24}$/;
+          if (cuidRegex.test(value)) return true;
+          
+          return false;
+        },
+        defaultMessage() {
+          return 'El valor debe ser un UUID válido o un CUID de Prisma';
+        },
+      },
+    },
+    validationOptions,
+  );
+}
 
 @InputType()
 export class MetodoPagoProductoInput {
@@ -308,6 +336,28 @@ export class CierreTurnoInput {
   @IsOptional()
   @IsString()
   observacionesGenerales?: string;
+}
+
+@InputType()
+export class FiltrosMovimientosEfectivoInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  fechaDesde?: Date;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  fechaHasta?: Date;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @IsUUIDOrCUID({ message: 'puntoVentaId debe ser un UUID válido o un CUID de Prisma' })
+  puntoVentaId?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  tipo?: string; // "INGRESO" o "EGRESO"
 }
 
 // Keep Spanish versions for backward compatibility

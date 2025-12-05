@@ -8,6 +8,28 @@ import { Shift } from './entities/shift.entity';
 export class ShiftsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Extrae la hora en formato HH:mm de un string ISO
+   * @param isoString - String ISO (ej: "2025-09-01T06:00:00.000Z")
+   * @returns String en formato HH:mm (ej: "06:00")
+   */
+  private extraerHoraEnFormatoHHmm(isoString: string): string {
+    const date = new Date(isoString);
+    const hours = date.getUTCHours().toString().padStart(2, '0');
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
+  /**
+   * Extrae solo la fecha (YYYY-MM-DD) de un string ISO o Date
+   * @param dateInput - String ISO o Date
+   * @returns String en formato YYYY-MM-DD
+   */
+  private extraerSoloFecha(dateInput: string | Date): string {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    return date.toISOString().split('T')[0];
+  }
+
   // Helper method to format Shift
   private formatShift(shift: any): Shift {
     return {
@@ -28,12 +50,44 @@ export class ShiftsService {
   }
 
   async create(createShiftInput: CreateShiftInput): Promise<Shift> {
+    // Extraer fecha y horas
+    const fechaInicio = new Date(createShiftInput.startDate);
+    const fechaInicioSolo = this.extraerSoloFecha(fechaInicio);
+    const horaInicio = createShiftInput.startTime; // Ya debe estar en formato HH:mm
+    const horaFin = createShiftInput.endTime || null;
+
+    // Normalizar fechaInicio para comparar solo la fecha (sin hora)
+    const fechaInicioInicio = new Date(fechaInicio);
+    fechaInicioInicio.setUTCHours(0, 0, 0, 0);
+    const fechaInicioFin = new Date(fechaInicio);
+    fechaInicioFin.setUTCHours(23, 59, 59, 999);
+
+    // Validar que no exista un turno con los mismos datos únicos
+    // Criterio de unicidad: fechaInicio (solo fecha) + puntoVentaId + horaInicio + horaFin
+    const turnoDuplicado = await this.prisma.turno.findFirst({
+      where: {
+        fechaInicio: {
+          gte: fechaInicioInicio,
+          lte: fechaInicioFin,
+        },
+        puntoVentaId: createShiftInput.puntoVentaId,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+      },
+    });
+
+    if (turnoDuplicado) {
+      throw new ConflictException(
+        `Ya existe un turno para esta fecha (${fechaInicioSolo}), punto de venta y horas (${horaInicio} - ${horaFin || 'N/A'}). Turno ID: ${turnoDuplicado.id}`
+      );
+    }
+
     const shift = await this.prisma.turno.create({
       data: {
-        fechaInicio: new Date(createShiftInput.startDate),
+        fechaInicio: fechaInicio,
         fechaFin: createShiftInput.endDate ? new Date(createShiftInput.endDate) : null,
-        horaInicio: createShiftInput.startTime,
-        horaFin: createShiftInput.endTime,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
         observaciones: createShiftInput.observations,
         activo: createShiftInput.active ?? true,
         puntoVenta: {
@@ -44,6 +98,70 @@ export class ShiftsService {
             connect: { id: createShiftInput.userId }
           }
         }),
+      },
+      include: {
+        puntoVenta: true,
+        usuario: {
+          include: {
+            rol: true,
+          }
+        },
+      },
+    });
+
+    return this.formatShift(shift);
+  }
+
+  /**
+   * Crea un turno desde timestamps ISO (usado por processShiftClosure)
+   * @param startTimeISO - Timestamp ISO de inicio (ej: "2025-09-01T06:00:00.000Z")
+   * @param finishTimeISO - Timestamp ISO de fin (ej: "2025-09-01T14:00:00.000Z")
+   * @param puntoVentaId - ID del punto de venta
+   * @param usuarioId - ID del usuario
+   * @param observaciones - Observaciones opcionales
+   * @returns Shift creado
+   */
+  async createFromTimestamps(
+    startTimeISO: string,
+    finishTimeISO: string,
+    puntoVentaId: string,
+    usuarioId: string,
+    observaciones?: string
+  ): Promise<Shift> {
+    // Extraer fecha y horas de los timestamps
+    const fechaInicio = new Date(startTimeISO);
+    const fechaFin = new Date(finishTimeISO);
+    const fechaInicioSolo = this.extraerSoloFecha(fechaInicio);
+    const horaInicio = this.extraerHoraEnFormatoHHmm(startTimeISO);
+    const horaFin = this.extraerHoraEnFormatoHHmm(finishTimeISO);
+
+    // Validar que no exista un turno con los mismos datos únicos
+    const turnoDuplicado = await this.prisma.turno.findFirst({
+      where: {
+        fechaInicio: fechaInicio,
+        puntoVentaId: puntoVentaId,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+      },
+    });
+
+    if (turnoDuplicado) {
+      throw new ConflictException(
+        `Ya existe un turno para esta fecha (${fechaInicioSolo}), punto de venta y horas (${horaInicio} - ${horaFin}). Turno ID: ${turnoDuplicado.id}`
+      );
+    }
+
+    // Crear NUEVO turno (nunca actualizar existente)
+    const shift = await this.prisma.turno.create({
+      data: {
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+        horaInicio: horaInicio, // Formato "HH:mm" (ej: "06:00", "14:00")
+        horaFin: horaFin, // Formato "HH:mm" (ej: "14:00", "22:00")
+        puntoVentaId: puntoVentaId,
+        usuarioId: usuarioId,
+        observaciones: observaciones || `Turno automático para cierre de ${puntoVentaId}`,
+        activo: true,
       },
       include: {
         puntoVenta: true,

@@ -23,11 +23,14 @@ import {
   BusquedaCierresCompletosResponse,
   EstadisticasCierresPorPeriodoResponse,
   EstadisticasMetodosPagoResponse,
-  ResumenCaja
+  ResumenCaja,
+  MovimientoEfectivo,
+  MovimientosEfectivoResponse
 } from './entities/shift-closure.entity';
 import {
   CierreTurnoInput,
-  LecturaMangueraInput
+  LecturaMangueraInput,
+  FiltrosMovimientosEfectivoInput
 } from './dto/shift-closure.input';
 import { InventoryEntryInput } from './dto/inventory-entry.input';
 import { InventoryEntryResponse } from './entities/inventory-entry.entity';
@@ -58,6 +61,7 @@ import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReport
 import { CrearMetodoPagoInput, ActualizarMetodoPagoInput, FiltrosMetodosPagoInput } from './dto/metodo-pago.input';
 import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
+import { MovimientosEfectivoService } from './services/movimientos-efectivo.service';
 import { HistorialPrecios, HistorialPreciosResponse } from './entities/historial-precios.entity';
 import { Caja } from './entities/caja.entity';
 
@@ -71,7 +75,8 @@ export class ProductsResolver {
     private readonly tanquesService: TanquesService,
     private readonly inventoryService: InventoryService,
     private readonly metodosPagoService: MetodosPagoService,
-    private readonly historialVentasService: HistorialVentasService
+    private readonly historialVentasService: HistorialVentasService,
+    private readonly movimientosEfectivoService: MovimientosEfectivoService
   ) {}
 
   @Mutation(() => Producto)
@@ -482,6 +487,8 @@ export class ProductsResolver {
       totalEfectivo: 0,
       totalTarjetas: 0,
       totalTransferencias: 0,
+      totalRumbo: 0,
+      totalBonosViveTerpel: 0,
       totalOtros: 0
     };
 
@@ -512,6 +519,8 @@ export class ProductsResolver {
           efectivo: resumenFinanciero.totalEfectivo,
           tarjetas: resumenFinanciero.totalTarjetas,
           transferencias: resumenFinanciero.totalTransferencias,
+          rumbo: resumenFinanciero.totalRumbo,
+          bonosViveTerpel: resumenFinanciero.totalBonosViveTerpel,
           otros: resumenFinanciero.totalOtros
         }
       },
@@ -572,6 +581,8 @@ export class ProductsResolver {
         totalEfectivo: 0,
         totalTarjetas: 0,
         totalTransferencias: 0,
+        totalRumbo: 0,
+        totalBonosViveTerpel: 0,
         totalOtros: 0
       },
       cierres: cierres.map(cierre => {
@@ -587,6 +598,8 @@ export class ProductsResolver {
         resumenDiario.resumenGeneral.totalEfectivo += resumenFinanciero.totalEfectivo || 0;
         resumenDiario.resumenGeneral.totalTarjetas += resumenFinanciero.totalTarjetas || 0;
         resumenDiario.resumenGeneral.totalTransferencias += resumenFinanciero.totalTransferencias || 0;
+        resumenDiario.resumenGeneral.totalRumbo += resumenFinanciero.totalRumbo || 0;
+        resumenDiario.resumenGeneral.totalBonosViveTerpel += resumenFinanciero.totalBonosViveTerpel || 0;
         resumenDiario.resumenGeneral.totalOtros += resumenFinanciero.totalOtros || 0;
 
         return {
@@ -721,6 +734,8 @@ export class ProductsResolver {
         totalEfectivo: Number(cierre.totalEfectivo),
         totalTarjetas: Number(cierre.totalTarjetas),
         totalTransferencias: Number(cierre.totalTransferencias),
+        totalRumbo: Number(cierre.totalRumbo),
+        totalBonosViveTerpel: Number(cierre.totalBonosViveTerpel),
         totalOtros: Number(cierre.totalOtros),
         observacionesFinancieras: cierre.observacionesFinancieras,
         metodosPagoDetallados: cierre.metodosPago.map(pago => ({
@@ -1097,19 +1112,94 @@ export class ProductsResolver {
     @Args('codigoProducto', { nullable: true }) codigoProducto?: string
   ): Promise<EstadisticasMetodosPagoResponse> {
     
+    // Función auxiliar para extraer hora en formato HH:mm (igual que movimientos_efectivo)
+    const extraerHoraHHmm = (dateInput: Date | string): string => {
+      const date = new Date(dateInput);
+      const hours = date.getUTCHours().toString().padStart(2, '0');
+      const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    };
+
+    // Extraer fecha y hora de los parámetros (igual que movimientos_efectivo)
+    const fechaDesdeDate = new Date(fechaDesde);
+    const fechaHastaDate = new Date(fechaHasta);
+    const horaDesde = extraerHoraHHmm(fechaDesde); // "06:00"
+    const horaHasta = extraerHoraHHmm(fechaHasta); // "14:00"
+    
+    console.log('[ESTADISTICAS_METODOS_PAGO] Filtros recibidos:');
+    console.log('[ESTADISTICAS_METODOS_PAGO]   - fechaDesde:', fechaDesde, 'horaDesde:', horaDesde);
+    console.log('[ESTADISTICAS_METODOS_PAGO]   - fechaHasta:', fechaHasta, 'horaHasta:', horaHasta);
+    
     // Construir filtros
-    const whereClause: any = {
-      fechaCierre: {
-        gte: fechaDesde,
-        lte: fechaHasta
-      }
+    // Filtrar por fechaInicio y fechaFin del TURNO (no por fechaCierre)
+    // Y también por horaInicio y horaFin del turno
+    // El frontend envía fecha inicio (ej: 01/09/2025 12:00 AM = 00:00:00) y fecha fin (ej: 01/09/2025 11:59 PM = 23:59:59)
+    // Se deben mostrar todos los cierres de turnos que se solapen con ese rango (fecha + hora)
+    const turnoFilters: any = {
+      AND: [
+        // Filtro por fecha (solapamiento)
+        {
+          fechaInicio: {
+            lte: fechaHasta
+          }
+        },
+        {
+          OR: [
+            {
+              fechaFin: {
+                gte: fechaDesde
+              }
+            },
+            {
+              fechaFin: null
+            }
+          ]
+        },
+        // Filtro por hora (solapamiento)
+        {
+          OR: [
+            // Turno que inicia dentro del rango
+            {
+              AND: [
+                { horaInicio: { gte: horaDesde } },
+                { horaInicio: { lte: horaHasta } }
+              ]
+            },
+            // Turno que termina dentro del rango
+            {
+              AND: [
+                { horaFin: { gte: horaDesde } },
+                { horaFin: { lte: horaHasta } }
+              ]
+            },
+            // Turno que contiene todo el rango (inicia antes y termina después)
+            {
+              AND: [
+                { horaInicio: { lte: horaDesde } },
+                { horaFin: { gte: horaHasta } }
+              ]
+            },
+            // Rango que contiene todo el turno (inicia después y termina antes)
+            {
+              AND: [
+                { horaInicio: { gte: horaDesde } },
+                { horaFin: { lte: horaHasta } }
+              ]
+            }
+          ]
+        }
+      ]
     };
 
     if (puntoVentaId) {
-      whereClause.turno = {
+      turnoFilters.AND.push({
         puntoVentaId: puntoVentaId
-      };
+      });
     }
+
+    const whereClause: any = {
+      turno: turnoFilters
+    };
 
     // Obtener todos los cierres del período
     const cierres = await this.prisma.cierreTurno.findMany({
@@ -1575,5 +1665,29 @@ export class ProductsResolver {
       totalPages: result.totalPages,
       currentPage: result.currentPage
     };
+  }
+
+  // ===== MOVIMIENTOS DE EFECTIVO =====
+
+  /**
+   * OBTENER MOVIMIENTOS DE EFECTIVO CON FILTROS DE FECHA
+   * Retorna lista de movimientos con totales de ingresos y egresos
+   */
+  @Query(() => MovimientosEfectivoResponse, { name: 'getMovimientosEfectivo' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async getMovimientosEfectivo(
+    @CurrentUser() user: any,
+    @Args('filtros') filtros: FiltrosMovimientosEfectivoInput
+  ): Promise<MovimientosEfectivoResponse> {
+    // Obtener empresaId del usuario para validación de permisos
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: user.id },
+      select: { empresaId: true },
+    });
+
+    const empresaId = usuario?.empresaId || undefined;
+
+    return this.movimientosEfectivoService.obtenerMovimientosEfectivo(filtros, empresaId);
   }
 } 

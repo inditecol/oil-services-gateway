@@ -1,4 +1,5 @@
 import { ObjectType, Field, Float, Int } from '@nestjs/graphql';
+import { ResumenFinanciero } from './shift-closure.entity';
 
 @ObjectType()
 export class ProductoResumenGeneral {
@@ -127,6 +128,9 @@ export class ConsolidadoVentasGeneral {
 
   @Field(() => TotalesGenerales)
   totalesGenerales: TotalesGenerales;
+
+  @Field(() => ResumenFinanciero, { nullable: true })
+  resumenFinanciero?: ResumenFinanciero;
 
   @Field()
   fechaGeneracion: Date;

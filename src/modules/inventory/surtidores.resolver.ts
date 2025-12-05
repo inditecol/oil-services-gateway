@@ -496,6 +496,726 @@ export class SurtidoresResolver {
 
       console.log(`[CONSOLIDADO] Totales generales: ${totalGeneralGalones} gal (${totalGeneralLitros}L), $${totalGeneralValor}, ${totalGeneralTransacciones} transacciones`);
 
+      // Calcular resumen financiero consolidado
+      let resumenFinanciero: any = {
+        totalDeclarado: 0,
+        totalCalculado: 0,
+        diferencia: 0,
+        metodosPago: [],
+        totalEfectivo: 0,
+        totalTarjetas: 0,
+        totalTransferencias: 0,
+        totalRumbo: 0,
+        totalBonosViveTerpel: 0,
+        totalOtros: 0,
+        observaciones: `Resumen financiero consolidado del período ${fechaDesde ? new Date(fechaDesde).toLocaleDateString() : 'sin inicio'} al ${fechaHasta ? new Date(fechaHasta).toLocaleDateString() : 'sin fin'}`,
+      };
+      
+      try {
+        // ESTRATEGIA: Calcular desde las mismas ventas que usa totalesGenerales
+        // 1. Ventas de productos (tienda): desde tablas Venta e HistorialVentasProductos
+        // 2. Ventas de combustible: desde historialLectura filtrado por fechaLectura,
+        //    luego distribuir proporcionalmente según métodos de pago del CierreTurno
+        
+        // IMPORTANTE: El problema es que cuando GraphQL recibe una fecha, la convierte
+        // y puede cambiar el día debido a timezone. Necesitamos extraer la fecha que
+        // el frontend realmente quiere, no la fecha convertida por timezone.
+        
+        console.log(`[CONSOLIDADO] ========== INICIO PROCESAMIENTO FECHAS ==========`);
+        console.log(`[CONSOLIDADO] Fechas recibidas del frontend (raw):`);
+        console.log(`[CONSOLIDADO]   fechaDesde: ${fechaDesde} (tipo: ${typeof fechaDesde})`);
+        console.log(`[CONSOLIDADO]   fechaHasta: ${fechaHasta} (tipo: ${typeof fechaHasta})`);
+        
+        // SOLUCIÓN CORREGIDA: Extraer la fecha usando métodos UTC para evitar problemas de timezone
+        // Esto garantiza que obtenemos la fecha correcta independientemente de la zona horaria
+        let fechaDesdeSolo: string | null = null;
+        let fechaHastaSolo: string | null = null;
+        
+        if (fechaDesde) {
+          const fechaDesdeDate = new Date(fechaDesde);
+          // Usar métodos UTC directamente para extraer la fecha sin conversiones de timezone
+          // Esto garantiza que si el frontend quiere el día 2, obtengamos el día 2
+          const year = fechaDesdeDate.getUTCFullYear();
+          const month = String(fechaDesdeDate.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(fechaDesdeDate.getUTCDate()).padStart(2, '0');
+          fechaDesdeSolo = `${year}-${month}-${day}`;
+          
+          console.log(`[CONSOLIDADO]   fechaDesde (original): ${fechaDesde}`);
+          console.log(`[CONSOLIDADO]   fechaDesde (Date ISO): ${fechaDesdeDate.toISOString()}`);
+          console.log(`[CONSOLIDADO]   fechaDesdeSolo (extraída UTC): ${fechaDesdeSolo}`);
+        }
+        
+        if (fechaHasta) {
+          const fechaHastaDate = new Date(fechaHasta);
+          // Usar métodos UTC directamente para extraer la fecha sin conversiones de timezone
+          const year = fechaHastaDate.getUTCFullYear();
+          const month = String(fechaHastaDate.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(fechaHastaDate.getUTCDate()).padStart(2, '0');
+          fechaHastaSolo = `${year}-${month}-${day}`;
+          
+          console.log(`[CONSOLIDADO]   fechaHasta (original): ${fechaHasta}`);
+          console.log(`[CONSOLIDADO]   fechaHasta (Date ISO): ${fechaHastaDate.toISOString()}`);
+          console.log(`[CONSOLIDADO]   fechaHastaSolo (extraída UTC): ${fechaHastaSolo}`);
+        }
+        
+        // IMPORTANTE: Usar las fechas ORIGINALES con hora (no solo la fecha)
+        // El frontend envía fechas con hora específica (ej: "2025-09-01T22:00:00.000Z")
+        // No debemos perder esa hora al filtrar
+        const fechaDesdeFinal = fechaDesde ? new Date(fechaDesde) : null;
+        const fechaHastaFinal = fechaHasta ? new Date(fechaHasta) : null;
+        
+        // Función auxiliar para extraer hora en formato HH:mm (igual que movimientos_efectivo)
+        const extraerHoraHHmm = (dateInput: Date | string): string => {
+          const date = new Date(dateInput);
+          const hours = date.getUTCHours().toString().padStart(2, '0');
+          const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+          return `${hours}:${minutes}`;
+        };
+        
+        // Extraer hora de las fechas originales
+        const horaDesde = fechaDesdeFinal ? extraerHoraHHmm(fechaDesdeFinal) : null;
+        const horaHasta = fechaHastaFinal ? extraerHoraHHmm(fechaHastaFinal) : null;
+        
+        console.log(`[CONSOLIDADO] Fechas finales para filtros:`);
+        console.log(`[CONSOLIDADO]   fechaDesdeSolo: ${fechaDesdeSolo}`);
+        console.log(`[CONSOLIDADO]   fechaHastaSolo: ${fechaHastaSolo}`);
+        console.log(`[CONSOLIDADO]   fechaDesdeFinal (con hora original): ${fechaDesdeFinal?.toISOString()}`);
+        console.log(`[CONSOLIDADO]   fechaHastaFinal (con hora original): ${fechaHastaFinal?.toISOString()}`);
+        console.log(`[CONSOLIDADO]   horaDesde: ${horaDesde || 'ninguna'}`);
+        console.log(`[CONSOLIDADO]   horaHasta: ${horaHasta || 'ninguna'}`);
+        console.log(`[CONSOLIDADO] ================================================`);
+        
+        // Inicializar totales
+        let totalEfectivo = 0;
+        let totalTarjetas = 0;
+        let totalTransferencias = 0;
+        let totalRumbo = 0;
+        let totalBonosViveTerpel = 0;
+        let totalOtros = 0;
+        let totalDeclarado = 0;
+        let totalCalculado = 0;
+
+        // Map para consolidar métodos de pago detallados
+        const metodosPagoMap = new Map<string, { monto: number; porcentaje: number; observaciones: string | null }>();
+
+        // 1. OBTENER VENTAS DE PRODUCTOS (Venta)
+        // IMPORTANTE: Usar fechas originales con hora para filtrar ventas
+        const filtroVentas: any = {
+          estado: 'completada', // Solo ventas completadas
+        };
+
+        if (fechaDesde && fechaHasta) {
+          filtroVentas.fechaVenta = {
+            gte: new Date(fechaDesde),
+            lte: new Date(fechaHasta),
+          };
+        } else if (fechaDesde) {
+          filtroVentas.fechaVenta = { gte: new Date(fechaDesde) };
+        } else if (fechaHasta) {
+          filtroVentas.fechaVenta = { lte: new Date(fechaHasta) };
+        }
+
+        if (puntoVentaIdFiltro) {
+          filtroVentas.puntoVentaId = puntoVentaIdFiltro;
+        } else if (puntosVentaIdsEmpresa && puntosVentaIdsEmpresa.length > 0) {
+          filtroVentas.puntoVentaId = {
+            in: puntosVentaIdsEmpresa,
+          };
+        }
+
+        const ventas = await this.prisma.venta.findMany({
+          where: filtroVentas,
+          select: {
+            total: true,
+            metodoPago: true,
+            fechaVenta: true,
+            puntoVentaId: true,
+          },
+        });
+
+        console.log(`[CONSOLIDADO] Ventas encontradas: ${ventas.length}`);
+        console.log(`[CONSOLIDADO] Filtro ventas:`, JSON.stringify(filtroVentas, null, 2));
+        if (ventas.length > 0) {
+          console.log(`[CONSOLIDADO] Primeras 3 ventas:`, ventas.slice(0, 3).map(v => ({
+            total: Number(v.total),
+            metodoPago: v.metodoPago,
+            fechaVenta: v.fechaVenta,
+          })));
+        }
+
+        // Procesar ventas de productos
+        for (const venta of ventas) {
+          const monto = Number(venta.total || 0);
+          totalDeclarado += monto;
+          totalCalculado += monto;
+
+          // Clasificar por método de pago (usar formato original)
+          const metodoPagoStr = (venta.metodoPago || '').trim();
+          const metodoPagoUpper = metodoPagoStr.toUpperCase();
+          
+          console.log(`[CONSOLIDADO] Procesando venta: monto=$${monto}, metodoPago="${metodoPagoStr}" (upper: "${metodoPagoUpper}")`);
+          
+          // Clasificar según la lógica existente
+          if (metodoPagoUpper === 'EFECTIVO') {
+            totalEfectivo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como EFECTIVO`);
+          } else if (metodoPagoUpper === 'TARJETA_CREDITO' || metodoPagoUpper === 'TARJETA_DEBITO' || metodoPagoUpper === 'TARJETA' || metodoPagoUpper.includes('TARJETA')) {
+            totalTarjetas += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TARJETAS`);
+          } else if (metodoPagoUpper === 'TRANSFERENCIA' || metodoPagoUpper === 'TRANSFERENCIA_BANCARIA' || metodoPagoUpper.includes('TRANSFERENCIA')) {
+            totalTransferencias += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TRANSFERENCIAS`);
+          } else if (metodoPagoStr === 'Rumbo' || metodoPagoUpper === 'RUMBO') {
+            totalRumbo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como RUMBO`);
+          } else if (metodoPagoStr === 'Bonos vive terpel' || metodoPagoStr.toLowerCase().includes('bonos') || metodoPagoStr.toLowerCase().includes('vive terpel')) {
+            totalBonosViveTerpel += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como BONOS VIVE TERPEL`);
+          } else {
+            totalOtros += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como OTROS (método desconocido: "${metodoPagoStr}")`);
+          }
+
+          // Consolidar en map para detalle
+          if (metodosPagoMap.has(metodoPagoStr)) {
+            const existente = metodosPagoMap.get(metodoPagoStr)!;
+            existente.monto += monto;
+          } else {
+            metodosPagoMap.set(metodoPagoStr, {
+              monto,
+              porcentaje: 0,
+              observaciones: null,
+            });
+          }
+        }
+
+        // 2. OBTENER VENTAS DE PRODUCTOS (HistorialVentasProductos)
+        // IMPORTANTE: Usar fechas originales con hora para filtrar historial de ventas
+        const filtroHistorialVentas: any = {};
+
+        if (fechaDesde && fechaHasta) {
+          filtroHistorialVentas.fechaVenta = {
+            gte: new Date(fechaDesde),
+            lte: new Date(fechaHasta),
+          };
+        } else if (fechaDesde) {
+          filtroHistorialVentas.fechaVenta = { gte: new Date(fechaDesde) };
+        } else if (fechaHasta) {
+          filtroHistorialVentas.fechaVenta = { lte: new Date(fechaHasta) };
+        }
+
+        if (puntoVentaIdFiltro) {
+          filtroHistorialVentas.puntoVentaId = puntoVentaIdFiltro;
+        } else if (puntosVentaIdsEmpresa && puntosVentaIdsEmpresa.length > 0) {
+          filtroHistorialVentas.puntoVentaId = {
+            in: puntosVentaIdsEmpresa,
+          };
+        }
+
+        const historialVentas = await this.prisma.historialVentasProductos.findMany({
+          where: filtroHistorialVentas,
+          select: {
+            valorTotal: true,
+            fechaVenta: true,
+            metodoPago: {
+              select: {
+                codigo: true,
+                nombre: true,
+              },
+            },
+          },
+        });
+
+        console.log(`[CONSOLIDADO] Historial ventas encontrado: ${historialVentas.length}`);
+        console.log(`[CONSOLIDADO] Filtro historial ventas:`, JSON.stringify(filtroHistorialVentas, null, 2));
+        if (historialVentas.length > 0) {
+          console.log(`[CONSOLIDADO] Primeras 3 historial ventas:`, historialVentas.slice(0, 3).map(v => ({
+            valorTotal: v.valorTotal,
+            metodoPagoCodigo: v.metodoPago?.codigo,
+            metodoPagoNombre: v.metodoPago?.nombre,
+            fechaVenta: v.fechaVenta,
+          })));
+        }
+
+        // Procesar historial de ventas de productos
+        for (const venta of historialVentas) {
+          const monto = Number(venta.valorTotal || 0);
+          totalDeclarado += monto;
+          totalCalculado += monto;
+
+          // Clasificar por método de pago (usar formato original)
+          const metodoPagoNombre = (venta.metodoPago?.nombre || venta.metodoPago?.codigo || '').trim();
+          const metodoPagoUpper = metodoPagoNombre.toUpperCase();
+          
+          console.log(`[CONSOLIDADO] Procesando historial venta: monto=$${monto}, metodoPagoNombre="${metodoPagoNombre}" (upper: "${metodoPagoUpper}"), codigo="${venta.metodoPago?.codigo}"`);
+          
+          // Clasificar según la lógica existente
+          if (metodoPagoUpper === 'EFECTIVO') {
+            totalEfectivo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como EFECTIVO`);
+          } else if (metodoPagoUpper === 'TARJETA_CREDITO' || metodoPagoUpper === 'TARJETA_DEBITO' || metodoPagoUpper === 'TARJETA' || metodoPagoUpper.includes('TARJETA')) {
+            totalTarjetas += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TARJETAS`);
+          } else if (metodoPagoUpper === 'TRANSFERENCIA' || metodoPagoUpper === 'TRANSFERENCIA_BANCARIA' || metodoPagoUpper.includes('TRANSFERENCIA')) {
+            totalTransferencias += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TRANSFERENCIAS`);
+          } else if (metodoPagoNombre === 'Rumbo' || metodoPagoUpper === 'RUMBO' || venta.metodoPago?.codigo === 'Rumbo') {
+            totalRumbo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como RUMBO`);
+          } else if (metodoPagoNombre === 'Bonos vive terpel' || metodoPagoNombre.toLowerCase().includes('bonos') || metodoPagoNombre.toLowerCase().includes('vive terpel') || venta.metodoPago?.codigo === 'Bonos vive terpel') {
+            totalBonosViveTerpel += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como BONOS VIVE TERPEL`);
+          } else {
+            totalOtros += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como OTROS (método desconocido: nombre="${metodoPagoNombre}", codigo="${venta.metodoPago?.codigo}")`);
+          }
+
+          // Consolidar en map
+          if (metodosPagoMap.has(metodoPagoNombre)) {
+            const existente = metodosPagoMap.get(metodoPagoNombre)!;
+            existente.monto += monto;
+          } else {
+            metodosPagoMap.set(metodoPagoNombre, {
+              monto,
+              porcentaje: 0,
+              observaciones: null,
+            });
+          }
+        }
+
+        // 3. OBTENER VENTAS DE COMBUSTIBLE desde CIERRES DE TURNO
+        // IMPORTANTE: Filtrar por fechaInicio y fechaFin del TURNO (no por fechaCierre)
+        // El frontend envía fecha inicio (ej: 01/09/2025 12:00 AM = 00:00:00) y fecha fin (ej: 01/09/2025 11:59 PM = 23:59:59)
+        // Se deben mostrar todos los cierres de turnos que se solapen con ese rango
+        // Un turno se solapa si: fechaInicio <= fechaHasta AND (fechaFin IS NULL OR fechaFin >= fechaDesde)
+        
+        console.log(`[CONSOLIDADO] Filtrando por fechas del TURNO (fechaInicio y fechaFin):`);
+        console.log(`[CONSOLIDADO]   fechaDesde: ${fechaDesdeSolo} (${fechaDesdeFinal?.toISOString()})`);
+        console.log(`[CONSOLIDADO]   fechaHasta: ${fechaHastaSolo} (${fechaHastaFinal?.toISOString()})`);
+        console.log(`[CONSOLIDADO]   fechaDesdeFinal (con hora): ${fechaDesdeFinal?.toISOString()}`);
+        console.log(`[CONSOLIDADO]   fechaHastaFinal (con hora): ${fechaHastaFinal?.toISOString()}`);
+
+        // Construir query usando Prisma.$queryRaw con template literals
+        // Filtrar por fechas del turno con lógica de solapamiento
+        let cierreIds: string[] = [];
+
+        if (fechaDesdeFinal || fechaHastaFinal || puntoVentaIdFiltro || (puntosVentaIdsEmpresa && puntosVentaIdsEmpresa.length > 0)) {
+          // Construir condiciones WHERE dinámicamente
+          // ORDEN: Primero filtrar por puntoVentaId, luego por fecha y hora
+          const conditions: string[] = [];
+
+          // 1. PRIMERO: Filtrar por punto de venta
+          if (puntoVentaIdFiltro) {
+            conditions.push(`t."puntoVentaId" = '${puntoVentaIdFiltro.replace(/'/g, "''")}'`);
+          } else if (puntosVentaIdsEmpresa && puntosVentaIdsEmpresa.length > 0) {
+            const puntosVentaList = puntosVentaIdsEmpresa.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
+            conditions.push(`t."puntoVentaId" IN (${puntosVentaList})`);
+          }
+
+          // 2. SEGUNDO: Filtrar por fechas del turno con lógica de solapamiento
+          // Un turno se solapa con el rango si:
+          // - El turno inicia antes o igual al final del rango (t."fechaInicio" <= fechaHasta)
+          // - Y el turno termina después o igual al inicio del rango (t."fechaFin" >= fechaDesde o es NULL)
+          if (fechaDesdeFinal && fechaHastaFinal) {
+            // Rango completo: usar lógica de solapamiento con fecha Y hora
+            const fechaDesdeISO = fechaDesdeFinal.toISOString();
+            const fechaHastaISO = fechaHastaFinal.toISOString();
+            conditions.push(`t."fechaInicio" <= '${fechaHastaISO}'::timestamp`);
+            conditions.push(`(t."fechaFin" IS NULL OR t."fechaFin" >= '${fechaDesdeISO}'::timestamp)`);
+            
+            // 3. TERCERO: Filtrar por hora (horaInicio y horaFin del turno)
+            // Solo aplicar filtro de hora si se proporcionaron horas válidas
+            if (horaDesde && horaHasta) {
+              // LÓGICA CORRECTA DE SOLAPAMIENTO:
+              // Un turno se solapa con el rango si hay intersección real (no solo tocar límites)
+              // Condición: horaInicio < horaHasta AND horaFin > horaDesde
+              // Esto EXCLUYE turnos que solo tocan los límites sin solaparse realmente
+              // 
+              // Ejemplos:
+              // - Rango 06:00-14:00, Turno 06:00-14:00 → 06:00 < 14:00 ✓ AND 14:00 > 06:00 ✓ → SÍ
+              // - Rango 06:00-14:00, Turno 14:00-22:00 → 14:00 < 14:00 ✗ → NO (solo toca límite)
+              // - Rango 14:00-22:00, Turno 06:00-14:00 → 06:00 < 22:00 ✓ AND 14:00 > 14:00 ✗ → NO (solo toca límite)
+              // - Rango 14:00-22:00, Turno 14:00-22:00 → 14:00 < 22:00 ✓ AND 22:00 > 14:00 ✓ → SÍ
+              // - Rango 22:00-22:00, Turno 14:00-22:00 → 14:00 < 22:00 ✓ AND 22:00 > 22:00 ✗ → NO (solo toca límite)
+              // 
+              // CASO ESPECIAL: Si horaDesde === horaHasta (rango de un solo punto)
+              // Entonces incluimos turnos que contengan ese punto exacto
+              if (horaDesde === horaHasta) {
+                // Rango de un solo punto: incluir turnos que contengan ese punto
+                conditions.push(`(
+                  t."horaInicio" <= '${horaHasta}' 
+                  AND (t."horaFin" IS NULL OR t."horaFin" >= '${horaDesde}')
+                )`);
+                console.log(`[CONSOLIDADO] Filtrando por rango de fechas Y HORAS del turno (rango de un punto: ${horaDesde})`);
+              } else {
+                // Rango normal: usar solapamiento estricto (excluir límites)
+                // IMPORTANTE: Si horaFin es NULL, el turno está activo y termina al final del día
+                // Para que se solape, debe cumplir: horaInicio < horaHasta
+                // Y si tiene horaFin, debe cumplir: horaFin > horaDesde
+                conditions.push(`(
+                  t."horaInicio" < '${horaHasta}' 
+                  AND (
+                    t."horaFin" IS NULL 
+                    OR t."horaFin" > '${horaDesde}'
+                  )
+                )`);
+                console.log(`[CONSOLIDADO] Filtrando por rango de fechas Y HORAS del turno (solapamiento estricto)`);
+                console.log(`[CONSOLIDADO]   - Condición: horaInicio < ${horaHasta} AND (horaFin IS NULL OR horaFin > ${horaDesde})`);
+              }
+              console.log(`[CONSOLIDADO]   - horaDesde: ${horaDesde}, horaHasta: ${horaHasta}`);
+              
+              // QUERY DE DIAGNÓSTICO: Verificar qué turnos se están incluyendo
+              const diagnosticoTurnosQuery = `
+                SELECT 
+                  t.id,
+                  t."horaInicio",
+                  t."horaFin",
+                  t."fechaInicio",
+                  t."fechaFin"
+                FROM turnos.turnos t
+                WHERE 
+                  ${conditions.join(' AND ')}
+                ORDER BY t."horaInicio"
+                LIMIT 10
+              `;
+              
+              try {
+                const turnosDiagnostico: any[] = await this.prisma.$queryRawUnsafe(diagnosticoTurnosQuery);
+                console.log(`[CONSOLIDADO] ========== DIAGNÓSTICO TURNOS INCLUIDOS ==========`);
+                console.log(`[CONSOLIDADO] Turnos que cumplen el filtro: ${turnosDiagnostico.length}`);
+                turnosDiagnostico.forEach((t, idx) => {
+                  console.log(`[CONSOLIDADO] Turno ${idx + 1}:`);
+                  console.log(`[CONSOLIDADO]   - ID: ${t.id}`);
+                  console.log(`[CONSOLIDADO]   - horaInicio: ${t.horaInicio}`);
+                  console.log(`[CONSOLIDADO]   - horaFin: ${t.horaFin || 'NULL'}`);
+                  console.log(`[CONSOLIDADO]   - fechaInicio: ${t.fechaInicio}`);
+                  console.log(`[CONSOLIDADO]   - fechaFin: ${t.fechaFin || 'NULL'}`);
+                  
+                  // Verificar si realmente se solapa
+                  if (horaDesde && horaHasta && horaDesde !== horaHasta) {
+                    const horaInicioTurno = t.horaInicio;
+                    const horaFinTurno = t.horaFin;
+                    const seSolapa = horaInicioTurno < horaHasta && (horaFinTurno ? horaFinTurno > horaDesde : horaInicioTurno < horaHasta);
+                    console.log(`[CONSOLIDADO]   - ¿Se solapa con ${horaDesde}-${horaHasta}? ${seSolapa ? 'SÍ' : 'NO'}`);
+                    if (!seSolapa) {
+                      console.warn(`[CONSOLIDADO]     ⚠️ Este turno NO debería incluirse pero está en el resultado`);
+                    }
+                  }
+                });
+                console.log(`[CONSOLIDADO] ================================================`);
+              } catch (error) {
+                console.error(`[CONSOLIDADO] Error en diagnóstico de turnos:`, error);
+              }
+            } else {
+              console.log(`[CONSOLIDADO] Filtrando por rango de fechas del turno (solapamiento, sin hora)`);
+            }
+          } else {
+            // Si solo hay una fecha, aplicar filtros individuales
+            if (fechaDesdeFinal) {
+              const fechaDesdeISO = fechaDesdeFinal.toISOString();
+              // El turno debe terminar después o igual a fechaDesde (o no tener fechaFin)
+              conditions.push(`(t."fechaFin" IS NULL OR t."fechaFin" >= '${fechaDesdeISO}'::timestamp)`);
+              if (horaDesde) {
+                conditions.push(`(t."horaFin" IS NULL OR t."horaFin" >= '${horaDesde}')`);
+              }
+            }
+            if (fechaHastaFinal) {
+              const fechaHastaISO = fechaHastaFinal.toISOString();
+              // El turno debe iniciar antes o igual a fechaHasta
+              conditions.push(`t."fechaInicio" <= '${fechaHastaISO}'::timestamp`);
+              if (horaHasta) {
+                conditions.push(`t."horaInicio" <= '${horaHasta}'`);
+              }
+            }
+          }
+
+          const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+          const querySql = `
+            SELECT c.id
+            FROM turnos.cierres_turno c
+            INNER JOIN turnos.turnos t ON c."turnoId" = t.id
+            ${whereClause}
+          `;
+
+          console.log(`[CONSOLIDADO] ========== QUERY SQL (FECHAS DEL TURNO) ==========`);
+          console.log(`[CONSOLIDADO] Query completa:`);
+          console.log(querySql.trim());
+          console.log(`[CONSOLIDADO] Filtro aplicado:`);
+          console.log(`  - fechaDesde: ${fechaDesdeFinal?.toISOString() || 'ninguna'}`);
+          console.log(`  - fechaHasta: ${fechaHastaFinal?.toISOString() || 'ninguna'}`);
+          console.log(`  - puntoVentaIdFiltro: ${puntoVentaIdFiltro || 'ninguno'}`);
+          console.log(`[CONSOLIDADO] ==============================================`);
+          
+          // Ejecutar query raw usando $queryRawUnsafe (sin parámetros, valores directos)
+          try {
+            const cierresIdsRaw: any[] = await this.prisma.$queryRawUnsafe(querySql);
+            cierreIds = cierresIdsRaw.map((c: any) => c.id);
+            console.log(`[CONSOLIDADO] IDs de cierres encontrados: ${cierreIds.length}`);
+            
+            if (cierreIds.length > 0) {
+              console.log(`[CONSOLIDADO] Primeros 5 IDs:`, cierreIds.slice(0, 5));
+            }
+          } catch (error) {
+            console.error(`[CONSOLIDADO] Error ejecutando query raw:`, error);
+            throw error;
+          }
+        }
+
+
+        // Procesar ventas de productos
+        for (const venta of ventas) {
+          const monto = Number(venta.total || 0);
+          totalDeclarado += monto;
+          totalCalculado += monto;
+
+          // Clasificar por método de pago (usar formato original)
+          const metodoPagoStr = (venta.metodoPago || '').trim();
+          const metodoPagoUpper = metodoPagoStr.toUpperCase();
+          
+          console.log(`[CONSOLIDADO] Procesando venta: monto=$${monto}, metodoPago="${metodoPagoStr}" (upper: "${metodoPagoUpper}")`);
+          
+          // Clasificar según la lógica existente
+          if (metodoPagoUpper === 'EFECTIVO') {
+            totalEfectivo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como EFECTIVO`);
+          } else if (metodoPagoUpper === 'TARJETA_CREDITO' || metodoPagoUpper === 'TARJETA_DEBITO' || metodoPagoUpper === 'TARJETA' || metodoPagoUpper.includes('TARJETA')) {
+            totalTarjetas += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TARJETAS`);
+          } else if (metodoPagoUpper === 'TRANSFERENCIA' || metodoPagoUpper === 'TRANSFERENCIA_BANCARIA' || metodoPagoUpper.includes('TRANSFERENCIA')) {
+            totalTransferencias += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TRANSFERENCIAS`);
+          } else if (metodoPagoStr === 'Rumbo' || metodoPagoUpper === 'RUMBO') {
+            totalRumbo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como RUMBO`);
+          } else if (metodoPagoStr === 'Bonos vive terpel' || metodoPagoStr.toLowerCase().includes('bonos') || metodoPagoStr.toLowerCase().includes('vive terpel')) {
+            totalBonosViveTerpel += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como BONOS VIVE TERPEL`);
+          } else {
+            totalOtros += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como OTROS (método desconocido: "${metodoPagoStr}")`);
+          }
+
+          // Consolidar en map para detalle
+          if (metodosPagoMap.has(metodoPagoStr)) {
+            const existente = metodosPagoMap.get(metodoPagoStr)!;
+            existente.monto += monto;
+          } else {
+            metodosPagoMap.set(metodoPagoStr, {
+              monto,
+              porcentaje: 0,
+              observaciones: null,
+            });
+          }
+        }
+
+
+        // Procesar historial de ventas de productos
+        for (const venta of historialVentas) {
+          const monto = Number(venta.valorTotal || 0);
+          totalDeclarado += monto;
+          totalCalculado += monto;
+
+          // Clasificar por método de pago (usar formato original)
+          const metodoPagoNombre = (venta.metodoPago?.nombre || venta.metodoPago?.codigo || '').trim();
+          const metodoPagoUpper = metodoPagoNombre.toUpperCase();
+          
+          console.log(`[CONSOLIDADO] Procesando historial venta: monto=$${monto}, metodoPagoNombre="${metodoPagoNombre}" (upper: "${metodoPagoUpper}"), codigo="${venta.metodoPago?.codigo}"`);
+          
+          // Clasificar según la lógica existente
+          if (metodoPagoUpper === 'EFECTIVO') {
+            totalEfectivo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como EFECTIVO`);
+          } else if (metodoPagoUpper === 'TARJETA_CREDITO' || metodoPagoUpper === 'TARJETA_DEBITO' || metodoPagoUpper === 'TARJETA' || metodoPagoUpper.includes('TARJETA')) {
+            totalTarjetas += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TARJETAS`);
+          } else if (metodoPagoUpper === 'TRANSFERENCIA' || metodoPagoUpper === 'TRANSFERENCIA_BANCARIA' || metodoPagoUpper.includes('TRANSFERENCIA')) {
+            totalTransferencias += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como TRANSFERENCIAS`);
+          } else if (metodoPagoNombre === 'Rumbo' || metodoPagoUpper === 'RUMBO' || venta.metodoPago?.codigo === 'Rumbo') {
+            totalRumbo += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como RUMBO`);
+          } else if (metodoPagoNombre === 'Bonos vive terpel' || metodoPagoNombre.toLowerCase().includes('bonos') || metodoPagoNombre.toLowerCase().includes('vive terpel') || venta.metodoPago?.codigo === 'Bonos vive terpel') {
+            totalBonosViveTerpel += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como BONOS VIVE TERPEL`);
+          } else {
+            totalOtros += monto;
+            console.log(`[CONSOLIDADO] → Clasificado como OTROS (método desconocido: nombre="${metodoPagoNombre}", codigo="${venta.metodoPago?.codigo}")`);
+          }
+
+          // Consolidar en map
+          if (metodosPagoMap.has(metodoPagoNombre)) {
+            const existente = metodosPagoMap.get(metodoPagoNombre)!;
+            existente.monto += monto;
+          } else {
+            metodosPagoMap.set(metodoPagoNombre, {
+              monto,
+              porcentaje: 0,
+              observaciones: null,
+            });
+          }
+        }
+
+        // 3. OBTENER VENTAS DE COMBUSTIBLE desde CIERRES DE TURNO
+        // Si no hay cierres, inicializar array vacío
+        let cierres: any[] = [];
+        
+        if (cierreIds.length > 0) {
+          // Obtener cierres completos con métodos de pago usando los IDs encontrados
+          cierres = await this.prisma.cierreTurno.findMany({
+            where: {
+              id: { in: cierreIds },
+            },
+            select: {
+              id: true,
+              fechaCierre: true,
+              totalEfectivo: true,
+              totalTarjetas: true,
+              totalTransferencias: true,
+              totalRumbo: true,
+              totalBonosViveTerpel: true,
+              totalOtros: true,
+              valorTotalGeneral: true,
+              totalDeclarado: true,
+              diferencia: true,
+              metodosPago: {
+                select: {
+                  metodoPago: true,
+                  monto: true,
+                  porcentaje: true,
+                  observaciones: true,
+                },
+              },
+            },
+          });
+        }
+
+        console.log(`[CONSOLIDADO] Cierres encontrados: ${cierres.length}`);
+        
+        // Log de diagnóstico: mostrar fechas de cierres encontrados
+        if (cierres.length > 0) {
+          console.log(`[CONSOLIDADO] ===== DIAGNÓSTICO DE CIERRES ENCONTRADOS =====`);
+          console.log(`[CONSOLIDADO] Filtro aplicado (por fechas del turno): fechaDesde=${fechaDesdeFinal?.toISOString() || 'ninguna'}, fechaHasta=${fechaHastaFinal?.toISOString() || 'ninguna'}`);
+          
+          // Agrupar cierres por fecha para ver si hay días anteriores
+          const cierresPorFecha = new Map<string, number>();
+          
+          cierres.forEach((c, index) => {
+            const fechaCierreUTC = new Date(c.fechaCierre);
+            const fechaSolo = `${fechaCierreUTC.getUTCFullYear()}-${String(fechaCierreUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(fechaCierreUTC.getUTCDate()).padStart(2, '0')}`;
+            
+            // Contar por fecha
+            if (cierresPorFecha.has(fechaSolo)) {
+              cierresPorFecha.set(fechaSolo, cierresPorFecha.get(fechaSolo)! + 1);
+            } else {
+              cierresPorFecha.set(fechaSolo, 1);
+            }
+            
+            if (index < 5) { // Solo mostrar los primeros 5 para no saturar logs
+              console.log(`[CONSOLIDADO] Cierre ${index + 1}:`);
+              console.log(`[CONSOLIDADO]   - ID: ${c.id}`);
+              console.log(`[CONSOLIDADO]   - fechaCierre (ISO): ${c.fechaCierre.toISOString()}`);
+              console.log(`[CONSOLIDADO]   - fechaCierre (solo fecha): ${fechaSolo}`);
+              console.log(`[CONSOLIDADO]   - totalEfectivo: ${Number(c.totalEfectivo || 0)}`);
+              console.log(`[CONSOLIDADO]   - totalTarjetas: ${Number(c.totalTarjetas || 0)}`);
+              console.log(`[CONSOLIDADO]   - totalRumbo: ${Number(c.totalRumbo || 0)}`);
+            }
+          });
+          
+          console.log(`[CONSOLIDADO] Cierres agrupados por fecha:`);
+          cierresPorFecha.forEach((count, fecha) => {
+            console.log(`[CONSOLIDADO]   - ${fecha}: ${count} cierre(s)`);
+          });
+          
+          console.log(`[CONSOLIDADO] ================================================`);
+        } else {
+          console.warn(`[CONSOLIDADO] ⚠️ No se encontraron cierres con el filtro aplicado`);
+          console.warn(`[CONSOLIDADO]   Filtro (por fechas del turno): fechaDesde=${fechaDesdeFinal?.toISOString() || 'ninguna'}, fechaHasta=${fechaHastaFinal?.toISOString() || 'ninguna'}`);
+        }
+
+        // Sumar directamente los totales de los cierres
+        for (const cierre of cierres) {
+          totalEfectivo += Number(cierre.totalEfectivo || 0);
+          totalTarjetas += Number(cierre.totalTarjetas || 0);
+          totalTransferencias += Number(cierre.totalTransferencias || 0);
+          totalRumbo += Number(cierre.totalRumbo || 0);
+          totalBonosViveTerpel += Number(cierre.totalBonosViveTerpel || 0);
+          totalOtros += Number(cierre.totalOtros || 0);
+          totalDeclarado += Number(cierre.totalDeclarado || 0);
+          totalCalculado += Number(cierre.valorTotalGeneral || 0);
+
+          // Consolidar métodos de pago detallados
+          for (const metodo of cierre.metodosPago) {
+            const key = metodo.metodoPago;
+            if (metodosPagoMap.has(key)) {
+              const existente = metodosPagoMap.get(key)!;
+              existente.monto += Number(metodo.monto || 0);
+            } else {
+              metodosPagoMap.set(key, {
+                monto: Number(metodo.monto || 0),
+                porcentaje: Number(metodo.porcentaje || 0),
+                observaciones: metodo.observaciones,
+              });
+            }
+          }
+        }
+
+        console.log(`[CONSOLIDADO] Totales desde cierres:`, {
+          totalEfectivo: Math.round(totalEfectivo * 100) / 100,
+          totalTarjetas: Math.round(totalTarjetas * 100) / 100,
+          totalTransferencias: Math.round(totalTransferencias * 100) / 100,
+          totalRumbo: Math.round(totalRumbo * 100) / 100,
+          totalBonosViveTerpel: Math.round(totalBonosViveTerpel * 100) / 100,
+          totalOtros: Math.round(totalOtros * 100) / 100,
+        });
+
+        // Calcular porcentajes para métodos de pago
+        const metodosPagoConsolidados = Array.from(metodosPagoMap.entries()).map(([metodoPago, data]) => ({
+          metodoPago,
+          monto: Math.round(data.monto * 100) / 100,
+          porcentaje: totalDeclarado > 0 
+            ? Math.round((data.monto / totalDeclarado) * 100 * 100) / 100 
+            : 0,
+          observaciones: data.observaciones,
+        }));
+
+        // Calcular diferencia
+        const diferencia = totalDeclarado - totalCalculado;
+
+        resumenFinanciero = {
+          totalDeclarado: Math.round(totalDeclarado * 100) / 100,
+          totalCalculado: Math.round(totalCalculado * 100) / 100,
+          diferencia: Math.round(diferencia * 100) / 100,
+          metodosPago: metodosPagoConsolidados,
+          totalEfectivo: Math.round(totalEfectivo * 100) / 100,
+          totalTarjetas: Math.round(totalTarjetas * 100) / 100,
+          totalTransferencias: Math.round(totalTransferencias * 100) / 100,
+          totalRumbo: Math.round(totalRumbo * 100) / 100,
+          totalBonosViveTerpel: Math.round(totalBonosViveTerpel * 100) / 100,
+          totalOtros: Math.round(totalOtros * 100) / 100,
+          observaciones: `Resumen financiero consolidado del período ${fechaDesde ? new Date(fechaDesde).toLocaleDateString() : 'sin inicio'} al ${fechaHasta ? new Date(fechaHasta).toLocaleDateString() : 'sin fin'}`,
+        };
+
+        console.log(`[CONSOLIDADO] ========== RESUMEN FINANCIERO ==========`);
+        console.log(`[CONSOLIDADO] Ventas productos (Venta): ${ventas.length}`);
+        console.log(`[CONSOLIDADO] Historial ventas productos: ${historialVentas.length}`);
+        console.log(`[CONSOLIDADO] Cierres de turno: ${cierres.length}`);
+        console.log(`[CONSOLIDADO] -----------------------------------------`);
+        console.log(`[CONSOLIDADO] Totales calculados:`, {
+          totalEfectivo: resumenFinanciero.totalEfectivo,
+          totalTarjetas: resumenFinanciero.totalTarjetas,
+          totalTransferencias: resumenFinanciero.totalTransferencias,
+          totalRumbo: resumenFinanciero.totalRumbo,
+          totalBonosViveTerpel: resumenFinanciero.totalBonosViveTerpel,
+          totalOtros: resumenFinanciero.totalOtros,
+          totalDeclarado: resumenFinanciero.totalDeclarado,
+          totalCalculado: resumenFinanciero.totalCalculado,
+        });
+        console.log(`[CONSOLIDADO] =========================================`);
+      } catch (error) {
+        console.error('[CONSOLIDADO] Error calculando resumen financiero:', error);
+        // No lanzar error, solo dejar resumenFinanciero como null
+      }
+
       return {
         periodo: {
           desde: fechaDesde,
@@ -510,6 +1230,7 @@ export class SurtidoresResolver {
           totalSurtidores: surtidores.length,
           totalMangueras: totalManguerasActivas,
         },
+        resumenFinanciero: resumenFinanciero,
         fechaGeneracion: new Date(),
       };
     } catch (error) {

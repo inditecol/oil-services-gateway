@@ -133,6 +133,12 @@ export class ResumenFinancieroTurno {
   totalTransferencias: number;
 
   @Field(() => Float)
+  totalRumbo: number;
+
+  @Field(() => Float)
+  totalBonosViveTerpel: number;
+
+  @Field(() => Float)
   totalOtros: number;
 
   @Field({ nullable: true })

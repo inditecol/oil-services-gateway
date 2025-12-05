@@ -17,6 +17,7 @@ import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
 import { ProcessShiftResolver } from './process-shift.resolver';
 import { ProcessShiftService } from './services/process-shift.service';
+import { MovimientosEfectivoService } from './services/movimientos-efectivo.service';
 
 @Module({
   providers: [
@@ -37,6 +38,7 @@ import { ProcessShiftService } from './services/process-shift.service';
     HistorialVentasService,
     ProcessShiftService,
     ProcessShiftResolver,
+    MovimientosEfectivoService,
   ],
   exports: [
     InventoryService, 
@@ -48,6 +50,7 @@ import { ProcessShiftService } from './services/process-shift.service';
     // Exportar nuevos servicios
     MetodosPagoService,
     HistorialVentasService,
+    MovimientosEfectivoService,
   ],
 })
 export class InventoryModule {} 

@@ -243,6 +243,12 @@ export class ResumenFinanciero {
   totalTransferencias: number;
 
   @Field(() => Float)
+  totalRumbo: number;
+
+  @Field(() => Float)
+  totalBonosViveTerpel: number;
+
+  @Field(() => Float)
   totalOtros: number;
 
   @Field({ nullable: true })
@@ -794,4 +800,45 @@ export class EstadisticasMetodosPagoResponse {
 
   @Field()
   fechaGeneracion: Date;
+}
+
+// === TIPOS PARA MOVIMIENTOS DE EFECTIVO ===
+
+@ObjectType()
+export class MovimientoEfectivo {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  tipo: string; // "INGRESO" o "EGRESO"
+
+  @Field(() => Float)
+  monto: number;
+
+  @Field()
+  concepto: string;
+
+  @Field({ nullable: true })
+  detalle?: string;
+
+  @Field({ nullable: true })
+  observaciones?: string;
+
+  @Field()
+  fecha: Date;
+
+  @Field()
+  nombreResponsable: string; // Nombre completo del usuario responsable
+}
+
+@ObjectType()
+export class MovimientosEfectivoResponse {
+  @Field(() => Float)
+  totalIngresos: number;
+
+  @Field(() => Float)
+  totalEgresos: number;
+
+  @Field(() => [MovimientoEfectivo])
+  movimientos: MovimientoEfectivo[];
 } 
