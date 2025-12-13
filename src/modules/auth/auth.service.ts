@@ -61,18 +61,18 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Generar token JWT
+    const tokenExpiration = this.configService.get<string>('JWT_EXPIRES_IN') || '5m';
+
     const payload = {
       sub: user.id,
       email: user.email,
       rol: user.rol.nombre,
-      role: user.rol.nombre, // Alias para compatibilidad con frontend
+      role: user.rol.nombre,
       rolId: user.rolId,
       username: user.username,
     };
 
     const access_token = this.jwtService.sign(payload);
-
     return {
       access_token,
       user: {
@@ -150,7 +150,7 @@ export class AuthService {
         })),
       },
       tokenType: 'Bearer',
-      expiresIn: '1d',
+      expiresIn: tokenExpiration,
     };
   }
 

@@ -487,6 +487,216 @@ export class SurtidoresService {
     try {
       const skip = (page - 1) * limit;
       
+      // Obtener el ID de la manguera primero
+      const manguera = await this.prisma.mangueraSurtidor.findFirst({
+        where: {
+          numero: numeroManguera,
+          surtidor: {
+            numero: numeroSurtidor,
+            puntoVentaId: puntoVentaId,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!manguera) {
+        return {
+          historial: [],
+          total: 0,
+          totalPages: 0,
+          currentPage: page,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        };
+      }
+
+      // Si hay fechas, filtrar por turno usando query raw para JOIN con turnos
+      let historialIds: string[] = [];
+      
+      if (fechaDesde && fechaHasta) {
+        // Filtrar por fechaInicio, fechaFin, horaInicio y horaFin del turno
+        // Un turno se solapa con el rango si:
+        // - fechaInicio <= fechaHasta AND (fechaFin IS NULL OR fechaFin >= fechaDesde)
+        // - horaInicio < horaHasta AND (horaFin IS NULL OR horaFin > horaDesde)
+        const fechaDesdeISO = fechaDesde.toISOString();
+        const fechaHastaISO = fechaHasta.toISOString();
+        
+        // Extraer hora en formato HH:mm
+        const extraerHoraHHmm = (dateInput: Date): string => {
+          const hours = dateInput.getUTCHours().toString().padStart(2, '0');
+          const minutes = dateInput.getUTCMinutes().toString().padStart(2, '0');
+          return `${hours}:${minutes}`;
+        };
+        
+        const horaDesde = extraerHoraHHmm(fechaDesde);
+        const horaHasta = extraerHoraHHmm(fechaHasta);
+        
+        // Escapar valores para prevenir SQL injection
+        const mangueraIdEscaped = manguera.id.replace(/'/g, "''");
+        const fechaDesdeEscaped = fechaDesdeISO.replace(/'/g, "''");
+        const fechaHastaEscaped = fechaHastaISO.replace(/'/g, "''");
+        const horaDesdeEscaped = horaDesde.replace(/'/g, "''");
+        const horaHastaEscaped = horaHasta.replace(/'/g, "''");
+        
+        // Construir condición de hora según si es rango de un punto o rango normal
+        let condicionHora: string;
+        if (horaDesde === horaHasta) {
+          // Rango de un solo punto: incluir turnos que contengan ese punto
+          condicionHora = `(t."horaInicio" <= '${horaHastaEscaped}' AND (t."horaFin" IS NULL OR t."horaFin" >= '${horaDesdeEscaped}'))`;
+        } else {
+          // Rango normal: usar solapamiento estricto (excluir límites)
+          condicionHora = `(t."horaInicio" < '${horaHastaEscaped}' AND (t."horaFin" IS NULL OR t."horaFin" > '${horaDesdeEscaped}'))`;
+        }
+        
+        // NOTA: HistorialLectura.turnoId contiene el ID de CierreTurno (no de Turno)
+        // Necesitamos hacer JOIN: HistorialLectura -> CierreTurno -> Turno
+        // Si no hay turno asociado, usamos fechaLectura como fallback
+        const querySql = `
+          SELECT hl.id
+          FROM inventario.historial_lecturas hl
+          LEFT JOIN turnos.cierres_turno c ON hl."turnoId" = c.id
+          LEFT JOIN turnos.turnos t ON c."turnoId" = t.id
+          WHERE hl."mangueraId" = '${mangueraIdEscaped}'
+            AND (
+              -- Si tiene turno, filtrar por fechaInicio, fechaFin, horaInicio y horaFin del turno
+              (hl."turnoId" IS NOT NULL AND t.id IS NOT NULL
+                AND t."fechaInicio" <= '${fechaHastaEscaped}'::timestamp
+                AND (t."fechaFin" IS NULL OR t."fechaFin" >= '${fechaDesdeEscaped}'::timestamp)
+                AND ${condicionHora})
+              -- Si no tiene turno, filtrar por fechaLectura
+              OR (hl."turnoId" IS NULL
+                AND hl."fechaLectura" >= '${fechaDesdeEscaped}'::timestamp
+                AND hl."fechaLectura" <= '${fechaHastaEscaped}'::timestamp)
+            )
+          ORDER BY hl."fechaLectura" DESC, hl."createdAt" DESC
+          LIMIT ${limit} OFFSET ${skip}
+        `;
+        
+        const countQuerySql = `
+          SELECT COUNT(*) as total
+          FROM inventario.historial_lecturas hl
+          LEFT JOIN turnos.cierres_turno c ON hl."turnoId" = c.id
+          LEFT JOIN turnos.turnos t ON c."turnoId" = t.id
+          WHERE hl."mangueraId" = '${mangueraIdEscaped}'
+            AND (
+              -- Si tiene turno, filtrar por fechaInicio, fechaFin, horaInicio y horaFin del turno
+              (hl."turnoId" IS NOT NULL AND t.id IS NOT NULL
+                AND t."fechaInicio" <= '${fechaHastaEscaped}'::timestamp
+                AND (t."fechaFin" IS NULL OR t."fechaFin" >= '${fechaDesdeEscaped}'::timestamp)
+                AND ${condicionHora})
+              -- Si no tiene turno, filtrar por fechaLectura
+              OR (hl."turnoId" IS NULL
+                AND hl."fechaLectura" >= '${fechaDesdeEscaped}'::timestamp
+                AND hl."fechaLectura" <= '${fechaHastaEscaped}'::timestamp)
+            )
+        `;
+
+        const [historialIdsRaw, countResult] = await Promise.all([
+          this.prisma.$queryRawUnsafe<Array<{ id: string }>>(querySql),
+          this.prisma.$queryRawUnsafe<Array<{ total: bigint }>>(countQuerySql),
+        ]);
+
+        historialIds = historialIdsRaw.map((r: any) => r.id);
+        const total = Number(countResult[0]?.total || 0);
+        const totalPages = Math.ceil(total / limit);
+
+        // Obtener los registros completos usando los IDs
+        const historialRaw = historialIds.length > 0
+          ? await this.prisma.historialLectura.findMany({
+              where: {
+                id: { in: historialIds },
+              },
+              include: {
+                manguera: {
+                  include: {
+                    surtidor: {
+                      include: {
+                        puntoVenta: true,
+                      },
+                    },
+                    producto: true,
+                  },
+                },
+              },
+              orderBy: [
+                { fechaLectura: 'desc' },
+                { createdAt: 'desc' },
+              ],
+            })
+          : [];
+
+        // Formatear la respuesta
+        const historial = historialRaw.map(item => ({
+          id: item.id,
+          fechaLectura: item.fechaLectura,
+          lecturaAnterior: Number(item.lecturaAnterior),
+          lecturaActual: Number(item.lecturaActual),
+          cantidadVendida: Number(item.cantidadVendida),
+          valorVenta: Number(item.valorVenta),
+          tipoOperacion: item.tipoOperacion,
+          observaciones: item.observaciones,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          mangueraId: item.mangueraId,
+          manguera: {
+            id: item.manguera.id,
+            numero: item.manguera.numero,
+            color: item.manguera.color,
+            lecturaAnterior: Number(item.manguera.lecturaAnterior),
+            lecturaActual: Number(item.manguera.lecturaActual),
+            activo: item.manguera.activo,
+            createdAt: item.manguera.createdAt,
+            updatedAt: item.manguera.updatedAt,
+            surtidorId: item.manguera.surtidorId,
+            surtidor: item.manguera.surtidor,
+            productoId: item.manguera.productoId,
+            producto: {
+              id: item.manguera.producto.id,
+              codigo: item.manguera.producto.codigo,
+              nombre: item.manguera.producto.nombre,
+              descripcion: item.manguera.producto.descripcion,
+              unidadMedida: item.manguera.producto.unidadMedida,
+              precio: Number((item.manguera.producto as any).precioVenta || (item.manguera.producto as any).precio || 0),
+              precioCompra: Number((item.manguera.producto as any).precioCompra || 0),
+              precioVenta: Number((item.manguera.producto as any).precioVenta || (item.manguera.producto as any).precio || 0),
+              moneda: (item.manguera.producto as any).moneda || 'COP',
+              porcentajeGanancia: 0,
+              costo: 0,
+              utilidad: 0,
+              margenUtilidad: 0,
+              stockMinimo: item.manguera.producto.stockMinimo,
+              stockActual: item.manguera.producto.stockActual,
+              esCombustible: item.manguera.producto.esCombustible,
+              activo: item.manguera.producto.activo,
+              createdAt: item.manguera.producto.createdAt,
+              updatedAt: item.manguera.producto.updatedAt,
+              categoriaId: item.manguera.producto.categoriaId,
+              categoria: {
+                id: '',
+                nombre: '',
+                descripcion: null,
+                activo: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            },
+          },
+          usuarioId: item.usuarioId,
+          startTime: item.startTime,
+          finishTime: item.finishTime,
+        }));
+
+        return {
+          historial,
+          total,
+          totalPages,
+          currentPage: page,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        };
+      }
+
+      // Si no hay fechas, usar el método original
       const where = {
         manguera: {
           numero: numeroManguera,
@@ -495,12 +705,6 @@ export class SurtidoresService {
             puntoVentaId: puntoVentaId,
           },
         },
-        ...(fechaDesde && fechaHasta && {
-          fechaLectura: {
-            gte: fechaDesde,
-            lte: fechaHasta,
-          },
-        }),
       };
 
       const [historialRaw, total] = await Promise.all([
