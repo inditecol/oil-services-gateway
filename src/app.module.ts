@@ -15,6 +15,7 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
     PrismaModule,
 
     // Módulos de funcionalidad
+    HealthModule,
     AuthModule,
     UsersModule,
     CompanyModule,
