@@ -712,77 +712,6 @@ export class SurtidoresResolver {
           };
         }
 
-        const historialVentas = await this.prisma.historialVentasProductos.findMany({
-          where: filtroHistorialVentas,
-          select: {
-            valorTotal: true,
-            fechaVenta: true,
-            metodoPago: {
-              select: {
-                codigo: true,
-                nombre: true,
-              },
-            },
-          },
-        });
-
-        console.log(`[CONSOLIDADO] Historial ventas encontrado: ${historialVentas.length}`);
-        console.log(`[CONSOLIDADO] Filtro historial ventas:`, JSON.stringify(filtroHistorialVentas, null, 2));
-        if (historialVentas.length > 0) {
-          console.log(`[CONSOLIDADO] Primeras 3 historial ventas:`, historialVentas.slice(0, 3).map(v => ({
-            valorTotal: v.valorTotal,
-            metodoPagoCodigo: v.metodoPago?.codigo,
-            metodoPagoNombre: v.metodoPago?.nombre,
-            fechaVenta: v.fechaVenta,
-          })));
-        }
-
-        // Procesar historial de ventas de productos
-        for (const venta of historialVentas) {
-          const monto = Number(venta.valorTotal || 0);
-          totalDeclarado += monto;
-          totalCalculado += monto;
-
-          // Clasificar por método de pago (usar formato original)
-          const metodoPagoNombre = (venta.metodoPago?.nombre || venta.metodoPago?.codigo || '').trim();
-          const metodoPagoUpper = metodoPagoNombre.toUpperCase();
-          
-          console.log(`[CONSOLIDADO] Procesando historial venta: monto=$${monto}, metodoPagoNombre="${metodoPagoNombre}" (upper: "${metodoPagoUpper}"), codigo="${venta.metodoPago?.codigo}"`);
-          
-          // Clasificar según la lógica existente
-          if (metodoPagoUpper === 'EFECTIVO') {
-            totalEfectivo += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como EFECTIVO`);
-          } else if (metodoPagoUpper === 'TARJETA_CREDITO' || metodoPagoUpper === 'TARJETA_DEBITO' || metodoPagoUpper === 'TARJETA' || metodoPagoUpper.includes('TARJETA')) {
-            totalTarjetas += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como TARJETAS`);
-          } else if (metodoPagoUpper === 'TRANSFERENCIA' || metodoPagoUpper === 'TRANSFERENCIA_BANCARIA' || metodoPagoUpper.includes('TRANSFERENCIA')) {
-            totalTransferencias += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como TRANSFERENCIAS`);
-          } else if (metodoPagoNombre === 'Rumbo' || metodoPagoUpper === 'RUMBO' || venta.metodoPago?.codigo === 'Rumbo') {
-            totalRumbo += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como RUMBO`);
-          } else if (metodoPagoNombre === 'Bonos vive terpel' || metodoPagoNombre.toLowerCase().includes('bonos') || metodoPagoNombre.toLowerCase().includes('vive terpel') || venta.metodoPago?.codigo === 'Bonos vive terpel') {
-            totalBonosViveTerpel += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como BONOS VIVE TERPEL`);
-          } else {
-            totalOtros += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como OTROS (método desconocido: nombre="${metodoPagoNombre}", codigo="${venta.metodoPago?.codigo}")`);
-          }
-
-          // Consolidar en map
-          if (metodosPagoMap.has(metodoPagoNombre)) {
-            const existente = metodosPagoMap.get(metodoPagoNombre)!;
-            existente.monto += monto;
-          } else {
-            metodosPagoMap.set(metodoPagoNombre, {
-              monto,
-              porcentaje: 0,
-              observaciones: null,
-            });
-          }
-        }
-
         // 3. OBTENER VENTAS DE COMBUSTIBLE desde CIERRES DE TURNO
         // IMPORTANTE: Filtrar por fechaInicio y fechaFin del TURNO (no por fechaCierre)
         // El frontend envía fecha inicio (ej: 01/09/2025 12:00 AM = 00:00:00) y fecha fin (ej: 01/09/2025 11:59 PM = 23:59:59)
@@ -1008,55 +937,6 @@ export class SurtidoresResolver {
           }
         }
 
-
-        // Procesar historial de ventas de productos
-        for (const venta of historialVentas) {
-          const monto = Number(venta.valorTotal || 0);
-          totalDeclarado += monto;
-          totalCalculado += monto;
-
-          // Clasificar por método de pago (usar formato original)
-          const metodoPagoNombre = (venta.metodoPago?.nombre || venta.metodoPago?.codigo || '').trim();
-          const metodoPagoUpper = metodoPagoNombre.toUpperCase();
-          
-          console.log(`[CONSOLIDADO] Procesando historial venta: monto=$${monto}, metodoPagoNombre="${metodoPagoNombre}" (upper: "${metodoPagoUpper}"), codigo="${venta.metodoPago?.codigo}"`);
-          
-          // Clasificar según la lógica existente
-          if (metodoPagoUpper === 'EFECTIVO') {
-            totalEfectivo += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como EFECTIVO`);
-          } else if (metodoPagoUpper === 'TARJETA_CREDITO' || metodoPagoUpper === 'TARJETA_DEBITO' || metodoPagoUpper === 'TARJETA' || metodoPagoUpper.includes('TARJETA')) {
-            totalTarjetas += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como TARJETAS`);
-          } else if (metodoPagoUpper === 'TRANSFERENCIA' || metodoPagoUpper === 'TRANSFERENCIA_BANCARIA' || metodoPagoUpper.includes('TRANSFERENCIA')) {
-            totalTransferencias += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como TRANSFERENCIAS`);
-          } else if (metodoPagoNombre === 'Rumbo' || metodoPagoUpper === 'RUMBO' || venta.metodoPago?.codigo === 'Rumbo') {
-            totalRumbo += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como RUMBO`);
-          } else if (metodoPagoNombre === 'Bonos vive terpel' || metodoPagoNombre.toLowerCase().includes('bonos') || metodoPagoNombre.toLowerCase().includes('vive terpel') || venta.metodoPago?.codigo === 'Bonos vive terpel') {
-            totalBonosViveTerpel += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como BONOS VIVE TERPEL`);
-          } else {
-            totalOtros += monto;
-            console.log(`[CONSOLIDADO] → Clasificado como OTROS (método desconocido: nombre="${metodoPagoNombre}", codigo="${venta.metodoPago?.codigo}")`);
-          }
-
-          // Consolidar en map
-          if (metodosPagoMap.has(metodoPagoNombre)) {
-            const existente = metodosPagoMap.get(metodoPagoNombre)!;
-            existente.monto += monto;
-          } else {
-            metodosPagoMap.set(metodoPagoNombre, {
-              monto,
-              porcentaje: 0,
-              observaciones: null,
-            });
-          }
-        }
-
-        // 3. OBTENER VENTAS DE COMBUSTIBLE desde CIERRES DE TURNO
-        // Si no hay cierres, inicializar array vacío
         let cierres: any[] = [];
         
         if (cierreIds.length > 0) {
@@ -1197,7 +1077,6 @@ export class SurtidoresResolver {
 
         console.log(`[CONSOLIDADO] ========== RESUMEN FINANCIERO ==========`);
         console.log(`[CONSOLIDADO] Ventas productos (Venta): ${ventas.length}`);
-        console.log(`[CONSOLIDADO] Historial ventas productos: ${historialVentas.length}`);
         console.log(`[CONSOLIDADO] Cierres de turno: ${cierres.length}`);
         console.log(`[CONSOLIDADO] -----------------------------------------`);
         console.log(`[CONSOLIDADO] Totales calculados:`, {

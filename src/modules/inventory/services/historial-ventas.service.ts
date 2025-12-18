@@ -245,29 +245,24 @@ export class HistorialVentasService {
       whereVenta.puntoVentaId = { in: puntosVentaIds };
     }
 
-    // Filtro por fecha - Extraer solo la fecha para evitar problemas de timezone
-    let fechaInicioSolo: string | null = null;
-    let fechaFinSolo: string | null = null;
-    
+    // Filtro por fecha - Usar fechas EXACTAS con hora para filtrar por turno específico
+    // El frontend envía fechaInicio y fechaFin del turno con hora (ej: 2025-12-01T14:00:00 a 2025-12-01T22:00:00)
+    // Usamos estas fechas exactas para filtrar solo los productos del turno específico
     if (filtros.fechaInicio) {
-      const fechaInicioDate = new Date(filtros.fechaInicio);
-      fechaInicioSolo = fechaInicioDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
-      const fechaInicioUTC = new Date(`${fechaInicioSolo}T00:00:00.000Z`);
-      whereTienda.fechaVenta = { ...whereTienda.fechaVenta, gte: fechaInicioUTC };
-      whereVenta.fechaVenta = { ...whereVenta.fechaVenta, gte: fechaInicioUTC };
+      const fechaInicioExacta = new Date(filtros.fechaInicio);
+      whereTienda.fechaVenta = { ...whereTienda.fechaVenta, gte: fechaInicioExacta };
+      whereVenta.fechaVenta = { ...whereVenta.fechaVenta, gte: fechaInicioExacta };
     }
 
     if (filtros.fechaFin) {
-      const fechaFinDate = new Date(filtros.fechaFin);
-      fechaFinSolo = fechaFinDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
-      const fechaFinUTC = new Date(`${fechaFinSolo}T23:59:59.999Z`);
-      whereTienda.fechaVenta = { ...whereTienda.fechaVenta, lte: fechaFinUTC };
-      whereVenta.fechaVenta = { ...whereVenta.fechaVenta, lte: fechaFinUTC };
+      const fechaFinExacta = new Date(filtros.fechaFin);
+      whereTienda.fechaVenta = { ...whereTienda.fechaVenta, lte: fechaFinExacta };
+      whereVenta.fechaVenta = { ...whereVenta.fechaVenta, lte: fechaFinExacta };
     }
     
-    console.log(`[PRODUCTOS] Filtros de fecha procesados:`);
-    console.log(`[PRODUCTOS]   fechaInicioSolo: ${fechaInicioSolo}`);
-    console.log(`[PRODUCTOS]   fechaFinSolo: ${fechaFinSolo}`);
+    console.log(`[PRODUCTOS] Filtros de fecha procesados (con hora exacta):`);
+    console.log(`[PRODUCTOS]   fechaInicio: ${filtros.fechaInicio ? new Date(filtros.fechaInicio).toISOString() : 'null'}`);
+    console.log(`[PRODUCTOS]   fechaFin: ${filtros.fechaFin ? new Date(filtros.fechaFin).toISOString() : 'null'}`);
 
     // Obtener estadísticas generales de productos de tienda desde historialVentasProductos
     const estadisticasTienda = await this.prisma.historialVentasProductos.aggregate({
@@ -557,33 +552,111 @@ export class HistorialVentasService {
       whereCombustibleManguera.productoId = filtros.productoId;
     }
 
-    const whereCombustible: any = {
-      manguera: whereCombustibleManguera
-    };
-
-    // Filtrar por fechas
-    if (filtros.fechaInicio || filtros.fechaFin) {
-      whereCombustible.fechaLectura = {};
-      if (filtros.fechaInicio) {
-        whereCombustible.fechaLectura.gte = filtros.fechaInicio;
-      }
-      if (filtros.fechaFin) {
-        whereCombustible.fechaLectura.lte = filtros.fechaFin;
-      }
-    }
-
-    // Obtener historial de lecturas con información de manguera y producto
-    const historialLecturas = await this.prisma.historialLectura.findMany({
-      where: whereCombustible,
-      include: {
-        manguera: {
+    // IMPORTANTE: Filtrar combustibles por turno específico usando relación CierreTurno -> Turno
+    // El frontend envía fechaInicio y fechaFin del turno con hora, necesitamos encontrar el turno correcto
+    // y filtrar las lecturas que pertenecen a ese turno a través de CierreTurno.turnoId
+    let historialLecturas: any[] = [];
+    
+    if (filtros.fechaInicio && filtros.fechaFin) {
+      const fechaInicioDate = new Date(filtros.fechaInicio);
+      const fechaFinDate = new Date(filtros.fechaFin);
+      
+      // Extraer hora en formato HH:mm para filtrar por horaInicio y horaFin del turno
+      const extraerHoraEnFormatoHHmm = (date: Date): string => {
+        const hours = date.getUTCHours().toString().padStart(2, '0');
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+      
+      const horaInicio = extraerHoraEnFormatoHHmm(fechaInicioDate);
+      const horaFin = extraerHoraEnFormatoHHmm(fechaFinDate);
+      
+      // Normalizar fechaInicio para comparar solo la fecha (sin hora)
+      const fechaInicioInicio = new Date(fechaInicioDate);
+      fechaInicioInicio.setUTCHours(0, 0, 0, 0);
+      const fechaInicioFin = new Date(fechaInicioDate);
+      fechaInicioFin.setUTCHours(23, 59, 59, 999);
+      
+      // Buscar turnos que coincidan con fechaInicio (solo fecha), horaInicio y horaFin
+      const turnos = await this.prisma.turno.findMany({
+        where: {
+          fechaInicio: {
+            gte: fechaInicioInicio,
+            lte: fechaInicioFin,
+          },
+          horaInicio: horaInicio,
+          horaFin: horaFin,
+          ...(puntoVentaIdFiltro ? { puntoVentaId: puntoVentaIdFiltro } : 
+              puntosVentaIds && puntosVentaIds.length > 0 ? { puntoVentaId: { in: puntosVentaIds } } : {}),
+        },
+        select: { id: true }
+      });
+      
+      if (turnos.length > 0) {
+        const turnoIds = turnos.map(t => t.id);
+        
+        // Obtener los CierreTurno asociados a estos turnos
+        const cierresTurno = await this.prisma.cierreTurno.findMany({
+          where: {
+            turnoId: { in: turnoIds }
+          },
+          select: { id: true }
+        });
+        
+        const cierreTurnoIds = cierresTurno.map(c => c.id);
+        
+        // Filtrar historialLectura por turnoId (que es el cierreTurnoId)
+        const whereCombustible: any = {
+          manguera: whereCombustibleManguera,
+          turnoId: { in: cierreTurnoIds }
+        };
+        
+        // Obtener historial de lecturas con información de manguera y producto
+        historialLecturas = await this.prisma.historialLectura.findMany({
+          where: whereCombustible,
           include: {
-            producto: true,
-            surtidor: true
+            manguera: {
+              include: {
+                producto: true,
+                surtidor: true
+              }
+            }
           }
+        });
+        
+        console.log(`[PRODUCTOS] Combustibles encontrados filtrando por turno: ${historialLecturas.length} lecturas para ${turnoIds.length} turno(s)`);
+      } else {
+        console.log(`[PRODUCTOS] No se encontró turno con fechaInicio=${fechaInicioDate.toISOString()}, horaInicio=${horaInicio}, horaFin=${horaFin}`);
+      }
+    } else {
+      // Si no hay fechas, usar filtro por fechaLectura (comportamiento anterior para compatibilidad)
+      const whereCombustible: any = {
+        manguera: whereCombustibleManguera
+      };
+
+      if (filtros.fechaInicio || filtros.fechaFin) {
+        whereCombustible.fechaLectura = {};
+        if (filtros.fechaInicio) {
+          whereCombustible.fechaLectura.gte = filtros.fechaInicio;
+        }
+        if (filtros.fechaFin) {
+          whereCombustible.fechaLectura.lte = filtros.fechaFin;
         }
       }
-    });
+
+      // Obtener historial de lecturas con información de manguera y producto
+      historialLecturas = await this.prisma.historialLectura.findMany({
+        where: whereCombustible,
+        include: {
+          manguera: {
+            include: {
+              producto: true,
+              surtidor: true
+            }
+          }
+        }
+      });
+    }
 
     // Agrupar ventas de combustible por producto
     const ventasCombustiblePorProducto = new Map<string, {
