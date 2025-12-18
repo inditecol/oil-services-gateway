@@ -581,6 +581,24 @@ export class ProcessShiftService {
 
       // PROCESAR VENTAS DE PRODUCTOS DE TIENDA (si se proporcionaron)
       let resumenVentasProductos = null;
+      // Array para almacenar las ventas que se registrarán en HistorialVentasProductos
+      // dentro de la transacción después de crear el turno
+      const ventasParaRegistrarEnHistorial: Array<{
+        productoId: string;
+        codigoProducto: string;
+        unidadMedida: string;
+        ventasIndividuales: Array<{
+          cantidad: number;
+          precioUnitario: number;
+          valorTotal: number;
+          observaciones?: string;
+          metodosPago: Array<{
+            metodoPago: string;
+            monto: number;
+          }>;
+        }>;
+      }> = [];
+
       if (
         cierreTurnoInput.ventasProductos &&
         cierreTurnoInput.ventasProductos.length > 0
@@ -832,62 +850,42 @@ export class ProcessShiftService {
                 `[CIERRE_TURNO] Stock actualizado para ${product.codigo}: -${cantidadTotalProducto} ${product.unidadMedida}`,
               );
 
-              // REGISTRAR VENTAS EN HistorialVentasProductos
-              try {
-                // Obtener el turno activo
-                const turnoActivo = await this.prisma.turno.findFirst({
-                  where: {
-                    puntoVentaId: cierreTurnoInput.puntoVentaId,
-                    activo: true,
-                  },
-                });
-
-                if (turnoActivo) {
-                  // Registrar cada venta individual
-                  for (const ventaIndividual of ventasIndividualesDetalle) {
-                    for (const metodoPago of ventaIndividual.metodosPago) {
-                      // Buscar el método de pago por código
-                      const metodoPagoDb =
-                        await this.prisma.metodoPago.findUnique({
-                          where: { codigo: metodoPago.metodoPago },
-                        });
-
-                      if (metodoPagoDb) {
-                        await this.prisma.historialVentasProductos.create({
-                          data: {
-                            fechaVenta: new Date(),
-                            cantidadVendida: ventaIndividual.cantidad,
-                            precioUnitario: ventaIndividual.precioUnitario,
-                            valorTotal: ventaIndividual.valorTotal,
-                            unidadMedida: ventaProducto.unidadMedida,
-                            observaciones:
-                              ventaIndividual.observaciones ||
-                              `Venta registrada en cierre de turno - ${metodoPago.metodoPago}`,
-                            productoId: product.id,
-                            metodoPagoId: metodoPagoDb.id,
-                            usuarioId: user.id,
-                            turnoId: turnoActivo.id,
-                            puntoVentaId: cierreTurnoInput.puntoVentaId,
-                          },
-                        });
-                        console.log(
-                          `[CIERRE_TURNO] Venta registrada en historial: ${product.codigo} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - ${metodoPago.metodoPago}`,
-                        );
-                      }
-                    }
-                  }
+              // Guardar información para registrar después en la transacción con el turno correcto
+              // IMPORTANTE: Solo registrar productos tipo BEBIDA y LUBRICANTE (NO combustibles)
+              if (ventasIndividualesDetalle.length > 0 && !product.esCombustible) {
+                // Verificar que el producto sea bebida o lubricante
+                const esBebidaOLubricante = 
+                  product.tipoProducto?.toLowerCase() === 'bebida' ||
+                  product.tipoProducto?.toLowerCase() === 'lubricante' ||
+                  (!product.esCombustible && product.tipoProducto); // Si no es combustible y tiene tipoProducto
+                
+                if (esBebidaOLubricante) {
+                  ventasParaRegistrarEnHistorial.push({
+                    productoId: product.id,
+                    codigoProducto: product.codigo,
+                    unidadMedida: ventaProducto.unidadMedida,
+                    ventasIndividuales: ventasIndividualesDetalle.map((vi) => ({
+                      cantidad: vi.cantidad,
+                      precioUnitario: vi.precioUnitario,
+                      valorTotal: vi.valorTotal,
+                      observaciones: vi.observaciones,
+                      metodosPago: vi.metodosPago.map((mp) => ({
+                        metodoPago: mp.metodoPago,
+                        monto: mp.monto,
+                      })),
+                    })),
+                  });
+                  console.log(
+                    `[CIERRE_TURNO] Venta preparada para registro (${product.tipoProducto}): ${product.codigo} - ${ventasIndividualesDetalle.length} venta(s) individual(es)`,
+                  );
                 } else {
                   console.warn(
-                    `[CIERRE_TURNO] No se encontró turno activo para registrar ventas de productos`,
+                    `[CIERRE_TURNO] Producto ${product.codigo} omitido: esCombustible=${product.esCombustible}, tipoProducto=${product.tipoProducto}. Solo se registran bebidas y lubricantes.`,
                   );
                 }
-              } catch (error) {
-                console.error(
-                  `[CIERRE_TURNO] Error al registrar ventas en historial:`,
-                  error,
-                );
-                advertencias.push(
-                  `Error al registrar ventas de ${product.codigo} en historial: ${error.message}`,
+              } else if (product.esCombustible) {
+                console.warn(
+                  `[CIERRE_TURNO] Producto ${product.codigo} es combustible y NO se registrará en HistorialVentasProductos. Los combustibles se registran en HistorialLectura.`,
                 );
               }
 
@@ -1216,6 +1214,116 @@ export class ProcessShiftService {
             activo: true,
             },
           });
+
+        // REGISTRAR VENTAS DE PRODUCTOS (BEBIDAS Y LUBRICANTES) EN HistorialVentasProductos
+        // Ahora que tenemos el turno creado, registramos las ventas con el turno correcto
+        if (ventasParaRegistrarEnHistorial.length > 0) {
+          console.log(
+            `[CIERRE_TURNO] Registrando ${ventasParaRegistrarEnHistorial.length} productos en HistorialVentasProductos con turno ${turno.id}`,
+          );
+
+          for (const ventaProducto of ventasParaRegistrarEnHistorial) {
+            // Validación adicional: Verificar que el producto NO sea combustible
+            const productoDb = await prisma.producto.findUnique({
+              where: { id: ventaProducto.productoId },
+              select: { id: true, codigo: true, esCombustible: true, tipoProducto: true },
+            });
+
+            if (!productoDb) {
+              console.warn(
+                `[CIERRE_TURNO] Producto no encontrado: ${ventaProducto.productoId}`,
+              );
+              advertencias.push(
+                `Producto no encontrado: ${ventaProducto.codigoProducto}`,
+              );
+              continue;
+            }
+
+            // Verificar que NO sea combustible y que sea bebida o lubricante
+            if (productoDb.esCombustible) {
+              console.warn(
+                `[CIERRE_TURNO] Producto ${productoDb.codigo} es combustible y NO se registrará en HistorialVentasProductos. Los combustibles se registran en HistorialLectura.`,
+              );
+              continue;
+            }
+
+            const esBebidaOLubricante =
+              productoDb.tipoProducto?.toLowerCase() === 'bebida' ||
+              productoDb.tipoProducto?.toLowerCase() === 'lubricante';
+
+            if (!esBebidaOLubricante) {
+              console.warn(
+                `[CIERRE_TURNO] Producto ${productoDb.codigo} (tipo: ${productoDb.tipoProducto}) NO es bebida ni lubricante. Solo se registran bebidas y lubricantes en HistorialVentasProductos.`,
+              );
+              continue;
+            }
+
+            for (const ventaIndividual of ventaProducto.ventasIndividuales) {
+              for (const metodoPago of ventaIndividual.metodosPago) {
+                try {
+                  // Buscar el método de pago por código
+                  const metodoPagoDb = await prisma.metodoPago.findUnique({
+                    where: { codigo: metodoPago.metodoPago },
+                  });
+
+                  if (metodoPagoDb) {
+                    // Calcular un punto medio entre fechaInicio y fechaFin del turno
+                    // Esto asegura que el producto quede dentro del rango específico del turno
+                    // y no aparezca en turnos anteriores o posteriores que puedan solaparse en los límites
+                    const fechaInicioTurno = new Date(turno.fechaInicio);
+                    const fechaFinTurno = new Date(turno.fechaFin);
+                    const puntoMedioTurno = new Date(
+                      (fechaInicioTurno.getTime() + fechaFinTurno.getTime()) / 2
+                    );
+                    
+                    await prisma.historialVentasProductos.create({
+                      data: {
+                        fechaVenta: puntoMedioTurno, // ✅ Usar punto medio del turno para que quede dentro del rango específico
+                        cantidadVendida: ventaIndividual.cantidad,
+                        precioUnitario: ventaIndividual.precioUnitario,
+                        valorTotal: ventaIndividual.valorTotal,
+                        unidadMedida: ventaProducto.unidadMedida,
+                        observaciones:
+                          ventaIndividual.observaciones ||
+                          `Venta registrada en cierre de turno - ${metodoPago.metodoPago}`,
+                        productoId: ventaProducto.productoId,
+                        metodoPagoId: metodoPagoDb.id,
+                        usuarioId: user.id,
+                        turnoId: turno.id, // ✅ Usando el turno recién creado
+                        puntoVentaId: cierreTurnoInput.puntoVentaId,
+                      },
+                    });
+                    console.log(
+                      `[CIERRE_TURNO] Venta registrada en historial (${productoDb.tipoProducto}): ${ventaProducto.codigoProducto} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - ${metodoPago.metodoPago} - Turno: ${turno.id}`,
+                    );
+                  } else {
+                    console.warn(
+                      `[CIERRE_TURNO] Método de pago no encontrado: ${metodoPago.metodoPago}`,
+                    );
+                    advertencias.push(
+                      `Método de pago no encontrado: ${metodoPago.metodoPago} para producto ${ventaProducto.codigoProducto}`,
+                    );
+                  }
+                } catch (error) {
+                  console.error(
+                    `[CIERRE_TURNO] Error al registrar venta individual en historial:`,
+                    error,
+                  );
+                  advertencias.push(
+                    `Error al registrar venta de ${ventaProducto.codigoProducto} en historial: ${error.message}`,
+                  );
+                }
+              }
+            }
+          }
+          console.log(
+            `[CIERRE_TURNO] ${ventasParaRegistrarEnHistorial.length} productos registrados exitosamente en HistorialVentasProductos con turno ${turno.id}`,
+          );
+        } else {
+          console.log(
+            `[CIERRE_TURNO] No hay ventas de productos para registrar en HistorialVentasProductos`,
+          );
+        }
 
         // CREAR ESTRUCTURA COMPLETA CON TODA LA INFORMACIÓN
         const datosCompletosCierre = {
