@@ -671,11 +671,10 @@ export class HistorialVentasService {
       const cantidadVendida = Number(lectura.cantidadVendida);
       const valorVenta = Number(lectura.valorVenta);
       
-      // Convertir a litros si la unidad de medida del producto es galones
-      let cantidadLitros = cantidadVendida;
-      if (lectura.manguera.producto.unidadMedida.toLowerCase() === 'galones') {
-        cantidadLitros = cantidadVendida * GALONES_TO_LITROS;
-      }
+      // IMPORTANTE: Mantener la cantidad en la unidad de medida original del producto
+      // Para productos combustibles con unidad "galones", se devuelve en galones (no se convierte a litros)
+      // cantidadTotalVendida devuelve la cantidad en la unidad de medida del producto
+      const cantidadEnUnidadOriginal = cantidadVendida;
 
       if (!ventasCombustiblePorProducto.has(productoId)) {
         ventasCombustiblePorProducto.set(productoId, {
@@ -687,11 +686,11 @@ export class HistorialVentasService {
       }
 
       const productoData = ventasCombustiblePorProducto.get(productoId)!;
-      productoData.cantidadTotal += cantidadLitros;
+      productoData.cantidadTotal += cantidadEnUnidadOriginal;
       productoData.valorTotal += valorVenta;
       productoData.numeroVentas += 1;
       productoData.productos.push({
-        cantidad: cantidadLitros,
+        cantidad: cantidadEnUnidadOriginal,
         valor: valorVenta
       });
     });
