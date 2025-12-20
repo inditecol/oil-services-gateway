@@ -6,8 +6,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 import { CompanyService } from './company.service';
 import { Company } from './entities/company.entity';
+import { ConfiguracionEmpresa } from './entities/configuracion-empresa.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CreateConfiguracionEmpresaDto } from './dto/create-configuracion-empresa.dto';
+import { UpdateConfiguracionEmpresaDto } from './dto/update-configuracion-empresa.dto';
 import { runInThisContext } from 'vm';
 
 @Resolver(() => Company)
@@ -70,5 +73,43 @@ export class CompanyResolver {
   @Roles('admin')
   async toggleCompanyStatus(@Args('id', { type: () => ID }) id: string): Promise<Company> {
     return this.companyService.toggleStatus(id);
+  }
+
+  // ==========================================
+  // MUTACIONES Y QUERIES PARA CONFIGURACIÓN DE EMPRESA
+  // ==========================================
+
+  @Mutation(() => ConfiguracionEmpresa)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager')
+  async createConfiguracionEmpresa(
+    @Args('createConfiguracionEmpresaInput') createConfiguracionDto: CreateConfiguracionEmpresaDto,
+  ): Promise<ConfiguracionEmpresa> {
+    return this.companyService.createConfiguracionEmpresa(createConfiguracionDto);
+  }
+
+  @Query(() => ConfiguracionEmpresa, { name: 'configuracionEmpresa', nullable: true })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager')
+  async getConfiguracionEmpresa(@Args('empresaId', { type: () => ID }) empresaId: string): Promise<ConfiguracionEmpresa | null> {
+    return this.companyService.getConfiguracionEmpresa(empresaId);
+  }
+
+  @Mutation(() => ConfiguracionEmpresa)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager')
+  async updateConfiguracionEmpresa(
+    @Args('updateConfiguracionEmpresaInput') updateConfiguracionDto: UpdateConfiguracionEmpresaDto,
+  ): Promise<ConfiguracionEmpresa> {
+    return this.companyService.updateConfiguracionEmpresa(updateConfiguracionDto);
+  }
+
+  @Mutation(() => ConfiguracionEmpresa)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager')
+  async createOrUpdateConfiguracionEmpresa(
+    @Args('createConfiguracionEmpresaInput') createConfiguracionDto: CreateConfiguracionEmpresaDto,
+  ): Promise<ConfiguracionEmpresa> {
+    return this.companyService.createOrUpdateConfiguracionEmpresa(createConfiguracionDto);
   }
 } 

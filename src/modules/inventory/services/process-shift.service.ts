@@ -47,6 +47,64 @@ export class ProcessShiftService {
         );
       }
 
+      // ==========================================
+      // VALIDAR CONFIGURACIÓN DE MÉTODOS DE PAGO
+      // ==========================================
+      // Obtener configuración de la empresa desde el JWT
+      const seleccionPorProducto = user?.configuracionEmpresa?.seleccionPorProducto ?? false;
+      
+      console.log('[CIERRE_TURNO] Configuración de métodos de pago:', {
+        seleccionPorProducto,
+        tieneConfiguracion: !!user?.configuracionEmpresa,
+        userId: user?.id,
+      });
+
+      // Si seleccionPorProducto = true, validar que NO se envíen métodos de pago por manguera individual
+      if (seleccionPorProducto) {
+        // Verificar si hay métodos de pago en las mangueras (no permitido cuando seleccionPorProducto = true)
+        const tieneMetodosPagoEnMangueras = cierreTurnoInput.lecturasSurtidores?.some(
+          (surtidor) =>
+            surtidor.mangueras?.some(
+              (manguera) => manguera.metodosPago && manguera.metodosPago.length > 0
+            )
+        );
+
+        if (tieneMetodosPagoEnMangueras) {
+          errores.push(
+            'La configuración de la empresa requiere métodos de pago por producto consolidado. ' +
+            'No se permiten métodos de pago individuales por manguera. ' +
+            'Por favor, consolide los métodos de pago por producto en el campo ventasProductos.'
+          );
+          console.warn('[CIERRE_TURNO] Error: Métodos de pago por manguera detectados cuando seleccionPorProducto = true');
+        }
+
+        // Validar que existan métodos de pago consolidados por producto
+        const tieneMetodosPagoConsolidados = 
+          (cierreTurnoInput.ventasProductos && cierreTurnoInput.ventasProductos.length > 0 &&
+            cierreTurnoInput.ventasProductos.some(
+              (vp) => vp.metodosPago && vp.metodosPago.length > 0
+            )) ||
+          (cierreTurnoInput.ventasProductos && cierreTurnoInput.ventasProductos.length > 0 &&
+            cierreTurnoInput.ventasProductos.some(
+              (vp) => vp.ventasIndividuales && vp.ventasIndividuales.some(
+                (vi) => vi.metodosPago && vi.metodosPago.length > 0
+              )
+            )) ||
+          (cierreTurnoInput.resumenVentas?.metodosPago && 
+            cierreTurnoInput.resumenVentas.metodosPago.length > 0);
+
+        if (!tieneMetodosPagoConsolidados) {
+          advertencias.push(
+            'La configuración requiere métodos de pago por producto consolidado. ' +
+            'Asegúrese de incluir los métodos de pago en ventasProductos o en resumenVentas.metodosPago.'
+          );
+          console.warn('[CIERRE_TURNO] Advertencia: No se detectaron métodos de pago consolidados por producto');
+        }
+      } else {
+        // Si seleccionPorProducto = false, el comportamiento es el actual (por manguera o consolidado)
+        console.log('[CIERRE_TURNO] Modo: Métodos de pago por manguera individual (comportamiento actual)');
+      }
+
       console.log(
         `[CIERRE_TURNO] Punto de venta validado: ${puntoVenta.nombre} (${puntoVenta.codigo}). Procesando ${cierreTurnoInput.lecturasSurtidores.length} surtidores`,
       );
@@ -135,6 +193,19 @@ export class ProcessShiftService {
 
             // Calcular métodos de pago para este producto desde ventasProductos
             let metodosPagoProducto = [];
+
+            // Si seleccionPorProducto = true, NO procesar métodos de pago por manguera individual
+            // Solo usar métodos consolidados por producto
+            if (seleccionPorProducto && manguera.metodosPago && manguera.metodosPago.length > 0) {
+              advertencias.push(
+                `Métodos de pago por manguera ignorados para ${manguera.codigoProducto} en surtidor ${surtidor.numeroSurtidor}. ` +
+                `La configuración requiere métodos de pago consolidados por producto.`
+              );
+              console.warn(
+                `[CIERRE_TURNO] Ignorando métodos de pago por manguera (seleccionPorProducto=true): ` +
+                `surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`
+              );
+            }
 
             // Buscar el producto correspondiente en ventasProductos
             if (
@@ -1068,7 +1139,14 @@ export class ProcessShiftService {
       // Solo usar resumenVentas.metodosPago si NO hay métodos consolidados o si es DETALLADO_POR_PRODUCTO
       let metodosPagoAProcesar = cierreTurnoInput.resumenVentas?.metodosPago || [];
       
-      if (metodosPagoConsolidadosGlobal.length > 0) {
+      // Si seleccionPorProducto = true, priorizar métodos consolidados por producto
+      if (seleccionPorProducto && metodosPagoConsolidadosGlobal.length > 0) {
+        console.log(
+          '[CIERRE_TURNO] Modo: Métodos de pago por producto consolidado. ' +
+          `Usando ${metodosPagoConsolidadosGlobal.length} métodos consolidados.`
+        );
+        metodosPagoAProcesar = metodosPagoConsolidadosGlobal;
+      } else if (metodosPagoConsolidadosGlobal.length > 0) {
         // Verificar si resumenVentas tiene DETALLADO_POR_PRODUCTO
         const tieneDetalladoPorProducto = metodosPagoAProcesar.some(
           (mp: any) => mp.metodoPago === 'DETALLADO_POR_PRODUCTO'

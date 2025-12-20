@@ -33,6 +33,7 @@ model Empresa {
   updatedAt         DateTime     @updatedAt
   puntosVenta       PuntoVenta[]
   usuarios          Usuario[]
+  configuracion     ConfiguracionEmpresa?
 
   @@map("empresas")
   @@schema("configuracion")
@@ -778,4 +779,17 @@ model PresupuestoGasto {
   @@index([mes, anio])
   @@map("presupuestos_gastos")
   @@schema("gastos")
+}
+
+// Configuración de empresa para métodos de pago
+model ConfiguracionEmpresa {
+  id                   String   @id @default(cuid())
+  empresaId            String   @unique
+  seleccionPorProducto Boolean  @default(false) // true = métodos de pago por producto, false = por manguera
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  empresa              Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@map("configuracion_empresa")
+  @@schema("configuracion")
 }
