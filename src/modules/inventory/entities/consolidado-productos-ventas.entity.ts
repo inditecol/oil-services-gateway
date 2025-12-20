@@ -9,7 +9,9 @@ export class ConsolidadoProductosVendidos {
   @Field(() => Producto)
   producto: Producto;
 
-  @Field(() => Float)
+  @Field(() => Float, { 
+    description: 'Cantidad total vendida en la unidad de medida del producto. Para productos combustibles con unidad "galones", devuelve galones (no litros).' 
+  })
   cantidadTotalVendida: number;
 
   @Field(() => Float)
