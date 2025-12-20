@@ -1,4 +1,10 @@
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
+import { HistorialLectura } from './historial-lectura.entity';
+import { HistorialVentasProductos } from './historial-ventas-productos.entity';
+import { Caja } from './caja.entity';
+import { PointOfSale } from '../../point-of-sale/entities/point-of-sale.entity';
+import { User } from '../../users/entities/user.entity';
+import { Shift } from '../../shifts/entities/shift.entity';
 
 @ObjectType()
 export class MetodoPagoProductoResult {
@@ -841,4 +847,34 @@ export class MovimientosEfectivoResponse {
 
   @Field(() => [MovimientoEfectivo])
   movimientos: MovimientoEfectivo[];
+}
+
+@ObjectType()
+export class ShiftClosureDataResponse {
+  @Field(() => Shift, { nullable: true })
+  turno?: Shift;
+
+  @Field(() => CierreTurno, { nullable: true })
+  cierreTurno?: CierreTurno;
+
+  @Field(() => [MetodoPagoResumen], { nullable: true })
+  metodosPago?: MetodoPagoResumen[];
+
+  @Field(() => [HistorialLectura], { nullable: true })
+  historialLecturas?: HistorialLectura[];
+
+  @Field(() => [HistorialVentasProductos], { nullable: true })
+  historialVentasProductos?: HistorialVentasProductos[];
+
+  @Field(() => [MovimientoEfectivo], { nullable: true })
+  movimientosEfectivo?: MovimientoEfectivo[];
+
+  @Field(() => Caja, { nullable: true })
+  caja?: Caja;
+
+  @Field(() => PointOfSale, { nullable: true })
+  puntoVenta?: PointOfSale;
+
+  @Field(() => User, { nullable: true })
+  usuario?: User;
 } 

@@ -25,7 +25,8 @@ import {
   EstadisticasMetodosPagoResponse,
   ResumenCaja,
   MovimientoEfectivo,
-  MovimientosEfectivoResponse
+  MovimientosEfectivoResponse,
+  ShiftClosureDataResponse
 } from './entities/shift-closure.entity';
 import {
   CierreTurnoInput,
@@ -57,7 +58,7 @@ import { InventoryService } from './inventory.service';
 import { MetodoPago } from './entities/metodo-pago.entity';
 import { HistorialVentasProductos } from './entities/historial-ventas-productos.entity';
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from './entities/consolidado-productos-ventas.entity';
-import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput } from './dto/registrar-venta-producto.input';
+import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput, UpdateHistorialVentaProductoInput } from './dto/registrar-venta-producto.input';
 import { CrearMetodoPagoInput, ActualizarMetodoPagoInput, FiltrosMetodosPagoInput } from './dto/metodo-pago.input';
 import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
@@ -373,6 +374,15 @@ export class ProductsResolver {
   @Roles('admin', 'manager', 'employee')
   async getShiftClosure(@Args('id', { type: () => ID }) id: string): Promise<CierreTurno> {
     return this.productsService.getShiftClosureById(id);
+  }
+
+  @Query(() => ShiftClosureDataResponse, { name: 'getShiftClosureData' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async getShiftClosureData(
+    @Args('turnoId', { type: () => ID }) turnoId: string
+  ): Promise<any> {
+    return this.productsService.getShiftClosureDataByTurnoId(turnoId);
   }
 
   @Query(() => [CierreTurno], { name: 'getShiftClosuresByDate' })
@@ -1507,6 +1517,24 @@ export class ProductsResolver {
     };
     
     return this.historialVentasService.registrarVentaProducto(inputWithUser);
+  }
+
+  @Mutation(() => HistorialVentasProductos)
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async updateHistorialVentaProducto(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('cantidadVendida', { type: () => Float, nullable: true }) cantidadVendida?: number,
+    @Args('precioUnitario', { type: () => Float, nullable: true }) precioUnitario?: number,
+    @Args('observaciones', { nullable: true }) observaciones?: string
+  ): Promise<HistorialVentasProductos> {
+    const input: UpdateHistorialVentaProductoInput = {
+      id,
+      ...(cantidadVendida !== undefined && { cantidadVendida }),
+      ...(precioUnitario !== undefined && { precioUnitario }),
+      ...(observaciones !== undefined && { observaciones })
+    };
+    return this.historialVentasService.updateHistorialVentaProducto(input);
   }
 
   /**

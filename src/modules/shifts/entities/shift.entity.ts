@@ -35,6 +35,9 @@ export class Shift {
 
   @Field(() => User, { nullable: true })
   user?: User;
+
+  @Field(() => ID, { nullable: true })
+  puntoVentaId?: string;
 }
 
 @ObjectType()

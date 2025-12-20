@@ -135,3 +135,28 @@ export class FiltrosReporteVentasInput {
   @IsString()
   agrupacion?: 'dia' | 'mes' | 'año' | 'producto' | 'puntoVenta';
 }
+
+@InputType()
+export class UpdateHistorialVentaProductoInput {
+  @Field(() => String)
+  @IsNotEmpty()
+  @IsUUID()
+  id: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  cantidadVendida?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  precioUnitario?: number;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  observaciones?: string;
+}
