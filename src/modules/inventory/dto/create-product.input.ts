@@ -2,6 +2,8 @@ import { InputType, Field, Float, Int } from '@nestjs/graphql';
 import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, Min, IsIn, ValidateBy, ValidationOptions } from 'class-validator';
 
 // Validador personalizado para verificar que precio de venta > precio de compra
+// Solo valida cuando ambos campos están presentes en el input
+// Si precioCompra no está presente, la validación se hace en el resolver usando el valor de la BD
 function IsPrecioVentaMayorQueCompra(validationOptions?: ValidationOptions) {
   return ValidateBy(
     {
@@ -9,6 +11,11 @@ function IsPrecioVentaMayorQueCompra(validationOptions?: ValidationOptions) {
       validator: {
         validate(value: any, args: any) {
           const precioCompra = args?.object?.precioCompra;
+          // Si precioCompra no está presente, pasar la validación (se validará en el resolver)
+          if (precioCompra === undefined || precioCompra === null) {
+            return true;
+          }
+          // Si ambos están presentes, validar que precioVenta > precioCompra
           return typeof value === 'number' && typeof precioCompra === 'number' && value > precioCompra;
         },
         defaultMessage() {

@@ -4,11 +4,16 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 
+export interface ConfiguracionEmpresaPayload {
+  seleccionPorProducto: boolean;
+}
+
 export interface JwtPayload {
   email: string;
   sub: string;
   rolId: string;
   username: string;
+  configuracionEmpresa?: ConfiguracionEmpresaPayload;
 }
 
 @Injectable()

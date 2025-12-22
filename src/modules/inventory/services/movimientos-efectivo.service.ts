@@ -257,8 +257,6 @@ export class MovimientosEfectivoService {
         totalIngresos += monto;
       } else if (movimiento.tipo === 'EGRESO') {
 
-        const regexProsegur = /Prosegur/i;
-        if(!regexProsegur.test(movimiento.concepto))
         totalEgresos += monto;
       }
 

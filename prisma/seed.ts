@@ -395,6 +395,7 @@ async function main() {
       stockActual: 4000,
       tipoProducto: 'Combustible',
       esCombustible: true,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: combustibleCategory.id,
     },
   });
@@ -414,6 +415,7 @@ async function main() {
       stockActual: 6000,
       tipoProducto: 'Combustible',
       esCombustible: true,
+      puntoVentaId: puntoVentaGasol1.id,
       categoriaId: combustibleCategory.id,
     },
   });
@@ -433,6 +435,7 @@ async function main() {
       stockActual: 4000,
       tipoProducto: 'Combustible',
       esCombustible: true,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: combustibleCategory.id,
     },
   });
@@ -452,15 +455,16 @@ async function main() {
       stockActual: 6000,
       tipoProducto: 'Combustible',
       esCombustible: true,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: combustibleCategory.id,
     },
   });
 
   const hidroblue = await prisma.producto.upsert({
-    where: { codigo: 'HIDROBLUE-Gasol-1' },
+    where: { codigo: 'HIDROBLUE-Gasol-2' },
     update: {},
     create: {
-      codigo: 'HIDROBLUE-Gasol-1',
+      codigo: 'HIDROBLUE-Gasol-2',
       nombre: 'Hidroblue (AdBlue)',
       descripcion: 'Líquido reductor de emisiones para motores diesel',
       unidadMedida: 'Litros',
@@ -470,7 +474,8 @@ async function main() {
       stockMinimo: 50,
       stockActual: 200,
       tipoProducto: 'Combustible',
-      esCombustible: false,
+      esCombustible: true,
+      puntoVentaId: puntoVentaGasol2.id,
       categoriaId: combustibleCategory.id,
     },
   });
@@ -3270,7 +3275,7 @@ async function main() {
   });
 
   const acpmax500ck_G1 = await prisma.producto.upsert({
-    where: { codigo: 'G1-ACPMAX500CC-DIESEL-UNID' },
+    where: { codigo: 'G1-ACPMAXX500CC-DIESEL-UNID' },
     update: {},
     create: {
       codigo: 'G1-ACPMAXX500CC-DIESEL-UNID',
@@ -3873,10 +3878,10 @@ async function main() {
       nombre: 'Surtidor Principal 3',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 58528.40 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 28304.93 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 52787.89 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 44744.04 },
+        { numero: 'MANGUERA 1', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 58528.40 },
+        { numero: 'MANGUERA 2', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 28304.93 },
+        { numero: 'MANGUERA 3', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 52787.89 },
+        { numero: 'MANGUERA 4', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: true, lecturaActual: 44744.04 },
       ]
     },
     {
@@ -3884,9 +3889,9 @@ async function main() {
       nombre: 'Surtidor Principal 4',
       puntoVentaId: puntoVentaGasol1.id,
       mangueras: [
-        { numero: '5', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 272117.94 },
+        { numero: 'MANGUERA 5', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 272117.94 },
         { numero: '7', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false, lecturaActual: 0 },
-        { numero: '6', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 264990.48 },
+        { numero: 'MANGUERA 6', color: 'Amarillo', productoId: dieselGasol1.id, activo: true, lecturaActual: 264990.48 },
         { numero: '8', color: 'Rojo', productoId: gasolina90Gasol1.id, activo: false, lecturaActual: 0 },
       ]
     },
@@ -3919,10 +3924,10 @@ async function main() {
       nombre: 'Surtidor Principal 3',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 59592.13 },
-        { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 25589.40 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 49918.91 },
-        { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 37871.68 },
+        { numero: 'MANGUERA 1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 59592.13 },
+        { numero: 'MANGUERA 2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 25589.40 },
+        { numero: 'MANGUERA 3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 49918.91 },
+        { numero: 'MANGUERA 4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: true, lecturaActual: 37871.68 },
       ],
       activo: true,
     },
@@ -3931,9 +3936,9 @@ async function main() {
       nombre: 'Surtidor Principal 4',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 311834.88 },
+        { numero: 'MANGUERA 5', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 311834.88 },
         { numero: '2', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false, lecturaActual: 0 },
-        { numero: '3', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 254251.97 },
+        { numero: 'MANGUERA 6', color: 'Amarillo', productoId: dieselGasol2.id, activo: true, lecturaActual: 254251.97 },
         { numero: '4', color: 'Rojo', productoId: gasolina90Gasol2.id, activo: false, lecturaActual: 0 },
       ],
       activo: true,
@@ -3943,7 +3948,7 @@ async function main() {
       nombre: 'Surtidor Hidroblue',
       puntoVentaId: puntoVentaGasol2.id,
       mangueras: [
-        { numero: '1', color: 'Azul', productoId: hidroblue.id, activo: true, lecturaActual: 17117.3 },
+        { numero: 'HIDROBLUE', color: 'Azul', productoId: hidroblue.id, activo: true, lecturaActual: 17117.3 },
       ],
       activo: true,
     }
@@ -4168,6 +4173,15 @@ async function main() {
       esTarjeta: false,
       esDigital: false,
       orden: 10
+    },
+    {
+      codigo: 'Credito',
+      nombre: 'Credito',
+      descripcion: 'Pago con Prestamo a clientes o empleados',
+      esEfectivo: false,
+      esTarjeta: false,
+      esDigital: false,
+      orden: 11
     }
   ];
 

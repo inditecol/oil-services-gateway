@@ -38,9 +38,18 @@ export class AuthService {
       where: { email },
       include: { 
         rol: true,
+        empresa: {
+          include: {
+            configuracion: true
+          }
+        },
         puntosVenta: {
           include: {
-            empresa: true
+            empresa: {
+              include: {
+                configuracion: true
+              }
+            }
           }
         }
       },
@@ -61,9 +70,21 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    // Obtener configuración de la empresa (del usuario directo o del primer punto de venta)
+    let configuracionEmpresa = null;
+    if (user.empresa?.configuracion) {
+      configuracionEmpresa = {
+        seleccionPorProducto: user.empresa.configuracion.seleccionPorProducto,
+      };
+    } else if (user.puntosVenta && user.puntosVenta.length > 0 && user.puntosVenta[0].empresa?.configuracion) {
+      configuracionEmpresa = {
+        seleccionPorProducto: user.puntosVenta[0].empresa.configuracion.seleccionPorProducto,
+      };
+    }
+
     const tokenExpiration = this.configService.get<string>('JWT_EXPIRES_IN') || '5m';
 
-    const payload = {
+    const payload: any = {
       sub: user.id,
       email: user.email,
       rol: user.rol.nombre,
@@ -71,6 +92,11 @@ export class AuthService {
       rolId: user.rolId,
       username: user.username,
     };
+
+    // Agregar configuración de empresa al payload si existe
+    if (configuracionEmpresa) {
+      payload.configuracionEmpresa = configuracionEmpresa;
+    }
 
     const access_token = this.jwtService.sign(payload);
     return {
@@ -89,6 +115,7 @@ export class AuthService {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         rolId: user.rolId,
+        configuracionEmpresa: configuracionEmpresa,
         rol: {
           id: user.rol.id,
           nombre: user.rol.nombre,
@@ -176,9 +203,18 @@ export class AuthService {
       where: { id: payload.sub },
       include: { 
         rol: true,
+        empresa: {
+          include: {
+            configuracion: true
+          }
+        },
         puntosVenta: {
           include: {
-            empresa: true
+            empresa: {
+              include: {
+                configuracion: true
+              }
+            }
           }
         }
       },
@@ -186,6 +222,18 @@ export class AuthService {
 
     if (!user || !user.activo) {
       throw new UnauthorizedException('Usuario no válido');
+    }
+
+    // Obtener configuración de la empresa (del usuario directo o del primer punto de venta)
+    let configuracionEmpresa = null;
+    if (user.empresa?.configuracion) {
+      configuracionEmpresa = {
+        seleccionPorProducto: user.empresa.configuracion.seleccionPorProducto,
+      };
+    } else if (user.puntosVenta && user.puntosVenta.length > 0 && user.puntosVenta[0].empresa?.configuracion) {
+      configuracionEmpresa = {
+        seleccionPorProducto: user.puntosVenta[0].empresa.configuracion.seleccionPorProducto,
+      };
     }
 
     return {
@@ -204,6 +252,7 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       rolId: user.rolId,
+      configuracionEmpresa: configuracionEmpresa,
       rol: {
         id: user.rol.id,
         nombre: user.rol.nombre,

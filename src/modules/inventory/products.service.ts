@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { TanquesService } from './tanques.service';
 import { randomUUID } from 'crypto';
@@ -241,13 +241,51 @@ export class ProductsService {
     return this.formatProducts(productos);
   }
 
-  async update(id: string, updateProductInput: UpdateProductInput, usuarioId?: string): Promise<Producto> {
+  async update(id: string, updateProductInput: UpdateProductInput, usuarioId?: string, isEmployee?: boolean): Promise<Producto> {
     const existingProduct = await this.findById(id);
 
     if (!existingProduct) {
       throw new NotFoundException('Producto no encontrado');
     }
 
+    // Si es empleado, validar que solo se actualice precioVenta y que el producto sea combustible
+    if (isEmployee) {
+      if (!existingProduct.esCombustible) {
+        throw new ForbiddenException('Los empleados solo pueden actualizar el precio de productos combustibles');
+      }
+
+      // Asegurar que solo se actualice precioVenta (y motivoCambioPrecio si viene)
+      const allowedFields = ['precioVenta', 'motivoCambioPrecio'];
+      const filteredData: any = {};
+      
+      if (updateProductInput.precioVenta !== undefined) {
+        filteredData.precioVenta = updateProductInput.precioVenta;
+      }
+      
+      if (updateProductInput.motivoCambioPrecio !== undefined) {
+        filteredData.motivoCambioPrecio = updateProductInput.motivoCambioPrecio;
+      }
+
+      // Verificar si el precio de venta está cambiando
+      const precioAnterior = parseFloat(existingProduct.precioVenta.toString());
+      const precioNuevo = filteredData.precioVenta ? parseFloat(filteredData.precioVenta.toString()) : precioAnterior;
+      const precioCambio = precioAnterior !== precioNuevo;
+
+      const producto = await this.prisma.producto.update({
+        where: { id },
+        data: { precioVenta: filteredData.precioVenta },
+        include: { categoria: true },
+      });
+
+      // Registrar cambio de precio si aplica
+      if (precioCambio && usuarioId) {
+        await this.registrarCambioPrecio(id, precioAnterior, precioNuevo, usuarioId, filteredData.motivoCambioPrecio);
+      }
+
+      return this.formatProduct(producto);
+    }
+
+    // Para admin y manager, comportamiento normal
     // Si se está actualizando el código, verificar que no exista
     if (updateProductInput.codigo && updateProductInput.codigo !== existingProduct.codigo) {
       const codeExists = await this.prisma.producto.findUnique({
@@ -256,6 +294,20 @@ export class ProductsService {
 
       if (codeExists) {
         throw new ConflictException('El código del producto ya existe');
+      }
+    }
+
+    // Validar precioVenta > precioCompra si se está actualizando precioVenta
+    // Usar precioCompra del input si viene, sino usar el de la BD
+    if (updateProductInput.precioVenta !== undefined) {
+      const precioCompraParaValidar = updateProductInput.precioCompra !== undefined
+        ? parseFloat(updateProductInput.precioCompra.toString())
+        : parseFloat(existingProduct.precioCompra.toString());
+      
+      const precioVentaNuevo = parseFloat(updateProductInput.precioVenta.toString());
+      
+      if (precioVentaNuevo <= precioCompraParaValidar) {
+        throw new ForbiddenException('El precio de venta debe ser mayor al precio de compra');
       }
     }
 
