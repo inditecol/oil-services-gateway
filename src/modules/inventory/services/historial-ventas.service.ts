@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, UnauthorizedExcepti
 import { PrismaService } from '../../../config/prisma/prisma.service';
 import { HistorialVentasProductos as HistorialVentasProductosGraphQL } from '../entities/historial-ventas-productos.entity';
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from '../entities/consolidado-productos-ventas.entity';
-import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput } from '../dto/registrar-venta-producto.input';
+import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput, UpdateHistorialVentaProductoInput } from '../dto/registrar-venta-producto.input';
 
 @Injectable()
 export class HistorialVentasService {
@@ -894,5 +894,93 @@ export class HistorialVentasService {
         totalTransacciones: ventasAño._count.id || 0
       }
     };
+  }
+
+  async updateHistorialVentaProducto(input: UpdateHistorialVentaProductoInput): Promise<any> {
+    const registroExistente = await this.prisma.historialVentasProductos.findUnique({
+      where: { id: input.id },
+      include: {
+        turno: {
+          include: {
+            cierres: {
+              take: 1
+            }
+          }
+        }
+      }
+    });
+
+    if (!registroExistente) {
+      throw new NotFoundException(`Registro de venta de producto con ID ${input.id} no encontrado`);
+    }
+
+    if (!registroExistente.turno || !registroExistente.turno.cierres || registroExistente.turno.cierres.length === 0) {
+      throw new BadRequestException(`El registro no pertenece a un turno con cierre asociado`);
+    }
+
+    const datosActualizacion: any = {};
+    let nuevaCantidad = registroExistente.cantidadVendida;
+    let nuevoPrecio = registroExistente.precioUnitario;
+
+    if (input.cantidadVendida !== undefined) {
+      if (input.cantidadVendida <= 0) {
+        throw new BadRequestException('La cantidad vendida debe ser mayor a 0');
+      }
+      nuevaCantidad = input.cantidadVendida;
+      datosActualizacion.cantidadVendida = input.cantidadVendida;
+    }
+
+    if (input.precioUnitario !== undefined) {
+      if (input.precioUnitario <= 0) {
+        throw new BadRequestException('El precio unitario debe ser mayor a 0');
+      }
+      nuevoPrecio = input.precioUnitario;
+      datosActualizacion.precioUnitario = input.precioUnitario;
+    }
+
+    datosActualizacion.valorTotal = Math.round((nuevaCantidad * nuevoPrecio) * 100) / 100;
+
+    if (input.observaciones !== undefined) {
+      datosActualizacion.observaciones = input.observaciones;
+    }
+
+    const registroActualizado = await this.prisma.historialVentasProductos.update({
+      where: { id: input.id },
+      data: datosActualizacion,
+      include: {
+        producto: true,
+        metodoPago: true,
+        cliente: true,
+        usuario: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            username: true,
+            email: true
+          }
+        },
+        turno: {
+          include: {
+            puntoVenta: {
+              select: {
+                id: true,
+                codigo: true,
+                nombre: true
+              }
+            }
+          }
+        },
+        puntoVenta: {
+          select: {
+            id: true,
+            codigo: true,
+            nombre: true
+          }
+        }
+      }
+    });
+
+    return registroActualizado;
   }
 }

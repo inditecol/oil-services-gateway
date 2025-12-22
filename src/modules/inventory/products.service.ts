@@ -822,6 +822,161 @@ export class ProductsService {
     }
   }
 
+  async getShiftClosureDataByTurnoId(turnoId: string) {
+    try {
+      const turno = await this.prisma.turno.findUnique({
+        where: { id: turnoId },
+        include: {
+          puntoVenta: {
+            include: {
+              caja: true
+            }
+          },
+          usuario: true,
+          cierres: {
+            include: {
+              metodosPago: {
+                include: {
+                  metodoPagoRel: true
+                }
+              },
+              movimientosEfectivo: true,
+              usuario: true
+            },
+            orderBy: {
+              fechaCierre: 'desc'
+            },
+            take: 1
+          }
+        }
+      });
+
+      if (!turno) {
+        throw new NotFoundException(`Turno con ID ${turnoId} no encontrado`);
+      }
+
+      const cierreTurno = turno.cierres && turno.cierres.length > 0 
+        ? turno.cierres[0] 
+        : null;
+
+      if (!cierreTurno) {
+        throw new NotFoundException(`No se encontró cierre de turno para el turno ${turnoId}`);
+      }
+
+      const historialLecturas = await this.prisma.historialLectura.findMany({
+        where: {
+          turnoId: cierreTurno.id
+        },
+        include: {
+          manguera: {
+            include: {
+              producto: true,
+              surtidor: {
+                include: {
+                  puntoVenta: true
+                }
+              }
+            }
+          },
+          usuario: true
+        },
+        orderBy: {
+          fechaLectura: 'desc'
+        }
+      });
+
+      const historialVentasProductos = await this.prisma.historialVentasProductos.findMany({
+        where: {
+          turnoId: turnoId
+        },
+        include: {
+          producto: true,
+          metodoPago: true,
+          cliente: true,
+          usuario: true,
+          puntoVenta: true
+        },
+        orderBy: {
+          fechaVenta: 'desc'
+        }
+      });
+
+      const cierreFormateado = {
+        ...cierreTurno,
+        totalVentasLitros: parseFloat(cierreTurno.totalVentasLitros.toString()),
+        totalVentasGalones: parseFloat(cierreTurno.totalVentasGalones.toString()),
+        valorTotalGeneral: parseFloat(cierreTurno.valorTotalGeneral.toString()),
+        resumenSurtidores: typeof cierreTurno.resumenSurtidores === 'string'
+          ? JSON.parse(cierreTurno.resumenSurtidores)
+          : cierreTurno.resumenSurtidores
+      };
+
+      const metodosPagoFormateados = cierreTurno.metodosPago?.map(pago => ({
+        metodoPago: pago.metodoPago,
+        monto: parseFloat(pago.monto.toString()),
+        porcentaje: parseFloat(pago.porcentaje.toString()),
+        observaciones: pago.observaciones
+      })) || [];
+
+      const movimientosEfectivoFormateados = cierreTurno.movimientosEfectivo?.map(mov => ({
+        ...mov,
+        monto: parseFloat(mov.monto.toString()),
+        fecha: mov.fecha
+      })) || [];
+
+      const historialLecturasFormateado = historialLecturas.map(lectura => ({
+        ...lectura,
+        lecturaAnterior: parseFloat(lectura.lecturaAnterior.toString()),
+        lecturaActual: parseFloat(lectura.lecturaActual.toString()),
+        cantidadVendida: parseFloat(lectura.cantidadVendida.toString()),
+        valorVenta: parseFloat(lectura.valorVenta.toString())
+      }));
+
+      const historialVentasFormateado = historialVentasProductos.map(venta => ({
+        ...venta,
+        cantidadVendida: parseFloat(venta.cantidadVendida.toString()),
+        precioUnitario: parseFloat(venta.precioUnitario.toString()),
+        valorTotal: parseFloat(venta.valorTotal.toString())
+      }));
+
+      const cajaFormateada = turno.puntoVenta?.caja ? {
+        ...turno.puntoVenta.caja,
+        saldoActual: parseFloat(turno.puntoVenta.caja.saldoActual.toString()),
+        saldoInicial: parseFloat(turno.puntoVenta.caja.saldoInicial.toString())
+      } : null;
+
+      return {
+        turno: {
+          ...turno,
+          fechaInicio: turno.fechaInicio,
+          fechaFin: turno.fechaFin
+        },
+        cierreTurno: cierreFormateado,
+        metodosPago: metodosPagoFormateados,
+        historialLecturas: historialLecturasFormateado,
+        historialVentasProductos: historialVentasFormateado,
+        movimientosEfectivo: movimientosEfectivoFormateados,
+        caja: cajaFormateada,
+        puntoVenta: turno.puntoVenta ? {
+          ...turno.puntoVenta,
+          caja: cajaFormateada
+        } : null,
+        usuario: turno.usuario ? {
+          id: turno.usuario.id,
+          nombre: turno.usuario.nombre,
+          apellido: turno.usuario.apellido,
+          username: turno.usuario.username,
+          email: turno.usuario.email
+        } : null
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Error consultando datos del turno: ${error.message}`);
+    }
+  }
+
   /**
    * Dar de baja productos vencidos
    */
