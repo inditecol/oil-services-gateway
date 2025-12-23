@@ -923,38 +923,73 @@ export class ProcessShiftService {
 
               // Guardar información para registrar después en la transacción con el turno correcto
               // IMPORTANTE: Solo registrar productos tipo BEBIDA y LUBRICANTE (NO combustibles)
-              if (ventasIndividualesDetalle.length > 0 && !product.esCombustible) {
-                // Verificar que el producto sea bebida o lubricante
-                const esBebidaOLubricante = 
-                  product.tipoProducto?.toLowerCase() === 'bebida' ||
-                  product.tipoProducto?.toLowerCase() === 'lubricante' ||
-                  (!product.esCombustible && product.tipoProducto); // Si no es combustible y tiene tipoProducto
-                
-                if (esBebidaOLubricante) {
-                  ventasParaRegistrarEnHistorial.push({
-                    productoId: product.id,
-                    codigoProducto: product.codigo,
-                    unidadMedida: ventaProducto.unidadMedida,
-                    ventasIndividuales: ventasIndividualesDetalle.map((vi) => ({
-                      cantidad: vi.cantidad,
-                      precioUnitario: vi.precioUnitario,
-                      valorTotal: vi.valorTotal,
-                      observaciones: vi.observaciones,
-                      metodosPago: vi.metodosPago.map((mp) => ({
-                        metodoPago: mp.metodoPago,
-                        monto: mp.monto,
+              // Cuando seleccionPorProducto = true, también registrar combustibles si vienen en ventasProductos
+              if (!product.esCombustible || seleccionPorProducto) {
+                // Si tiene ventasIndividuales, usar ese formato
+                if (ventasIndividualesDetalle.length > 0) {
+                  // Verificar que el producto sea bebida, lubricante, o combustible (si flag activo)
+                  const debeRegistrar = 
+                    product.tipoProducto?.toLowerCase() === 'bebida' ||
+                    product.tipoProducto?.toLowerCase() === 'lubricante' ||
+                    (seleccionPorProducto && product.esCombustible) ||
+                    (!product.esCombustible && product.tipoProducto); // Si no es combustible y tiene tipoProducto
+                  
+                  if (debeRegistrar) {
+                    ventasParaRegistrarEnHistorial.push({
+                      productoId: product.id,
+                      codigoProducto: product.codigo,
+                      unidadMedida: ventaProducto.unidadMedida,
+                      ventasIndividuales: ventasIndividualesDetalle.map((vi) => ({
+                        cantidad: vi.cantidad,
+                        precioUnitario: vi.precioUnitario,
+                        valorTotal: vi.valorTotal,
+                        observaciones: vi.observaciones,
+                        metodosPago: vi.metodosPago.map((mp) => ({
+                          metodoPago: mp.metodoPago,
+                          monto: mp.monto,
+                        })),
                       })),
-                    })),
-                  });
-                  console.log(
-                    `[CIERRE_TURNO] Venta preparada para registro (${product.tipoProducto}): ${product.codigo} - ${ventasIndividualesDetalle.length} venta(s) individual(es)`,
-                  );
-                } else {
-                  console.warn(
-                    `[CIERRE_TURNO] Producto ${product.codigo} omitido: esCombustible=${product.esCombustible}, tipoProducto=${product.tipoProducto}. Solo se registran bebidas y lubricantes.`,
-                  );
+                    });
+                    console.log(
+                      `[CIERRE_TURNO] Venta preparada para registro (${product.tipoProducto || 'combustible'}): ${product.codigo} - ${ventasIndividualesDetalle.length} venta(s) individual(es)`,
+                    );
+                  } else {
+                    console.warn(
+                      `[CIERRE_TURNO] Producto ${product.codigo} omitido: esCombustible=${product.esCombustible}, tipoProducto=${product.tipoProducto}. Solo se registran bebidas, lubricantes${seleccionPorProducto ? ' y combustibles (flag activo)' : ''}.`,
+                    );
+                  }
+                } 
+                // Si NO tiene ventasIndividuales pero tiene métodos de pago consolidados (formato anterior o cuando flag activo)
+                else if (metodosPagoConsolidados.length > 0 && (seleccionPorProducto || !product.esCombustible)) {
+                  // Crear una venta individual consolidada para guardar en historial
+                  const debeRegistrar = 
+                    product.tipoProducto?.toLowerCase() === 'bebida' ||
+                    product.tipoProducto?.toLowerCase() === 'lubricante' ||
+                    (seleccionPorProducto && product.esCombustible) ||
+                    (!product.esCombustible && product.tipoProducto);
+                  
+                  if (debeRegistrar) {
+                    ventasParaRegistrarEnHistorial.push({
+                      productoId: product.id,
+                      codigoProducto: product.codigo,
+                      unidadMedida: ventaProducto.unidadMedida,
+                      ventasIndividuales: [{
+                        cantidad: cantidadTotalProducto,
+                        precioUnitario: valorTotalProducto / cantidadTotalProducto,
+                        valorTotal: valorTotalProducto,
+                        observaciones: ventaProducto.observaciones,
+                        metodosPago: metodosPagoConsolidados.map((mp) => ({
+                          metodoPago: mp.metodoPago,
+                          monto: mp.monto,
+                        })),
+                      }],
+                    });
+                    console.log(
+                      `[CIERRE_TURNO] Venta consolidada preparada para registro (${product.tipoProducto || 'combustible'}): ${product.codigo} - ${cantidadTotalProducto} ${ventaProducto.unidadMedida}`,
+                    );
+                  }
                 }
-              } else if (product.esCombustible) {
+              } else if (product.esCombustible && !seleccionPorProducto) {
                 console.warn(
                   `[CIERRE_TURNO] Producto ${product.codigo} es combustible y NO se registrará en HistorialVentasProductos. Los combustibles se registran en HistorialLectura.`,
                 );
@@ -1317,21 +1352,25 @@ export class ProcessShiftService {
               continue;
             }
 
-            // Verificar que NO sea combustible y que sea bebida o lubricante
-            if (productoDb.esCombustible) {
+            // Verificar que el producto sea válido para registrar
+            // Si seleccionPorProducto = true, también permitir combustibles
+            // Si seleccionPorProducto = false, solo bebidas y lubricantes
+            const esBebidaOLubricante =
+              productoDb.tipoProducto?.toLowerCase() === 'bebida' ||
+              productoDb.tipoProducto?.toLowerCase() === 'lubricante';
+
+            const esCombustibleYFlagActivo = productoDb.esCombustible && seleccionPorProducto;
+
+            if (productoDb.esCombustible && !seleccionPorProducto) {
               console.warn(
                 `[CIERRE_TURNO] Producto ${productoDb.codigo} es combustible y NO se registrará en HistorialVentasProductos. Los combustibles se registran en HistorialLectura.`,
               );
               continue;
             }
 
-            const esBebidaOLubricante =
-              productoDb.tipoProducto?.toLowerCase() === 'bebida' ||
-              productoDb.tipoProducto?.toLowerCase() === 'lubricante';
-
-            if (!esBebidaOLubricante) {
+            if (!esBebidaOLubricante && !esCombustibleYFlagActivo) {
               console.warn(
-                `[CIERRE_TURNO] Producto ${productoDb.codigo} (tipo: ${productoDb.tipoProducto}) NO es bebida ni lubricante. Solo se registran bebidas y lubricantes en HistorialVentasProductos.`,
+                `[CIERRE_TURNO] Producto ${productoDb.codigo} (tipo: ${productoDb.tipoProducto}, esCombustible: ${productoDb.esCombustible}) NO es válido para registrar. Solo se registran bebidas, lubricantes${seleccionPorProducto ? ' y combustibles (flag activo)' : ''} en HistorialVentasProductos.`,
               );
               continue;
             }
