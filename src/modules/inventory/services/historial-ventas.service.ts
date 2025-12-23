@@ -172,6 +172,16 @@ export class HistorialVentasService {
     const GALONES_TO_LITROS = 3.78541;
     const LITROS_TO_GALONES = 0.264172;
 
+    // Obtener configuración de la empresa para saber si seleccionPorProducto = true
+    let seleccionPorProducto = false;
+    if (empresaId) {
+      const configuracionEmpresa = await this.prisma.configuracionEmpresa.findUnique({
+        where: { empresaId: empresaId },
+        select: { seleccionPorProducto: true }
+      });
+      seleccionPorProducto = configuracionEmpresa?.seleccionPorProducto ?? false;
+    }
+
     let puntoVentaIdFiltro: string | undefined = filtros.puntoVentaId;
     let puntosVentaIds: string[] | undefined = undefined;
 
@@ -781,26 +791,30 @@ export class HistorialVentasService {
       consolidadoProductosMap.set(p.productoId, p);
     });
 
-    // Agregar o combinar productos de combustible
-    consolidadoProductosCombustible.forEach(p => {
-      if (consolidadoProductosMap.has(p.productoId)) {
-        // Si el producto ya existe (ventas de tienda y combustible), combinar
-        const existente = consolidadoProductosMap.get(p.productoId)!;
-        existente.cantidadTotalVendida += p.cantidadTotalVendida;
-        existente.valorTotalVentas += p.valorTotalVentas;
-        existente.numeroVentas += p.numeroVentas;
-        existente.precioPromedio = existente.cantidadTotalVendida > 0 
-          ? existente.valorTotalVentas / existente.cantidadTotalVendida 
-          : 0;
-        const costoTotal = existente.cantidadTotalVendida * Number(existente.producto.precioCompra || 0);
-        existente.rentabilidad = costoTotal > 0 
-          ? ((existente.valorTotalVentas - costoTotal) / costoTotal) * 100 
-          : 0;
-      } else {
-        // Si es solo combustible, agregar
-        consolidadoProductosMap.set(p.productoId, p);
-      }
-    });
+    // Agregar o combinar productos de combustible.
+    // IMPORTANTE: Si seleccionPorProducto = true, NO incluir combustibles desde historialLecturas
+    // porque ya están en historialVentasProductos (evitar duplicación).
+    if (!seleccionPorProducto) {
+      consolidadoProductosCombustible.forEach(p => {
+        if (consolidadoProductosMap.has(p.productoId)) {
+          // Si el producto ya existe (ventas de tienda y combustible), combinar
+          const existente = consolidadoProductosMap.get(p.productoId)!;
+          existente.cantidadTotalVendida += p.cantidadTotalVendida;
+          existente.valorTotalVentas += p.valorTotalVentas;
+          existente.numeroVentas += p.numeroVentas;
+          existente.precioPromedio = existente.cantidadTotalVendida > 0 
+            ? existente.valorTotalVentas / existente.cantidadTotalVendida 
+            : 0;
+          const costoTotal = existente.cantidadTotalVendida * Number(existente.producto.precioCompra || 0);
+          existente.rentabilidad = costoTotal > 0 
+            ? ((existente.valorTotalVentas - costoTotal) / costoTotal) * 100 
+            : 0;
+        } else {
+          // Si es solo combustible, agregar
+          consolidadoProductosMap.set(p.productoId, p);
+        }
+      });
+    }
 
     const consolidadoProductos = Array.from(consolidadoProductosMap.values());
 
@@ -820,16 +834,23 @@ export class HistorialVentasService {
     console.log(`[PRODUCTOS] ===================================`);
 
     // Calcular totales combinados
+    // IMPORTANTE: Si seleccionPorProducto = true, NO incluir combustibles desde historialLecturas en los totales
     const totalVentasTienda = Number(estadisticasTiendaActualizadas._sum.valorTotal || 0);
-    const totalVentasCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.valorTotalVentas, 0);
+    const totalVentasCombustible = seleccionPorProducto 
+      ? 0 // No incluir combustibles desde historialLecturas cuando seleccionPorProducto = true
+      : consolidadoProductosCombustible.reduce((sum, p) => sum + p.valorTotalVentas, 0);
     const totalVentas = totalVentasTienda + totalVentasCombustible;
 
     const totalCantidadTienda = Number(estadisticasTiendaActualizadas._sum.cantidadVendida || 0);
-    const totalCantidadCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.cantidadTotalVendida, 0);
+    const totalCantidadCombustible = seleccionPorProducto 
+      ? 0 // No incluir combustibles desde historialLecturas cuando seleccionPorProducto = true
+      : consolidadoProductosCombustible.reduce((sum, p) => sum + p.cantidadTotalVendida, 0);
     const totalCantidad = totalCantidadTienda + totalCantidadCombustible;
 
     const totalTransaccionesTienda = estadisticasTiendaActualizadas._count.id || 0;
-    const totalTransaccionesCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.numeroVentas, 0);
+    const totalTransaccionesCombustible = seleccionPorProducto 
+      ? 0 // No incluir combustibles desde historialLecturas cuando seleccionPorProducto = true
+      : consolidadoProductosCombustible.reduce((sum, p) => sum + p.numeroVentas, 0);
     const totalTransacciones = totalTransaccionesTienda + totalTransaccionesCombustible;
 
     const promedioPorVenta = totalTransacciones > 0 ? totalVentas / totalTransacciones : 0;

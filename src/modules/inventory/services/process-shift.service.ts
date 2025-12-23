@@ -113,6 +113,30 @@ export class ProcessShiftService {
       const historialesLecturaIds: string[] = [];
 
       // 3. PROCESAR CADA SURTIDOR (ya validado que pertenece al punto de venta)
+      // Si seleccionPorProducto = true, identificar productos de combustibles que ya vienen en ventasProductos
+      // para evitar procesarlos dos veces desde lecturasSurtidores
+      const productosCombustiblesEnVentasProductos = new Set<string>();
+      const productosCombustiblesEnVentasProductosNormalizados = new Map<string, string>();
+      
+      if (seleccionPorProducto && cierreTurnoInput.ventasProductos && cierreTurnoInput.ventasProductos.length > 0) {
+        for (const ventaProducto of cierreTurnoInput.ventasProductos) {
+          // Normalizar código (trim, uppercase) para comparación
+          const codigoNormalizado = ventaProducto.codigoProducto?.trim().toUpperCase() || '';
+          
+          // Buscar el producto para verificar si es combustible
+          try {
+            const product = await this.productsService.findByCode(ventaProducto.codigoProducto);
+            if (product && product.esCombustible) {
+              productosCombustiblesEnVentasProductos.add(ventaProducto.codigoProducto);
+              productosCombustiblesEnVentasProductosNormalizados.set(codigoNormalizado, ventaProducto.codigoProducto);
+            }
+          } catch (error) {
+            // Si no se encuentra el producto, continuar sin interrumpir el proceso
+            console.warn(`[CIERRE_TURNO] No se pudo verificar producto ${ventaProducto.codigoProducto}: ${error.message}`);
+          }
+        }
+      }
+
       for (const surtidor of cierreTurnoInput.lecturasSurtidores) {
         const ventasCalculadas = [];
         let totalSurtidorLitros = 0;
@@ -139,6 +163,154 @@ export class ProcessShiftService {
             console.log(
               `[CIERRE_TURNO] Producto encontrado: ${product.codigo} - Stock actual: ${product.stockActual}L`,
             );
+
+            // Si seleccionPorProducto = true y el producto es combustible y ya viene en ventasProductos,
+            // solo actualizar lecturas, NO procesar ventas (evitar duplicación)
+            const codigoMangueraNormalizado = manguera.codigoProducto?.trim().toUpperCase() || '';
+            const productoYaEnVentasProductos = 
+              productosCombustiblesEnVentasProductos.has(manguera.codigoProducto) ||
+              productosCombustiblesEnVentasProductosNormalizados.has(codigoMangueraNormalizado);
+            
+            if (
+              seleccionPorProducto &&
+              product.esCombustible &&
+              productoYaEnVentasProductos
+            ) {
+              // Calcular cantidad vendida solo para actualizar lecturas
+              const cantidadVendida =
+                manguera.lecturaActual - manguera.lecturaAnterior;
+              if (cantidadVendida < 0) {
+                errores.push(
+                  `Lectura inválida en surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}: lectura actual menor que anterior`,
+                );
+                continue;
+              }
+
+              if (cantidadVendida === 0) {
+                advertencias.push(
+                  `Sin ventas en surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`,
+                );
+                continue;
+              }
+
+              // Convertir a ambas unidades
+              let cantidadLitros = cantidadVendida;
+              let cantidadGalones = cantidadVendida;
+
+              if (manguera.unidadMedida.toLowerCase() === 'galones') {
+                cantidadLitros = cantidadVendida * GALONES_TO_LITROS;
+              } else if (manguera.unidadMedida.toLowerCase() === 'litros') {
+                cantidadGalones = cantidadVendida * LITROS_TO_GALONES;
+              } else {
+                errores.push(
+                  `Unidad no válida: ${manguera.unidadMedida} en surtidor ${surtidor.numeroSurtidor}`,
+                );
+                continue;
+              }
+
+              // Redondear
+              cantidadLitros = Math.round(cantidadLitros * 100) / 100;
+              cantidadGalones = Math.round(cantidadGalones * 100) / 100;
+
+              // Calcular precios
+              const precioLitro = Number(product.precioVenta);
+
+              // ACTUALIZAR SOLO LECTURAS (no procesar ventas)
+              try {
+                const lecturaActualizada =
+                  await this.surtidoresService.updateMangueraReadingsWithHistory(
+                    surtidor.numeroSurtidor,
+                    manguera.numeroManguera,
+                    manguera.lecturaActual,
+                    precioLitro,
+                    'cierre_turno',
+                    user.id,
+                    new Date(cierreTurnoInput.startTime),
+                    new Date(cierreTurnoInput.finishTime),
+                    `Cierre de turno ${cierreTurnoInput.puntoVentaId} - Cantidad vendida: ${cantidadLitros}L (venta procesada desde ventasProductos)`,
+                    undefined, // cierreTurnoId se actualizará después
+                    new Date(cierreTurnoInput.finishTime),
+                    cierreTurnoInput.puntoVentaId,
+                  );
+
+                if (!lecturaActualizada.success) {
+                  advertencias.push(
+                    `No se pudo actualizar lecturas para surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`,
+                  );
+                } else {
+                  console.log(
+                    `[CIERRE_TURNO] Lecturas actualizadas (sin procesar ventas): surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`,
+                  );
+                  if (lecturaActualizada.historialId) {
+                    historialesLecturaIds.push(lecturaActualizada.historialId);
+                  }
+                }
+              } catch (lecturaError) {
+                console.error(
+                  `[CIERRE_TURNO] Error actualizando lecturas:`,
+                  lecturaError,
+                );
+                advertencias.push(
+                  `Error actualizando lecturas en surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}: ${lecturaError.message}`,
+                );
+              }
+
+              // Verificar stock del tanque (pero no actualizar, eso se hace desde ventasProductos)
+              try {
+                const tanque = await this.prisma.tanque.findFirst({
+                  where: {
+                    productoId: product.id,
+                    puntoVentaId: cierreTurnoInput.puntoVentaId,
+                    activo: true,
+                  },
+                });
+
+                if (!tanque) {
+                  errores.push(
+                    `No se encontró tanque activo para ${product.codigo} en punto de venta ${cierreTurnoInput.puntoVentaId}`,
+                  );
+                } else {
+                  const nivelActualTanque = parseFloat(
+                    tanque.nivelActual.toString(),
+                  );
+
+                  if (cantidadGalones > nivelActualTanque) {
+                    errores.push(
+                      `Stock insuficiente en tanque para ${manguera.codigoProducto} en surtidor ${surtidor.numeroSurtidor}: necesario ${cantidadGalones}G, disponible ${nivelActualTanque}G en tanque`,
+                    );
+                  }
+                }
+              } catch (tankError) {
+                errores.push(
+                  `Error verificando tanque de ${manguera.codigoProducto}: ${tankError.message}`,
+                );
+              }
+
+              // Contar venta de combustible para estadísticas
+              if (cantidadVendida > 0) {
+                ventasCombustiblesCalculadas++;
+              }
+
+              // Agregar a resumen (solo para estadísticas, no para guardar ventas)
+              ventasCalculadas.push({
+                codigoProducto: manguera.codigoProducto,
+                nombreProducto: product.nombre,
+                cantidadVendidaGalones: cantidadGalones,
+                cantidadVendidaLitros: cantidadLitros,
+                precioUnitarioLitro: precioLitro,
+                precioUnitarioGalon: Math.round((precioLitro / LITROS_TO_GALONES) * 100) / 100,
+                valorTotalVenta: Math.round(cantidadLitros * precioLitro * 100) / 100,
+                unidadOriginal: manguera.unidadMedida,
+                metodosPago: [], // No hay métodos de pago aquí, vienen desde ventasProductos
+              });
+
+              totalSurtidorLitros += cantidadLitros;
+              totalSurtidorGalones += cantidadGalones;
+              valorTotalSurtidor += cantidadLitros * precioLitro;
+
+              // CONTINUAR con la siguiente manguera (no procesar ventas desde aquí)
+              continue;
+            }
 
             // Calcular cantidad vendida
             const cantidadVendida =
@@ -460,6 +632,23 @@ export class ProcessShiftService {
                   );
                 }
               }
+            }
+
+            // IMPORTANTE: Si seleccionPorProducto = true y el producto es combustible,
+            // NO agregar a ventasParaRegistrarEnHistorial desde lecturasSurtidores
+            // Las ventas de combustibles deben venir solo desde ventasProductos cuando el flag está activo
+            if (seleccionPorProducto && product.esCombustible) {
+              console.log(
+                `[CIERRE_TURNO] ⚠️ ADVERTENCIA: Producto combustible "${manguera.codigoProducto}" procesado desde lecturasSurtidores ` +
+                `cuando seleccionPorProducto=true. ` +
+                `Este producto DEBE venir en ventasProductos para evitar duplicación. ` +
+                `Solo se actualizarán las lecturas, NO se guardará venta en historial_ventas_productos desde aquí.`,
+              );
+              advertencias.push(
+                `Producto combustible ${manguera.codigoProducto} en surtidor ${surtidor.numeroSurtidor} ` +
+                `procesado desde lecturasSurtidores cuando seleccionPorProducto=true. ` +
+                `Asegúrese de incluir este producto en ventasProductos para que se guarde correctamente.`,
+              );
             }
 
             // Agregar a resumen
@@ -1332,7 +1521,19 @@ export class ProcessShiftService {
         // Ahora que tenemos el turno creado, registramos las ventas con el turno correcto
         if (ventasParaRegistrarEnHistorial.length > 0) {
           console.log(
+            `[CIERRE_TURNO] ========================================`,
+          );
+          console.log(
             `[CIERRE_TURNO] Registrando ${ventasParaRegistrarEnHistorial.length} productos en HistorialVentasProductos con turno ${turno.id}`,
+          );
+          console.log(
+            `[CIERRE_TURNO] Configuración: seleccionPorProducto=${seleccionPorProducto}`,
+          );
+          console.log(
+            `[CIERRE_TURNO] Productos a registrar: ${ventasParaRegistrarEnHistorial.map(v => v.codigoProducto).join(', ')}`,
+          );
+          console.log(
+            `[CIERRE_TURNO] ========================================`,
           );
 
           for (const ventaProducto of ventasParaRegistrarEnHistorial) {
