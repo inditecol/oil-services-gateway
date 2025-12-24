@@ -36,6 +36,7 @@ export class ShiftsResolver {
     @Args('fechaDesde', { nullable: true }) fechaDesde?: Date,
     @Args('fechaHasta', { nullable: true }) fechaHasta?: Date,
     @Args('usuarioId', { type: () => ID, nullable: true }) usuarioId?: string,
+    @Args('puntoVentaId', { type: () => ID, nullable: true }) puntoVentaId?: string,
     @Args('activo', { nullable: true }) activo?: boolean
   ): Promise<ShiftListResponse> {
     return this.shiftsService.findAll({
@@ -44,6 +45,7 @@ export class ShiftsResolver {
       startDate: fechaDesde,
       endDate: fechaHasta,
       userId: usuarioId,
+      puntoVentaId: puntoVentaId,
       active: activo
     });
   }
@@ -116,6 +118,7 @@ export class ShiftsResolver {
     @Args('usuarioId', { type: () => ID, nullable: true }) usuarioId?: string,
     @Args('fechaDesde', { nullable: true }) fechaDesde?: Date,
     @Args('fechaHasta', { nullable: true }) fechaHasta?: Date,
+    @Args('puntoVentaId', { type: () => ID, nullable: true }) puntoVentaId?: string,
     @Args('activo', { nullable: true }) activo?: boolean,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number = 1,
     @Args('limit', { type: () => Int, defaultValue: 10 }) limit: number = 10
@@ -124,6 +127,7 @@ export class ShiftsResolver {
       userId: usuarioId,
       startDate: fechaDesde,
       endDate: fechaHasta,
+      puntoVentaId: puntoVentaId,
       active: activo,
       page,
       limit,

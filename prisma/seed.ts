@@ -35,6 +35,20 @@ async function main() {
     },
   });
 
+  // 1.1. CREAR CONFIGURACIÓN DE EMPRESA
+  console.log('⚙️ Creando configuración de empresa...');
+
+  await prisma.configuracionEmpresa.upsert({
+    where: { empresaId: empresaPrincipal.id },
+    update: {},
+    create: {
+      empresaId: empresaPrincipal.id,
+      seleccionPorProducto: true,
+    },
+  });
+
+  console.log('✅ Configuración de empresa creada');
+
   // 2. CREAR PUNTOS DE VENTA
   console.log('🏪 Creando puntos de venta...');
 

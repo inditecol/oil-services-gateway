@@ -1577,60 +1577,74 @@ export class ProcessShiftService {
             }
 
             for (const ventaIndividual of ventaProducto.ventasIndividuales) {
-              for (const metodoPago of ventaIndividual.metodosPago) {
-                try {
-                  // Buscar el método de pago por código
-                  const metodoPagoDb = await prisma.metodoPago.findUnique({
-                    where: { codigo: metodoPago.metodoPago },
-                  });
-
-                  if (metodoPagoDb) {
-                    // Calcular un punto medio entre fechaInicio y fechaFin del turno
-                    // Esto asegura que el producto quede dentro del rango específico del turno
-                    // y no aparezca en turnos anteriores o posteriores que puedan solaparse en los límites
-                    const fechaInicioTurno = new Date(turno.fechaInicio);
-                    const fechaFinTurno = new Date(turno.fechaFin);
-                    const puntoMedioTurno = new Date(
-                      (fechaInicioTurno.getTime() + fechaFinTurno.getTime()) / 2
-                    );
-                    
-                    await prisma.historialVentasProductos.create({
-                      data: {
-                        fechaVenta: puntoMedioTurno, // ✅ Usar punto medio del turno para que quede dentro del rango específico
-                        cantidadVendida: ventaIndividual.cantidad,
-                        precioUnitario: ventaIndividual.precioUnitario,
-                        valorTotal: ventaIndividual.valorTotal,
-                        unidadMedida: ventaProducto.unidadMedida,
-                        observaciones:
-                          ventaIndividual.observaciones ||
-                          `Venta registrada en cierre de turno - ${metodoPago.metodoPago}`,
-                        productoId: ventaProducto.productoId,
-                        metodoPagoId: metodoPagoDb.id,
-                        usuarioId: user.id,
-                        turnoId: turno.id, // ✅ Usando el turno recién creado
-                        puntoVentaId: cierreTurnoInput.puntoVentaId,
-                      },
-                    });
-                    console.log(
-                      `[CIERRE_TURNO] Venta registrada en historial (${productoDb.tipoProducto}): ${ventaProducto.codigoProducto} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - ${metodoPago.metodoPago} - Turno: ${turno.id}`,
-                    );
-                  } else {
-                    console.warn(
-                      `[CIERRE_TURNO] Método de pago no encontrado: ${metodoPago.metodoPago}`,
-                    );
-                    advertencias.push(
-                      `Método de pago no encontrado: ${metodoPago.metodoPago} para producto ${ventaProducto.codigoProducto}`,
-                    );
-                  }
-                } catch (error) {
-                  console.error(
-                    `[CIERRE_TURNO] Error al registrar venta individual en historial:`,
-                    error,
-                  );
-                  advertencias.push(
-                    `Error al registrar venta de ${ventaProducto.codigoProducto} en historial: ${error.message}`,
+              try {
+                // IMPORTANTE: Para combustibles cuando seleccionPorProducto = true,
+                // crear UN SOLO registro por venta individual, no uno por método de pago
+                // Usar el método de pago con mayor monto como método de pago principal
+                let metodoPagoPrincipal = ventaIndividual.metodosPago[0];
+                if (ventaIndividual.metodosPago.length > 1) {
+                  // Encontrar el método de pago con mayor monto
+                  metodoPagoPrincipal = ventaIndividual.metodosPago.reduce((prev, current) => 
+                    (current.monto > prev.monto) ? current : prev
                   );
                 }
+
+                // Buscar el método de pago por código
+                const metodoPagoDb = await prisma.metodoPago.findUnique({
+                  where: { codigo: metodoPagoPrincipal.metodoPago },
+                });
+
+                if (metodoPagoDb) {
+                  // Calcular un punto medio entre fechaInicio y fechaFin del turno
+                  // Esto asegura que el producto quede dentro del rango específico del turno
+                  // y no aparezca en turnos anteriores o posteriores que puedan solaparse en los límites
+                  const fechaInicioTurno = new Date(turno.fechaInicio);
+                  const fechaFinTurno = new Date(turno.fechaFin);
+                  const puntoMedioTurno = new Date(
+                    (fechaInicioTurno.getTime() + fechaFinTurno.getTime()) / 2
+                  );
+                  
+                  // Crear lista de métodos de pago para las observaciones
+                  const metodosPagoStr = ventaIndividual.metodosPago
+                    .map(mp => `${mp.metodoPago}: $${mp.monto}`)
+                    .join(', ');
+                  
+                  await prisma.historialVentasProductos.create({
+                    data: {
+                      fechaVenta: puntoMedioTurno, // ✅ Usar punto medio del turno para que quede dentro del rango específico
+                      cantidadVendida: ventaIndividual.cantidad,
+                      precioUnitario: ventaIndividual.precioUnitario,
+                      valorTotal: ventaIndividual.valorTotal,
+                      unidadMedida: ventaProducto.unidadMedida,
+                      observaciones:
+                        ventaIndividual.observaciones ||
+                        `Venta registrada en cierre de turno - Métodos de pago: ${metodosPagoStr}`,
+                      productoId: ventaProducto.productoId,
+                      metodoPagoId: metodoPagoDb.id,
+                      usuarioId: user.id,
+                      turnoId: turno.id, // ✅ Usando el turno recién creado
+                      puntoVentaId: cierreTurnoInput.puntoVentaId,
+                    },
+                  });
+                  console.log(
+                    `[CIERRE_TURNO] Venta registrada en historial (${productoDb.tipoProducto}): ${ventaProducto.codigoProducto} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - Valor: $${ventaIndividual.valorTotal} - Métodos de pago: ${metodosPagoStr} - Turno: ${turno.id}`,
+                  );
+                } else {
+                  console.warn(
+                    `[CIERRE_TURNO] Método de pago no encontrado: ${metodoPagoPrincipal.metodoPago}`,
+                  );
+                  advertencias.push(
+                    `Método de pago no encontrado: ${metodoPagoPrincipal.metodoPago} para producto ${ventaProducto.codigoProducto}`,
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  `[CIERRE_TURNO] Error al registrar venta individual en historial:`,
+                  error,
+                );
+                advertencias.push(
+                  `Error al registrar venta de ${ventaProducto.codigoProducto} en historial: ${error.message}`,
+                );
               }
             }
           }

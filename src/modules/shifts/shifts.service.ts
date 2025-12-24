@@ -178,6 +178,7 @@ export class ShiftsService {
 
   async findAll(filters?: {
     userId?: string;
+    puntoVentaId?: string;
     startDate?: Date;
     endDate?: Date;
     active?: boolean;
@@ -193,6 +194,10 @@ export class ShiftsService {
 
       if (filters?.userId) {
         where.usuarioId = filters.userId;
+      }
+
+      if (filters?.puntoVentaId) {
+        where.puntoVentaId = filters.puntoVentaId;
       }
 
       if (filters?.startDate || filters?.endDate) {
@@ -214,6 +219,7 @@ export class ShiftsService {
           where,
           include: {
             usuario: true,
+            puntoVenta: true,
           },
           orderBy: { fechaInicio: 'desc' },
           skip,
