@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args, ID, Int, Float } from '@nestjs/graphql';
-import { UseGuards, UnauthorizedException } from '@nestjs/common';
+import { UseGuards, UnauthorizedException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -226,12 +226,97 @@ export class ProductsResolver {
 
   @Mutation(() => Producto)
   @UseGuards(RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('admin', 'manager', 'employee')
   async updateProduct(
     @Args('id', { type: () => ID }) id: string,
     @Args('updateProductInput') updateProductInput: UpdateProductInput,
     @CurrentUser() user: any
   ): Promise<Producto> {
+    // Obtener el rol del usuario
+    const userRole = user.rol?.nombre || user.rol || user.role || user.userRole;
+
+    // Si es empleado, validar restricciones
+    if (userRole === 'employee') {
+      // IMPORTANTE: Validar ANTES de obtener el producto para evitar que se mezclen objetos
+      // Los valores por defecto del DTO pueden estar presentes, pero debemos validar solo los campos realmente enviados
+      
+      // 1. Obtener el producto actual de la BD primero (necesitamos precioCompra para validar)
+      const existingProduct = await this.productsService.findById(id);
+      
+      if (!existingProduct) {
+        throw new NotFoundException('Producto no encontrado');
+      }
+
+      // 2. Validar que el producto es combustible
+      if (!existingProduct.esCombustible) {
+        throw new ForbiddenException('Los empleados solo pueden actualizar el precio de productos combustibles');
+      }
+
+      // 3. Validar que solo viene precioVenta (y opcionalmente motivoCambioPrecio)
+      // IMPORTANTE: Comparar con los valores del producto existente para detectar solo cambios reales
+      const allowedFields = ['precioVenta', 'motivoCambioPrecio'];
+      
+      // Valores por defecto del DTO que pueden estar presentes pero no fueron enviados
+      const defaultValues = {
+        moneda: 'COP',
+        stockMinimo: 0,
+        stockActual: 0,
+        esCombustible: false,
+        activo: true,
+      };
+      
+      // Obtener solo los campos que realmente fueron enviados (comparando con valores por defecto y con el producto existente)
+      const inputEntries = Object.entries(updateProductInput).filter(([key, value]) => {
+        // Excluir campos que son valores por defecto del DTO
+        if (defaultValues[key] !== undefined && value === defaultValues[key]) {
+          return false;
+        }
+        
+        // Excluir campos que coinciden con el producto existente (no fueron modificados)
+        if (existingProduct[key] !== undefined && 
+            JSON.stringify(value) === JSON.stringify(existingProduct[key])) {
+          return false;
+        }
+        
+        // Incluir solo si tiene un valor real y es diferente de undefined/null/vacío
+        return value !== undefined && 
+               value !== null && 
+               value !== '' &&
+               typeof value !== 'function' &&
+               !(typeof value === 'object' && value.constructor === Object && Object.keys(value).length === 0);
+      });
+      
+      const inputKeys = inputEntries.map(([key]) => key);
+      
+      // Verificar que todos los campos presentes están en la lista permitida
+      const invalidFields = inputKeys.filter(key => !allowedFields.includes(key));
+      
+      if (invalidFields.length > 0) {
+        throw new ForbiddenException(`Los empleados solo pueden actualizar el precio de venta. Campos no permitidos detectados: ${invalidFields.join(', ')}`);
+      }
+
+      if (!updateProductInput.precioVenta) {
+        throw new ForbiddenException('El precio de venta es requerido');
+      }
+
+      // 4. Validar precioVenta > precioCompra (usando precioCompra de la BD)
+      const precioCompraActual = parseFloat(existingProduct.precioCompra.toString());
+      const precioVentaNuevo = parseFloat(updateProductInput.precioVenta.toString());
+      
+      if (precioVentaNuevo <= precioCompraActual) {
+        throw new BadRequestException('El precio de venta debe ser mayor al precio de compra');
+      }
+
+      // 5. Filtrar el input para solo incluir precioVenta y motivoCambioPrecio
+      const filteredInput: UpdateProductInput = {
+        precioVenta: updateProductInput.precioVenta,
+        ...(updateProductInput.motivoCambioPrecio && { motivoCambioPrecio: updateProductInput.motivoCambioPrecio }),
+      };
+
+      return this.productsService.update(id, filteredInput, user.id, true);
+    }
+
+    // Para admin y manager, comportamiento normal
     return this.productsService.update(id, updateProductInput, user.id);
   }
 

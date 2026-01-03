@@ -1,6 +1,7 @@
 import { ObjectType, Field, ID, HideField } from '@nestjs/graphql';
 import { Rol } from './rol.entity';
 import { PointOfSale } from '../../point-of-sale/entities/point-of-sale.entity';
+import { ConfiguracionEmpresaPayload } from '../../company/entities/configuracion-empresa.entity';
 
 @ObjectType()
 export class User {
@@ -55,4 +56,7 @@ export class User {
 
   @Field(() => [PointOfSale])
   puntosVenta: PointOfSale[];
+
+  @Field(() => ConfiguracionEmpresaPayload, { nullable: true })
+  configuracionEmpresa?: ConfiguracionEmpresaPayload;
 } 
