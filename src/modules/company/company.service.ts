@@ -2,7 +2,10 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CreateConfiguracionEmpresaDto } from './dto/create-configuracion-empresa.dto';
+import { UpdateConfiguracionEmpresaDto } from './dto/update-configuracion-empresa.dto';
 import { Company } from './entities/company.entity';
+import { ConfiguracionEmpresa } from './entities/configuracion-empresa.entity';
 
 @Injectable()
 export class CompanyService {
@@ -707,6 +710,135 @@ export class CompanyService {
           puntosVenta: [],
         },
       })),
+    };
+  }
+
+  // ==========================================
+  // MÉTODOS PARA CONFIGURACIÓN DE EMPRESA
+  // ==========================================
+
+  async createConfiguracionEmpresa(
+    createConfiguracionDto: CreateConfiguracionEmpresaDto,
+  ): Promise<ConfiguracionEmpresa> {
+    // Verificar que la empresa existe
+    const empresa = await this.prisma.empresa.findUnique({
+      where: { id: createConfiguracionDto.empresaId },
+    });
+
+    if (!empresa) {
+      throw new NotFoundException('Empresa no encontrada');
+    }
+
+    // Verificar si ya existe una configuración para esta empresa
+    const configuracionExistente = await this.prisma.configuracionEmpresa.findUnique({
+      where: { empresaId: createConfiguracionDto.empresaId },
+    });
+
+    if (configuracionExistente) {
+      throw new ConflictException('Ya existe una configuración para esta empresa');
+    }
+
+    const configuracion = await this.prisma.configuracionEmpresa.create({
+      data: {
+        empresaId: createConfiguracionDto.empresaId,
+        seleccionPorProducto: createConfiguracionDto.seleccionPorProducto,
+      },
+    });
+
+    return {
+      id: configuracion.id,
+      empresaId: configuracion.empresaId,
+      seleccionPorProducto: configuracion.seleccionPorProducto,
+      createdAt: configuracion.createdAt,
+      updatedAt: configuracion.updatedAt,
+    };
+  }
+
+  async getConfiguracionEmpresa(empresaId: string): Promise<ConfiguracionEmpresa | null> {
+    const configuracion = await this.prisma.configuracionEmpresa.findUnique({
+      where: { empresaId },
+    });
+
+    if (!configuracion) {
+      return null;
+    }
+
+    return {
+      id: configuracion.id,
+      empresaId: configuracion.empresaId,
+      seleccionPorProducto: configuracion.seleccionPorProducto,
+      createdAt: configuracion.createdAt,
+      updatedAt: configuracion.updatedAt,
+    };
+  }
+
+  async updateConfiguracionEmpresa(
+    updateConfiguracionDto: UpdateConfiguracionEmpresaDto,
+  ): Promise<ConfiguracionEmpresa> {
+    // Verificar que la empresa existe
+    const empresa = await this.prisma.empresa.findUnique({
+      where: { id: updateConfiguracionDto.empresaId },
+    });
+
+    if (!empresa) {
+      throw new NotFoundException('Empresa no encontrada');
+    }
+
+    // Verificar si existe la configuración
+    const configuracionExistente = await this.prisma.configuracionEmpresa.findUnique({
+      where: { empresaId: updateConfiguracionDto.empresaId },
+    });
+
+    if (!configuracionExistente) {
+      throw new NotFoundException('Configuración no encontrada para esta empresa');
+    }
+
+    const configuracion = await this.prisma.configuracionEmpresa.update({
+      where: { empresaId: updateConfiguracionDto.empresaId },
+      data: {
+        seleccionPorProducto: updateConfiguracionDto.seleccionPorProducto,
+      },
+    });
+
+    return {
+      id: configuracion.id,
+      empresaId: configuracion.empresaId,
+      seleccionPorProducto: configuracion.seleccionPorProducto,
+      createdAt: configuracion.createdAt,
+      updatedAt: configuracion.updatedAt,
+    };
+  }
+
+  async createOrUpdateConfiguracionEmpresa(
+    createConfiguracionDto: CreateConfiguracionEmpresaDto,
+  ): Promise<ConfiguracionEmpresa> {
+    // Verificar que la empresa existe
+    const empresa = await this.prisma.empresa.findUnique({
+      where: { id: createConfiguracionDto.empresaId },
+    });
+
+    if (!empresa) {
+      throw new NotFoundException('Empresa no encontrada');
+    }
+
+    // Intentar actualizar, si no existe, crear
+    const configuracion = await this.prisma.configuracionEmpresa.upsert({
+      where: { empresaId: createConfiguracionDto.empresaId },
+      update: {
+        seleccionPorProducto: createConfiguracionDto.seleccionPorProducto,
+      },
+      create: {
+        empresaId: createConfiguracionDto.empresaId,
+        seleccionPorProducto: createConfiguracionDto.seleccionPorProducto,
+      },
+    });
+
+    return {
+      id: configuracion.id,
+      empresaId: configuracion.empresaId,
+      seleccionPorProducto: configuracion.seleccionPorProducto,
+      createdAt: configuracion.createdAt,
+      updatedAt: configuracion.updatedAt,
     };
   }
 } 

@@ -165,12 +165,19 @@ export class HistorialVentasService {
   }
 
   async obtenerResumenVentasPorPeriodo(filtros: FiltrosReporteVentasInput, empresaId?: string): Promise<ResumenVentasProductos> {
-    console.log(`[PRODUCTOS] ========== INICIO obtenerResumenVentasPorPeriodo ==========`);
-    console.log(`[PRODUCTOS] Filtros recibidos:`, JSON.stringify(filtros, null, 2));
-    console.log(`[PRODUCTOS] empresaId:`, empresaId);
     
     const GALONES_TO_LITROS = 3.78541;
     const LITROS_TO_GALONES = 0.264172;
+
+    // Obtener configuración de la empresa para saber si seleccionPorProducto = true
+    let seleccionPorProducto = false;
+    if (empresaId) {
+      const configuracionEmpresa = await this.prisma.configuracionEmpresa.findUnique({
+        where: { empresaId: empresaId },
+        select: { seleccionPorProducto: true }
+      });
+      seleccionPorProducto = configuracionEmpresa?.seleccionPorProducto ?? false;
+    }
 
     let puntoVentaIdFiltro: string | undefined = filtros.puntoVentaId;
     let puntosVentaIds: string[] | undefined = undefined;
@@ -248,6 +255,51 @@ export class HistorialVentasService {
     // Filtro por fecha - Usar fechas EXACTAS con hora para filtrar por turno específico
     // El frontend envía fechaInicio y fechaFin del turno con hora (ej: 2025-12-01T14:00:00 a 2025-12-01T22:00:00)
     // Usamos estas fechas exactas para filtrar solo los productos del turno específico
+    // IMPORTANTE: Cuando hay fechas específicas, también filtrar por turnoId para evitar incluir datos de otros turnos
+    let turnoIdsFiltro: string[] | undefined = undefined;
+    
+    if (filtros.fechaInicio && filtros.fechaFin) {
+      const fechaInicioDate = new Date(filtros.fechaInicio);
+      const fechaFinDate = new Date(filtros.fechaFin);
+      
+      // Extraer hora en formato HH:mm para filtrar por horaInicio y horaFin del turno
+      const extraerHoraEnFormatoHHmm = (date: Date): string => {
+        const hours = date.getUTCHours().toString().padStart(2, '0');
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+      
+      const horaInicio = extraerHoraEnFormatoHHmm(fechaInicioDate);
+      const horaFin = extraerHoraEnFormatoHHmm(fechaFinDate);
+      
+      // Normalizar fechaInicio para comparar solo la fecha (sin hora)
+      const fechaInicioInicio = new Date(fechaInicioDate);
+      fechaInicioInicio.setUTCHours(0, 0, 0, 0);
+      const fechaInicioFin = new Date(fechaInicioDate);
+      fechaInicioFin.setUTCHours(23, 59, 59, 999);
+      
+      // Buscar turnos que coincidan con fechaInicio (solo fecha), horaInicio y horaFin
+      const turnos = await this.prisma.turno.findMany({
+        where: {
+          fechaInicio: {
+            gte: fechaInicioInicio,
+            lte: fechaInicioFin,
+          },
+          horaInicio: horaInicio,
+          horaFin: horaFin,
+          ...(puntoVentaIdFiltro ? { puntoVentaId: puntoVentaIdFiltro } : 
+              puntosVentaIds && puntosVentaIds.length > 0 ? { puntoVentaId: { in: puntosVentaIds } } : {}),
+        },
+        select: { id: true }
+      });
+      
+      if (turnos.length > 0) {
+        turnoIdsFiltro = turnos.map(t => t.id);
+        // Agregar filtro por turnoId a whereTienda para asegurar que solo se incluyan productos del turno específico
+        whereTienda.turnoId = { in: turnoIdsFiltro };
+      }
+    }
+    
     if (filtros.fechaInicio) {
       const fechaInicioExacta = new Date(filtros.fechaInicio);
       whereTienda.fechaVenta = { ...whereTienda.fechaVenta, gte: fechaInicioExacta };
@@ -260,9 +312,6 @@ export class HistorialVentasService {
       whereVenta.fechaVenta = { ...whereVenta.fechaVenta, lte: fechaFinExacta };
     }
     
-    console.log(`[PRODUCTOS] Filtros de fecha procesados (con hora exacta):`);
-    console.log(`[PRODUCTOS]   fechaInicio: ${filtros.fechaInicio ? new Date(filtros.fechaInicio).toISOString() : 'null'}`);
-    console.log(`[PRODUCTOS]   fechaFin: ${filtros.fechaFin ? new Date(filtros.fechaFin).toISOString() : 'null'}`);
 
     // Obtener estadísticas generales de productos de tienda desde historialVentasProductos
     const estadisticasTienda = await this.prisma.historialVentasProductos.aggregate({
@@ -278,7 +327,6 @@ export class HistorialVentasService {
 
     // Obtener productos vendidos consolidados de tienda desde historialVentasProductos
     // IMPORTANTE: historialVentasProductos puede tener TODOS los tipos de productos (combustibles, bebidas, lubricantes)
-    console.log(`[PRODUCTOS] Consultando historialVentasProductos con filtro:`, JSON.stringify(whereTienda, null, 2));
     const productosVendidosTienda = await this.prisma.historialVentasProductos.groupBy({
       by: ['productoId'],
       where: whereTienda,
@@ -293,26 +341,8 @@ export class HistorialVentasService {
         precioUnitario: true
       }
     });
-    console.log(`[PRODUCTOS] Productos encontrados en historialVentasProductos: ${productosVendidosTienda.length}`);
-    if (productosVendidosTienda.length > 0) {
-      console.log(`[PRODUCTOS] IDs de productos desde historialVentasProductos:`, productosVendidosTienda.map(p => p.productoId));
-      
-      // Obtener información de los productos para saber si son combustibles o no
-      const productosIds = productosVendidosTienda.map(p => p.productoId);
-      const productosInfo = await this.prisma.producto.findMany({
-        where: { id: { in: productosIds } },
-        select: { id: true, nombre: true, esCombustible: true, tipoProducto: true }
-      });
-      console.log(`[PRODUCTOS] Información de productos desde historialVentasProductos:`, productosInfo.map(p => ({
-        id: p.id,
-        nombre: p.nombre,
-        esCombustible: p.esCombustible,
-        tipoProducto: p.tipoProducto
-      })));
-    }
 
     // Obtener ventas desde tabla Venta con DetalleVenta (productos no combustibles)
-    console.log(`[PRODUCTOS] Consultando tabla Venta con filtro:`, JSON.stringify(whereVenta, null, 2));
     const ventasConDetalles = await this.prisma.venta.findMany({
       where: whereVenta,
       include: {
@@ -323,79 +353,6 @@ export class HistorialVentasService {
         }
       }
     });
-    console.log(`[PRODUCTOS] Ventas encontradas en tabla Venta: ${ventasConDetalles.length}`);
-    
-    // DIAGNÓSTICO: Verificar si hay ventas en general (sin filtro de fecha) para ese punto de venta
-    if (ventasConDetalles.length === 0 && puntoVentaIdFiltro) {
-      const ventasTotalesPuntoVenta = await this.prisma.venta.count({
-        where: {
-          estado: 'completada',
-          puntoVentaId: puntoVentaIdFiltro,
-        },
-      });
-      console.log(`[PRODUCTOS] 🔍 DIAGNÓSTICO: Total ventas (sin filtro fecha) para punto de venta: ${ventasTotalesPuntoVenta}`);
-      
-      if (ventasTotalesPuntoVenta > 0) {
-        // Obtener algunas ventas de ejemplo para ver las fechas
-        const ventasEjemplo = await this.prisma.venta.findMany({
-          where: {
-            estado: 'completada',
-            puntoVentaId: puntoVentaIdFiltro,
-          },
-          select: {
-            id: true,
-            fechaVenta: true,
-            total: true,
-          },
-          take: 5,
-          orderBy: { fechaVenta: 'desc' },
-        });
-        console.log(`[PRODUCTOS] 🔍 DIAGNÓSTICO: Ejemplos de fechas de ventas (sin filtro):`, ventasEjemplo.map(v => ({
-          id: v.id,
-          fechaVenta: v.fechaVenta,
-          fechaVentaISO: v.fechaVenta.toISOString(),
-          total: v.total
-        })));
-      }
-      
-      // Verificar historialVentasProductos sin filtro de fecha
-      const historialTotal = await this.prisma.historialVentasProductos.count({
-        where: {
-          puntoVentaId: puntoVentaIdFiltro,
-        },
-      });
-      console.log(`[PRODUCTOS] 🔍 DIAGNÓSTICO: Total registros historialVentasProductos (sin filtro fecha): ${historialTotal}`);
-      
-      if (historialTotal > 0) {
-        const historialEjemplo = await this.prisma.historialVentasProductos.findMany({
-          where: {
-            puntoVentaId: puntoVentaIdFiltro,
-          },
-          select: {
-            id: true,
-            fechaVenta: true,
-            valorTotal: true,
-            producto: {
-              select: {
-                id: true,
-                nombre: true,
-                esCombustible: true,
-              },
-            },
-          },
-          take: 5,
-          orderBy: { fechaVenta: 'desc' },
-        });
-        console.log(`[PRODUCTOS] 🔍 DIAGNÓSTICO: Ejemplos de historialVentasProductos (sin filtro):`, historialEjemplo.map(h => ({
-          id: h.id,
-          fechaVenta: h.fechaVenta,
-          fechaVentaISO: h.fechaVenta.toISOString(),
-          valorTotal: h.valorTotal,
-          producto: h.producto.nombre,
-          esCombustible: h.producto.esCombustible,
-        })));
-      }
-    }
 
     // Agrupar ventas de tabla Venta por producto
     // IMPORTANTE: Incluir SOLO productos NO combustibles de Venta
@@ -440,11 +397,6 @@ export class HistorialVentasService {
         }
       });
     });
-    console.log(`[PRODUCTOS] Detalles de venta procesados: ${totalDetallesProcesados}`);
-    console.log(`[PRODUCTOS] Productos NO combustibles encontrados en Venta: ${productosVendidosVentaMap.size}`);
-    if (productosVendidosVentaMap.size > 0) {
-      console.log(`[PRODUCTOS] Productos desde tabla Venta:`, Array.from(productosVendidosVentaMap.keys()));
-    }
 
     // Calcular precio promedio para cada producto de la tabla Venta
     productosVendidosVentaMap.forEach((data, productoId) => {
@@ -519,10 +471,6 @@ export class HistorialVentasService {
       }
     }));
     
-    console.log(`[PRODUCTOS] Total productos consolidados (historialVentasProductos + Venta): ${productosVendidosTiendaConsolidados.length}`);
-    if (productosVendidosTiendaConsolidados.length > 0) {
-      console.log(`[PRODUCTOS] IDs de productos consolidados:`, productosVendidosTiendaConsolidados.map(p => p.productoId));
-    }
 
     // === VENTAS DE COMBUSTIBLE (HISTORIAL DE LECTURAS) ===
     const whereCombustibleManguera: any = {
@@ -624,9 +572,6 @@ export class HistorialVentasService {
           }
         });
         
-        console.log(`[PRODUCTOS] Combustibles encontrados filtrando por turno: ${historialLecturas.length} lecturas para ${turnoIds.length} turno(s)`);
-      } else {
-        console.log(`[PRODUCTOS] No se encontró turno con fechaInicio=${fechaInicioDate.toISOString()}, horaInicio=${horaInicio}, horaFin=${horaFin}`);
       }
     } else {
       // Si no hay fechas, usar filtro por fechaLectura (comportamiento anterior para compatibilidad)
@@ -781,55 +726,51 @@ export class HistorialVentasService {
       consolidadoProductosMap.set(p.productoId, p);
     });
 
-    // Agregar o combinar productos de combustible
-    consolidadoProductosCombustible.forEach(p => {
-      if (consolidadoProductosMap.has(p.productoId)) {
-        // Si el producto ya existe (ventas de tienda y combustible), combinar
-        const existente = consolidadoProductosMap.get(p.productoId)!;
-        existente.cantidadTotalVendida += p.cantidadTotalVendida;
-        existente.valorTotalVentas += p.valorTotalVentas;
-        existente.numeroVentas += p.numeroVentas;
-        existente.precioPromedio = existente.cantidadTotalVendida > 0 
-          ? existente.valorTotalVentas / existente.cantidadTotalVendida 
-          : 0;
-        const costoTotal = existente.cantidadTotalVendida * Number(existente.producto.precioCompra || 0);
-        existente.rentabilidad = costoTotal > 0 
-          ? ((existente.valorTotalVentas - costoTotal) / costoTotal) * 100 
-          : 0;
-      } else {
-        // Si es solo combustible, agregar
-        consolidadoProductosMap.set(p.productoId, p);
-      }
-    });
+    // Agregar o combinar productos de combustible.
+    // IMPORTANTE: Si seleccionPorProducto = true, NO incluir combustibles desde historialLecturas
+    // porque ya están en historialVentasProductos (evitar duplicación).
+    if (!seleccionPorProducto) {
+      consolidadoProductosCombustible.forEach(p => {
+        if (consolidadoProductosMap.has(p.productoId)) {
+          // Si el producto ya existe (ventas de tienda y combustible), combinar
+          const existente = consolidadoProductosMap.get(p.productoId)!;
+          existente.cantidadTotalVendida += p.cantidadTotalVendida;
+          existente.valorTotalVentas += p.valorTotalVentas;
+          existente.numeroVentas += p.numeroVentas;
+          existente.precioPromedio = existente.cantidadTotalVendida > 0 
+            ? existente.valorTotalVentas / existente.cantidadTotalVendida 
+            : 0;
+          const costoTotal = existente.cantidadTotalVendida * Number(existente.producto.precioCompra || 0);
+          existente.rentabilidad = costoTotal > 0 
+            ? ((existente.valorTotalVentas - costoTotal) / costoTotal) * 100 
+            : 0;
+        } else {
+          // Si es solo combustible, agregar
+          consolidadoProductosMap.set(p.productoId, p);
+        }
+      });
+    }
 
     const consolidadoProductos = Array.from(consolidadoProductosMap.values());
 
-    console.log(`[PRODUCTOS] ========== RESUMEN FINAL ==========`);
-    console.log(`[PRODUCTOS] Total productos consolidados finales: ${consolidadoProductos.length}`);
-    if (consolidadoProductos.length > 0) {
-      console.log(`[PRODUCTOS] Productos finales:`);
-      consolidadoProductos.forEach((p, index) => {
-        console.log(`[PRODUCTOS]   ${index + 1}. ${p.producto?.nombre || 'Sin nombre'} (ID: ${p.productoId})`);
-        console.log(`[PRODUCTOS]      - esCombustible: ${p.producto?.esCombustible}`);
-        console.log(`[PRODUCTOS]      - cantidadTotalVendida: ${p.cantidadTotalVendida}`);
-        console.log(`[PRODUCTOS]      - valorTotalVentas: ${p.valorTotalVentas}`);
-      });
-    } else {
-      console.warn(`[PRODUCTOS] ⚠️ No se encontraron productos para devolver`);
-    }
-    console.log(`[PRODUCTOS] ===================================`);
-
     // Calcular totales combinados
+    // IMPORTANTE: Si seleccionPorProducto = true, NO incluir combustibles desde historialLecturas en los totales
     const totalVentasTienda = Number(estadisticasTiendaActualizadas._sum.valorTotal || 0);
-    const totalVentasCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.valorTotalVentas, 0);
+    const totalVentasCombustible = seleccionPorProducto 
+      ? 0 // No incluir combustibles desde historialLecturas cuando seleccionPorProducto = true
+      : consolidadoProductosCombustible.reduce((sum, p) => sum + p.valorTotalVentas, 0);
     const totalVentas = totalVentasTienda + totalVentasCombustible;
 
     const totalCantidadTienda = Number(estadisticasTiendaActualizadas._sum.cantidadVendida || 0);
-    const totalCantidadCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.cantidadTotalVendida, 0);
+    const totalCantidadCombustible = seleccionPorProducto 
+      ? 0 // No incluir combustibles desde historialLecturas cuando seleccionPorProducto = true
+      : consolidadoProductosCombustible.reduce((sum, p) => sum + p.cantidadTotalVendida, 0);
     const totalCantidad = totalCantidadTienda + totalCantidadCombustible;
 
     const totalTransaccionesTienda = estadisticasTiendaActualizadas._count.id || 0;
-    const totalTransaccionesCombustible = consolidadoProductosCombustible.reduce((sum, p) => sum + p.numeroVentas, 0);
+    const totalTransaccionesCombustible = seleccionPorProducto 
+      ? 0 // No incluir combustibles desde historialLecturas cuando seleccionPorProducto = true
+      : consolidadoProductosCombustible.reduce((sum, p) => sum + p.numeroVentas, 0);
     const totalTransacciones = totalTransaccionesTienda + totalTransaccionesCombustible;
 
     const promedioPorVenta = totalTransacciones > 0 ? totalVentas / totalTransacciones : 0;

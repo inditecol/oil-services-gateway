@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { User } from '../../users/entities/user.entity';
+import { PointOfSale } from '../../point-of-sale/entities/point-of-sale.entity';
 
 @ObjectType()
 export class Shift {
@@ -38,6 +39,9 @@ export class Shift {
 
   @Field(() => ID, { nullable: true })
   puntoVentaId?: string;
+
+  @Field(() => PointOfSale, { nullable: true })
+  puntoVenta?: PointOfSale;
 }
 
 @ObjectType()

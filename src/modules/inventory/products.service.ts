@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { TanquesService } from './tanques.service';
 import { randomUUID } from 'crypto';
@@ -241,13 +241,51 @@ export class ProductsService {
     return this.formatProducts(productos);
   }
 
-  async update(id: string, updateProductInput: UpdateProductInput, usuarioId?: string): Promise<Producto> {
+  async update(id: string, updateProductInput: UpdateProductInput, usuarioId?: string, isEmployee?: boolean): Promise<Producto> {
     const existingProduct = await this.findById(id);
 
     if (!existingProduct) {
       throw new NotFoundException('Producto no encontrado');
     }
 
+    // Si es empleado, validar que solo se actualice precioVenta y que el producto sea combustible
+    if (isEmployee) {
+      if (!existingProduct.esCombustible) {
+        throw new ForbiddenException('Los empleados solo pueden actualizar el precio de productos combustibles');
+      }
+
+      // Asegurar que solo se actualice precioVenta (y motivoCambioPrecio si viene)
+      const allowedFields = ['precioVenta', 'motivoCambioPrecio'];
+      const filteredData: any = {};
+      
+      if (updateProductInput.precioVenta !== undefined) {
+        filteredData.precioVenta = updateProductInput.precioVenta;
+      }
+      
+      if (updateProductInput.motivoCambioPrecio !== undefined) {
+        filteredData.motivoCambioPrecio = updateProductInput.motivoCambioPrecio;
+      }
+
+      // Verificar si el precio de venta está cambiando
+      const precioAnterior = parseFloat(existingProduct.precioVenta.toString());
+      const precioNuevo = filteredData.precioVenta ? parseFloat(filteredData.precioVenta.toString()) : precioAnterior;
+      const precioCambio = precioAnterior !== precioNuevo;
+
+      const producto = await this.prisma.producto.update({
+        where: { id },
+        data: { precioVenta: filteredData.precioVenta },
+        include: { categoria: true },
+      });
+
+      // Registrar cambio de precio si aplica
+      if (precioCambio && usuarioId) {
+        await this.registrarCambioPrecio(id, precioAnterior, precioNuevo, usuarioId, filteredData.motivoCambioPrecio);
+      }
+
+      return this.formatProduct(producto);
+    }
+
+    // Para admin y manager, comportamiento normal
     // Si se está actualizando el código, verificar que no exista
     if (updateProductInput.codigo && updateProductInput.codigo !== existingProduct.codigo) {
       const codeExists = await this.prisma.producto.findUnique({
@@ -256,6 +294,20 @@ export class ProductsService {
 
       if (codeExists) {
         throw new ConflictException('El código del producto ya existe');
+      }
+    }
+
+    // Validar precioVenta > precioCompra si se está actualizando precioVenta
+    // Usar precioCompra del input si viene, sino usar el de la BD
+    if (updateProductInput.precioVenta !== undefined) {
+      const precioCompraParaValidar = updateProductInput.precioCompra !== undefined
+        ? parseFloat(updateProductInput.precioCompra.toString())
+        : parseFloat(existingProduct.precioCompra.toString());
+      
+      const precioVentaNuevo = parseFloat(updateProductInput.precioVenta.toString());
+      
+      if (precioVentaNuevo <= precioCompraParaValidar) {
+        throw new ForbiddenException('El precio de venta debe ser mayor al precio de compra');
       }
     }
 
@@ -939,11 +991,83 @@ export class ProductsService {
         valorTotal: parseFloat(venta.valorTotal.toString())
       }));
 
-      const cajaFormateada = turno.puntoVenta?.caja ? {
-        ...turno.puntoVenta.caja,
-        saldoActual: parseFloat(turno.puntoVenta.caja.saldoActual.toString()),
-        saldoInicial: parseFloat(turno.puntoVenta.caja.saldoInicial.toString())
-      } : null;
+      // ================================
+      // CÁLCULO DE CAJA POR TURNO
+      // ================================
+      // Regla de negocio esperada por frontend:
+      // - Turno 1:
+      //   cajaAnterior = saldoInicial (de configuracion.cajas)
+      //   cajaActual   = cajaAnterior + ingresos turno 1 − egresos turno 1
+      // - Turno 2:
+      //   cajaAnterior = cajaActual turno 1
+      //   cajaActual   = cajaAnterior + ingresos turno 2 − egresos turno 2
+      // - Turno N:
+      //   cajaAnterior = cajaActual turno N-1, y así sucesivamente.
+      //
+      // Para cumplir esto sin cambiar el modelo de datos,
+      // calculamos una caja "virtual" por turno encadenando todos
+      // los cierres del mismo punto de venta en orden cronológico.
+
+      // 1) Tomar el saldoInicial global configurado para la caja del punto de venta
+      const saldoInicialGlobal =
+        turno.puntoVenta?.caja?.saldoInicial !== undefined
+          ? parseFloat(turno.puntoVenta.caja.saldoInicial.toString())
+          : 0;
+
+      // 2) Obtener todos los cierres del mismo punto de venta, con sus movimientos,
+      //    ordenados cronológicamente por fechaCierre (ascendente)
+      const cierresMismoPuntoVenta = await this.prisma.cierreTurno.findMany({
+        where: {
+          turno: {
+            puntoVentaId: turno.puntoVentaId,
+          },
+        },
+        include: {
+          movimientosEfectivo: true,
+        },
+        orderBy: {
+          fechaCierre: 'asc',
+        },
+      });
+
+      let saldoEncadenado = saldoInicialGlobal;
+      let cajaAnteriorTurnoActual = saldoInicialGlobal;
+      let cajaActualTurnoActual = saldoInicialGlobal;
+
+      for (const cierre of cierresMismoPuntoVenta) {
+        const ingresosCierre = cierre.movimientosEfectivo
+          .filter(m => m.tipo === 'INGRESO')
+          .reduce((sum, m) => sum + Number(m.monto), 0);
+
+        const egresosCierre = cierre.movimientosEfectivo
+          .filter(m => m.tipo === 'EGRESO')
+          .reduce((sum, m) => sum + Number(m.monto), 0);
+
+        const cajaAnteriorCierre = saldoEncadenado;
+        const cajaActualCierre = cajaAnteriorCierre + ingresosCierre - egresosCierre;
+
+        // Actualizar acumulado para el siguiente cierre
+        saldoEncadenado = cajaActualCierre;
+
+        // Si este es el cierre del turno solicitado, guardamos sus valores
+        if (cierre.id === cierreTurno.id) {
+          cajaAnteriorTurnoActual = cajaAnteriorCierre;
+          cajaActualTurnoActual = cajaActualCierre;
+          break;
+        }
+      }
+
+      const cajaFormateada = {
+        id: turno.puntoVenta?.caja?.id || `virtual-${turno.id}`,
+        puntoVentaId: turno.puntoVentaId,
+        saldoInicial: cajaAnteriorTurnoActual,
+        saldoActual: cajaActualTurnoActual,
+        fechaUltimoMovimiento: turno.puntoVenta?.caja?.fechaUltimoMovimiento || cierreTurno.fechaCierre,
+        activa: turno.puntoVenta?.caja?.activa ?? true,
+        observaciones: turno.puntoVenta?.caja?.observaciones || `Caja encadenada para turno ${turno.id}`,
+        createdAt: turno.puntoVenta?.caja?.createdAt || cierreTurno.fechaCierre,
+        updatedAt: turno.puntoVenta?.caja?.updatedAt || cierreTurno.fechaCierre,
+      };
 
       return {
         turno: {

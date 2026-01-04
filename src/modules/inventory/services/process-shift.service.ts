@@ -47,6 +47,64 @@ export class ProcessShiftService {
         );
       }
 
+      // ==========================================
+      // VALIDAR CONFIGURACIÓN DE MÉTODOS DE PAGO
+      // ==========================================
+      // Obtener configuración de la empresa desde el JWT
+      const seleccionPorProducto = user?.configuracionEmpresa?.seleccionPorProducto ?? false;
+      
+      console.log('[CIERRE_TURNO] Configuración de métodos de pago:', {
+        seleccionPorProducto,
+        tieneConfiguracion: !!user?.configuracionEmpresa,
+        userId: user?.id,
+      });
+
+      // Si seleccionPorProducto = true, validar que NO se envíen métodos de pago por manguera individual
+      if (seleccionPorProducto) {
+        // Verificar si hay métodos de pago en las mangueras (no permitido cuando seleccionPorProducto = true)
+        const tieneMetodosPagoEnMangueras = cierreTurnoInput.lecturasSurtidores?.some(
+          (surtidor) =>
+            surtidor.mangueras?.some(
+              (manguera) => manguera.metodosPago && manguera.metodosPago.length > 0
+            )
+        );
+
+        if (tieneMetodosPagoEnMangueras) {
+          errores.push(
+            'La configuración de la empresa requiere métodos de pago por producto consolidado. ' +
+            'No se permiten métodos de pago individuales por manguera. ' +
+            'Por favor, consolide los métodos de pago por producto en el campo ventasProductos.'
+          );
+          console.warn('[CIERRE_TURNO] Error: Métodos de pago por manguera detectados cuando seleccionPorProducto = true');
+        }
+
+        // Validar que existan métodos de pago consolidados por producto
+        const tieneMetodosPagoConsolidados = 
+          (cierreTurnoInput.ventasProductos && cierreTurnoInput.ventasProductos.length > 0 &&
+            cierreTurnoInput.ventasProductos.some(
+              (vp) => vp.metodosPago && vp.metodosPago.length > 0
+            )) ||
+          (cierreTurnoInput.ventasProductos && cierreTurnoInput.ventasProductos.length > 0 &&
+            cierreTurnoInput.ventasProductos.some(
+              (vp) => vp.ventasIndividuales && vp.ventasIndividuales.some(
+                (vi) => vi.metodosPago && vi.metodosPago.length > 0
+              )
+            )) ||
+          (cierreTurnoInput.resumenVentas?.metodosPago && 
+            cierreTurnoInput.resumenVentas.metodosPago.length > 0);
+
+        if (!tieneMetodosPagoConsolidados) {
+          advertencias.push(
+            'La configuración requiere métodos de pago por producto consolidado. ' +
+            'Asegúrese de incluir los métodos de pago en ventasProductos o en resumenVentas.metodosPago.'
+          );
+          console.warn('[CIERRE_TURNO] Advertencia: No se detectaron métodos de pago consolidados por producto');
+        }
+      } else {
+        // Si seleccionPorProducto = false, el comportamiento es el actual (por manguera o consolidado)
+        console.log('[CIERRE_TURNO] Modo: Métodos de pago por manguera individual (comportamiento actual)');
+      }
+
       console.log(
         `[CIERRE_TURNO] Punto de venta validado: ${puntoVenta.nombre} (${puntoVenta.codigo}). Procesando ${cierreTurnoInput.lecturasSurtidores.length} surtidores`,
       );
@@ -55,6 +113,30 @@ export class ProcessShiftService {
       const historialesLecturaIds: string[] = [];
 
       // 3. PROCESAR CADA SURTIDOR (ya validado que pertenece al punto de venta)
+      // Si seleccionPorProducto = true, identificar productos de combustibles que ya vienen en ventasProductos
+      // para evitar procesarlos dos veces desde lecturasSurtidores
+      const productosCombustiblesEnVentasProductos = new Set<string>();
+      const productosCombustiblesEnVentasProductosNormalizados = new Map<string, string>();
+      
+      if (seleccionPorProducto && cierreTurnoInput.ventasProductos && cierreTurnoInput.ventasProductos.length > 0) {
+        for (const ventaProducto of cierreTurnoInput.ventasProductos) {
+          // Normalizar código (trim, uppercase) para comparación
+          const codigoNormalizado = ventaProducto.codigoProducto?.trim().toUpperCase() || '';
+          
+          // Buscar el producto para verificar si es combustible
+          try {
+            const product = await this.productsService.findByCode(ventaProducto.codigoProducto);
+            if (product && product.esCombustible) {
+              productosCombustiblesEnVentasProductos.add(ventaProducto.codigoProducto);
+              productosCombustiblesEnVentasProductosNormalizados.set(codigoNormalizado, ventaProducto.codigoProducto);
+            }
+          } catch (error) {
+            // Si no se encuentra el producto, continuar sin interrumpir el proceso
+            console.warn(`[CIERRE_TURNO] No se pudo verificar producto ${ventaProducto.codigoProducto}: ${error.message}`);
+          }
+        }
+      }
+
       for (const surtidor of cierreTurnoInput.lecturasSurtidores) {
         const ventasCalculadas = [];
         let totalSurtidorLitros = 0;
@@ -81,6 +163,154 @@ export class ProcessShiftService {
             console.log(
               `[CIERRE_TURNO] Producto encontrado: ${product.codigo} - Stock actual: ${product.stockActual}L`,
             );
+
+            // Si seleccionPorProducto = true y el producto es combustible y ya viene en ventasProductos,
+            // solo actualizar lecturas, NO procesar ventas (evitar duplicación)
+            const codigoMangueraNormalizado = manguera.codigoProducto?.trim().toUpperCase() || '';
+            const productoYaEnVentasProductos = 
+              productosCombustiblesEnVentasProductos.has(manguera.codigoProducto) ||
+              productosCombustiblesEnVentasProductosNormalizados.has(codigoMangueraNormalizado);
+            
+            if (
+              seleccionPorProducto &&
+              product.esCombustible &&
+              productoYaEnVentasProductos
+            ) {
+              // Calcular cantidad vendida solo para actualizar lecturas
+              const cantidadVendida =
+                manguera.lecturaActual - manguera.lecturaAnterior;
+              if (cantidadVendida < 0) {
+                errores.push(
+                  `Lectura inválida en surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}: lectura actual menor que anterior`,
+                );
+                continue;
+              }
+
+              if (cantidadVendida === 0) {
+                advertencias.push(
+                  `Sin ventas en surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`,
+                );
+                continue;
+              }
+
+              // Convertir a ambas unidades
+              let cantidadLitros = cantidadVendida;
+              let cantidadGalones = cantidadVendida;
+
+              if (manguera.unidadMedida.toLowerCase() === 'galones') {
+                cantidadLitros = cantidadVendida * GALONES_TO_LITROS;
+              } else if (manguera.unidadMedida.toLowerCase() === 'litros') {
+                cantidadGalones = cantidadVendida * LITROS_TO_GALONES;
+              } else {
+                errores.push(
+                  `Unidad no válida: ${manguera.unidadMedida} en surtidor ${surtidor.numeroSurtidor}`,
+                );
+                continue;
+              }
+
+              // Redondear
+              cantidadLitros = Math.round(cantidadLitros * 100) / 100;
+              cantidadGalones = Math.round(cantidadGalones * 100) / 100;
+
+              // Calcular precios
+              const precioLitro = Number(product.precioVenta);
+
+              // ACTUALIZAR SOLO LECTURAS (no procesar ventas)
+              try {
+                const lecturaActualizada =
+                  await this.surtidoresService.updateMangueraReadingsWithHistory(
+                    surtidor.numeroSurtidor,
+                    manguera.numeroManguera,
+                    manguera.lecturaActual,
+                    precioLitro,
+                    'cierre_turno',
+                    user.id,
+                    new Date(cierreTurnoInput.startTime),
+                    new Date(cierreTurnoInput.finishTime),
+                    `Cierre de turno ${cierreTurnoInput.puntoVentaId} - Cantidad vendida: ${cantidadLitros}L (venta procesada desde ventasProductos)`,
+                    undefined, // cierreTurnoId se actualizará después
+                    new Date(cierreTurnoInput.finishTime),
+                    cierreTurnoInput.puntoVentaId,
+                  );
+
+                if (!lecturaActualizada.success) {
+                  advertencias.push(
+                    `No se pudo actualizar lecturas para surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`,
+                  );
+                } else {
+                  console.log(
+                    `[CIERRE_TURNO] Lecturas actualizadas (sin procesar ventas): surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`,
+                  );
+                  if (lecturaActualizada.historialId) {
+                    historialesLecturaIds.push(lecturaActualizada.historialId);
+                  }
+                }
+              } catch (lecturaError) {
+                console.error(
+                  `[CIERRE_TURNO] Error actualizando lecturas:`,
+                  lecturaError,
+                );
+                advertencias.push(
+                  `Error actualizando lecturas en surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}: ${lecturaError.message}`,
+                );
+              }
+
+              // Verificar stock del tanque (pero no actualizar, eso se hace desde ventasProductos)
+              try {
+                const tanque = await this.prisma.tanque.findFirst({
+                  where: {
+                    productoId: product.id,
+                    puntoVentaId: cierreTurnoInput.puntoVentaId,
+                    activo: true,
+                  },
+                });
+
+                if (!tanque) {
+                  errores.push(
+                    `No se encontró tanque activo para ${product.codigo} en punto de venta ${cierreTurnoInput.puntoVentaId}`,
+                  );
+                } else {
+                  const nivelActualTanque = parseFloat(
+                    tanque.nivelActual.toString(),
+                  );
+
+                  if (cantidadGalones > nivelActualTanque) {
+                    errores.push(
+                      `Stock insuficiente en tanque para ${manguera.codigoProducto} en surtidor ${surtidor.numeroSurtidor}: necesario ${cantidadGalones}G, disponible ${nivelActualTanque}G en tanque`,
+                    );
+                  }
+                }
+              } catch (tankError) {
+                errores.push(
+                  `Error verificando tanque de ${manguera.codigoProducto}: ${tankError.message}`,
+                );
+              }
+
+              // Contar venta de combustible para estadísticas
+              if (cantidadVendida > 0) {
+                ventasCombustiblesCalculadas++;
+              }
+
+              // Agregar a resumen (solo para estadísticas, no para guardar ventas)
+              ventasCalculadas.push({
+                codigoProducto: manguera.codigoProducto,
+                nombreProducto: product.nombre,
+                cantidadVendidaGalones: cantidadGalones,
+                cantidadVendidaLitros: cantidadLitros,
+                precioUnitarioLitro: precioLitro,
+                precioUnitarioGalon: Math.round((precioLitro / LITROS_TO_GALONES) * 100) / 100,
+                valorTotalVenta: Math.round(cantidadLitros * precioLitro * 100) / 100,
+                unidadOriginal: manguera.unidadMedida,
+                metodosPago: [], // No hay métodos de pago aquí, vienen desde ventasProductos
+              });
+
+              totalSurtidorLitros += cantidadLitros;
+              totalSurtidorGalones += cantidadGalones;
+              valorTotalSurtidor += cantidadLitros * precioLitro;
+
+              // CONTINUAR con la siguiente manguera (no procesar ventas desde aquí)
+              continue;
+            }
 
             // Calcular cantidad vendida
             const cantidadVendida =
@@ -135,6 +365,19 @@ export class ProcessShiftService {
 
             // Calcular métodos de pago para este producto desde ventasProductos
             let metodosPagoProducto = [];
+
+            // Si seleccionPorProducto = true, NO procesar métodos de pago por manguera individual
+            // Solo usar métodos consolidados por producto
+            if (seleccionPorProducto && manguera.metodosPago && manguera.metodosPago.length > 0) {
+              advertencias.push(
+                `Métodos de pago por manguera ignorados para ${manguera.codigoProducto} en surtidor ${surtidor.numeroSurtidor}. ` +
+                `La configuración requiere métodos de pago consolidados por producto.`
+              );
+              console.warn(
+                `[CIERRE_TURNO] Ignorando métodos de pago por manguera (seleccionPorProducto=true): ` +
+                `surtidor ${surtidor.numeroSurtidor}, manguera ${manguera.numeroManguera}`
+              );
+            }
 
             // Buscar el producto correspondiente en ventasProductos
             if (
@@ -389,6 +632,23 @@ export class ProcessShiftService {
                   );
                 }
               }
+            }
+
+            // IMPORTANTE: Si seleccionPorProducto = true y el producto es combustible,
+            // NO agregar a ventasParaRegistrarEnHistorial desde lecturasSurtidores
+            // Las ventas de combustibles deben venir solo desde ventasProductos cuando el flag está activo
+            if (seleccionPorProducto && product.esCombustible) {
+              console.log(
+                `[CIERRE_TURNO] ⚠️ ADVERTENCIA: Producto combustible "${manguera.codigoProducto}" procesado desde lecturasSurtidores ` +
+                `cuando seleccionPorProducto=true. ` +
+                `Este producto DEBE venir en ventasProductos para evitar duplicación. ` +
+                `Solo se actualizarán las lecturas, NO se guardará venta en historial_ventas_productos desde aquí.`,
+              );
+              advertencias.push(
+                `Producto combustible ${manguera.codigoProducto} en surtidor ${surtidor.numeroSurtidor} ` +
+                `procesado desde lecturasSurtidores cuando seleccionPorProducto=true. ` +
+                `Asegúrese de incluir este producto en ventasProductos para que se guarde correctamente.`,
+              );
             }
 
             // Agregar a resumen
@@ -852,38 +1112,73 @@ export class ProcessShiftService {
 
               // Guardar información para registrar después en la transacción con el turno correcto
               // IMPORTANTE: Solo registrar productos tipo BEBIDA y LUBRICANTE (NO combustibles)
-              if (ventasIndividualesDetalle.length > 0 && !product.esCombustible) {
-                // Verificar que el producto sea bebida o lubricante
-                const esBebidaOLubricante = 
-                  product.tipoProducto?.toLowerCase() === 'bebida' ||
-                  product.tipoProducto?.toLowerCase() === 'lubricante' ||
-                  (!product.esCombustible && product.tipoProducto); // Si no es combustible y tiene tipoProducto
-                
-                if (esBebidaOLubricante) {
-                  ventasParaRegistrarEnHistorial.push({
-                    productoId: product.id,
-                    codigoProducto: product.codigo,
-                    unidadMedida: ventaProducto.unidadMedida,
-                    ventasIndividuales: ventasIndividualesDetalle.map((vi) => ({
-                      cantidad: vi.cantidad,
-                      precioUnitario: vi.precioUnitario,
-                      valorTotal: vi.valorTotal,
-                      observaciones: vi.observaciones,
-                      metodosPago: vi.metodosPago.map((mp) => ({
-                        metodoPago: mp.metodoPago,
-                        monto: mp.monto,
+              // Cuando seleccionPorProducto = true, también registrar combustibles si vienen en ventasProductos
+              if (!product.esCombustible || seleccionPorProducto) {
+                // Si tiene ventasIndividuales, usar ese formato
+                if (ventasIndividualesDetalle.length > 0) {
+                  // Verificar que el producto sea bebida, lubricante, o combustible (si flag activo)
+                  const debeRegistrar = 
+                    product.tipoProducto?.toLowerCase() === 'bebida' ||
+                    product.tipoProducto?.toLowerCase() === 'lubricante' ||
+                    (seleccionPorProducto && product.esCombustible) ||
+                    (!product.esCombustible && product.tipoProducto); // Si no es combustible y tiene tipoProducto
+                  
+                  if (debeRegistrar) {
+                    ventasParaRegistrarEnHistorial.push({
+                      productoId: product.id,
+                      codigoProducto: product.codigo,
+                      unidadMedida: ventaProducto.unidadMedida,
+                      ventasIndividuales: ventasIndividualesDetalle.map((vi) => ({
+                        cantidad: vi.cantidad,
+                        precioUnitario: vi.precioUnitario,
+                        valorTotal: vi.valorTotal,
+                        observaciones: vi.observaciones,
+                        metodosPago: vi.metodosPago.map((mp) => ({
+                          metodoPago: mp.metodoPago,
+                          monto: mp.monto,
+                        })),
                       })),
-                    })),
-                  });
-                  console.log(
-                    `[CIERRE_TURNO] Venta preparada para registro (${product.tipoProducto}): ${product.codigo} - ${ventasIndividualesDetalle.length} venta(s) individual(es)`,
-                  );
-                } else {
-                  console.warn(
-                    `[CIERRE_TURNO] Producto ${product.codigo} omitido: esCombustible=${product.esCombustible}, tipoProducto=${product.tipoProducto}. Solo se registran bebidas y lubricantes.`,
-                  );
+                    });
+                    console.log(
+                      `[CIERRE_TURNO] Venta preparada para registro (${product.tipoProducto || 'combustible'}): ${product.codigo} - ${ventasIndividualesDetalle.length} venta(s) individual(es)`,
+                    );
+                  } else {
+                    console.warn(
+                      `[CIERRE_TURNO] Producto ${product.codigo} omitido: esCombustible=${product.esCombustible}, tipoProducto=${product.tipoProducto}. Solo se registran bebidas, lubricantes${seleccionPorProducto ? ' y combustibles (flag activo)' : ''}.`,
+                    );
+                  }
+                } 
+                // Si NO tiene ventasIndividuales pero tiene métodos de pago consolidados (formato anterior o cuando flag activo)
+                else if (metodosPagoConsolidados.length > 0 && (seleccionPorProducto || !product.esCombustible)) {
+                  // Crear una venta individual consolidada para guardar en historial
+                  const debeRegistrar = 
+                    product.tipoProducto?.toLowerCase() === 'bebida' ||
+                    product.tipoProducto?.toLowerCase() === 'lubricante' ||
+                    (seleccionPorProducto && product.esCombustible) ||
+                    (!product.esCombustible && product.tipoProducto);
+                  
+                  if (debeRegistrar) {
+                    ventasParaRegistrarEnHistorial.push({
+                      productoId: product.id,
+                      codigoProducto: product.codigo,
+                      unidadMedida: ventaProducto.unidadMedida,
+                      ventasIndividuales: [{
+                        cantidad: cantidadTotalProducto,
+                        precioUnitario: valorTotalProducto / cantidadTotalProducto,
+                        valorTotal: valorTotalProducto,
+                        observaciones: ventaProducto.observaciones,
+                        metodosPago: metodosPagoConsolidados.map((mp) => ({
+                          metodoPago: mp.metodoPago,
+                          monto: mp.monto,
+                        })),
+                      }],
+                    });
+                    console.log(
+                      `[CIERRE_TURNO] Venta consolidada preparada para registro (${product.tipoProducto || 'combustible'}): ${product.codigo} - ${cantidadTotalProducto} ${ventaProducto.unidadMedida}`,
+                    );
+                  }
                 }
-              } else if (product.esCombustible) {
+              } else if (product.esCombustible && !seleccionPorProducto) {
                 console.warn(
                   `[CIERRE_TURNO] Producto ${product.codigo} es combustible y NO se registrará en HistorialVentasProductos. Los combustibles se registran en HistorialLectura.`,
                 );
@@ -1068,7 +1363,14 @@ export class ProcessShiftService {
       // Solo usar resumenVentas.metodosPago si NO hay métodos consolidados o si es DETALLADO_POR_PRODUCTO
       let metodosPagoAProcesar = cierreTurnoInput.resumenVentas?.metodosPago || [];
       
-      if (metodosPagoConsolidadosGlobal.length > 0) {
+      // Si seleccionPorProducto = true, priorizar métodos consolidados por producto
+      if (seleccionPorProducto && metodosPagoConsolidadosGlobal.length > 0) {
+        console.log(
+          '[CIERRE_TURNO] Modo: Métodos de pago por producto consolidado. ' +
+          `Usando ${metodosPagoConsolidadosGlobal.length} métodos consolidados.`
+        );
+        metodosPagoAProcesar = metodosPagoConsolidadosGlobal;
+      } else if (metodosPagoConsolidadosGlobal.length > 0) {
         // Verificar si resumenVentas tiene DETALLADO_POR_PRODUCTO
         const tieneDetalladoPorProducto = metodosPagoAProcesar.some(
           (mp: any) => mp.metodoPago === 'DETALLADO_POR_PRODUCTO'
@@ -1219,7 +1521,19 @@ export class ProcessShiftService {
         // Ahora que tenemos el turno creado, registramos las ventas con el turno correcto
         if (ventasParaRegistrarEnHistorial.length > 0) {
           console.log(
+            `[CIERRE_TURNO] ========================================`,
+          );
+          console.log(
             `[CIERRE_TURNO] Registrando ${ventasParaRegistrarEnHistorial.length} productos en HistorialVentasProductos con turno ${turno.id}`,
+          );
+          console.log(
+            `[CIERRE_TURNO] Configuración: seleccionPorProducto=${seleccionPorProducto}`,
+          );
+          console.log(
+            `[CIERRE_TURNO] Productos a registrar: ${ventasParaRegistrarEnHistorial.map(v => v.codigoProducto).join(', ')}`,
+          );
+          console.log(
+            `[CIERRE_TURNO] ========================================`,
           );
 
           for (const ventaProducto of ventasParaRegistrarEnHistorial) {
@@ -1239,80 +1553,98 @@ export class ProcessShiftService {
               continue;
             }
 
-            // Verificar que NO sea combustible y que sea bebida o lubricante
-            if (productoDb.esCombustible) {
+            // Verificar que el producto sea válido para registrar
+            // Si seleccionPorProducto = true, también permitir combustibles
+            // Si seleccionPorProducto = false, solo bebidas y lubricantes
+            const esBebidaOLubricante =
+              productoDb.tipoProducto?.toLowerCase() === 'bebida' ||
+              productoDb.tipoProducto?.toLowerCase() === 'lubricante';
+
+            const esCombustibleYFlagActivo = productoDb.esCombustible && seleccionPorProducto;
+
+            if (productoDb.esCombustible && !seleccionPorProducto) {
               console.warn(
                 `[CIERRE_TURNO] Producto ${productoDb.codigo} es combustible y NO se registrará en HistorialVentasProductos. Los combustibles se registran en HistorialLectura.`,
               );
               continue;
             }
 
-            const esBebidaOLubricante =
-              productoDb.tipoProducto?.toLowerCase() === 'bebida' ||
-              productoDb.tipoProducto?.toLowerCase() === 'lubricante';
-
-            if (!esBebidaOLubricante) {
+            if (!esBebidaOLubricante && !esCombustibleYFlagActivo) {
               console.warn(
-                `[CIERRE_TURNO] Producto ${productoDb.codigo} (tipo: ${productoDb.tipoProducto}) NO es bebida ni lubricante. Solo se registran bebidas y lubricantes en HistorialVentasProductos.`,
+                `[CIERRE_TURNO] Producto ${productoDb.codigo} (tipo: ${productoDb.tipoProducto}, esCombustible: ${productoDb.esCombustible}) NO es válido para registrar. Solo se registran bebidas, lubricantes${seleccionPorProducto ? ' y combustibles (flag activo)' : ''} en HistorialVentasProductos.`,
               );
               continue;
             }
 
             for (const ventaIndividual of ventaProducto.ventasIndividuales) {
-              for (const metodoPago of ventaIndividual.metodosPago) {
-                try {
-                  // Buscar el método de pago por código
-                  const metodoPagoDb = await prisma.metodoPago.findUnique({
-                    where: { codigo: metodoPago.metodoPago },
-                  });
-
-                  if (metodoPagoDb) {
-                    // Calcular un punto medio entre fechaInicio y fechaFin del turno
-                    // Esto asegura que el producto quede dentro del rango específico del turno
-                    // y no aparezca en turnos anteriores o posteriores que puedan solaparse en los límites
-                    const fechaInicioTurno = new Date(turno.fechaInicio);
-                    const fechaFinTurno = new Date(turno.fechaFin);
-                    const puntoMedioTurno = new Date(
-                      (fechaInicioTurno.getTime() + fechaFinTurno.getTime()) / 2
-                    );
-                    
-                    await prisma.historialVentasProductos.create({
-                      data: {
-                        fechaVenta: puntoMedioTurno, // ✅ Usar punto medio del turno para que quede dentro del rango específico
-                        cantidadVendida: ventaIndividual.cantidad,
-                        precioUnitario: ventaIndividual.precioUnitario,
-                        valorTotal: ventaIndividual.valorTotal,
-                        unidadMedida: ventaProducto.unidadMedida,
-                        observaciones:
-                          ventaIndividual.observaciones ||
-                          `Venta registrada en cierre de turno - ${metodoPago.metodoPago}`,
-                        productoId: ventaProducto.productoId,
-                        metodoPagoId: metodoPagoDb.id,
-                        usuarioId: user.id,
-                        turnoId: turno.id, // ✅ Usando el turno recién creado
-                        puntoVentaId: cierreTurnoInput.puntoVentaId,
-                      },
-                    });
-                    console.log(
-                      `[CIERRE_TURNO] Venta registrada en historial (${productoDb.tipoProducto}): ${ventaProducto.codigoProducto} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - ${metodoPago.metodoPago} - Turno: ${turno.id}`,
-                    );
-                  } else {
-                    console.warn(
-                      `[CIERRE_TURNO] Método de pago no encontrado: ${metodoPago.metodoPago}`,
-                    );
-                    advertencias.push(
-                      `Método de pago no encontrado: ${metodoPago.metodoPago} para producto ${ventaProducto.codigoProducto}`,
-                    );
-                  }
-                } catch (error) {
-                  console.error(
-                    `[CIERRE_TURNO] Error al registrar venta individual en historial:`,
-                    error,
-                  );
-                  advertencias.push(
-                    `Error al registrar venta de ${ventaProducto.codigoProducto} en historial: ${error.message}`,
+              try {
+                // IMPORTANTE: Para combustibles cuando seleccionPorProducto = true,
+                // crear UN SOLO registro por venta individual, no uno por método de pago
+                // Usar el método de pago con mayor monto como método de pago principal
+                let metodoPagoPrincipal = ventaIndividual.metodosPago[0];
+                if (ventaIndividual.metodosPago.length > 1) {
+                  // Encontrar el método de pago con mayor monto
+                  metodoPagoPrincipal = ventaIndividual.metodosPago.reduce((prev, current) => 
+                    (current.monto > prev.monto) ? current : prev
                   );
                 }
+
+                // Buscar el método de pago por código
+                const metodoPagoDb = await prisma.metodoPago.findUnique({
+                  where: { codigo: metodoPagoPrincipal.metodoPago },
+                });
+
+                if (metodoPagoDb) {
+                  // Calcular un punto medio entre fechaInicio y fechaFin del turno
+                  // Esto asegura que el producto quede dentro del rango específico del turno
+                  // y no aparezca en turnos anteriores o posteriores que puedan solaparse en los límites
+                  const fechaInicioTurno = new Date(turno.fechaInicio);
+                  const fechaFinTurno = new Date(turno.fechaFin);
+                  const puntoMedioTurno = new Date(
+                    (fechaInicioTurno.getTime() + fechaFinTurno.getTime()) / 2
+                  );
+                  
+                  // Crear lista de métodos de pago para las observaciones
+                  const metodosPagoStr = ventaIndividual.metodosPago
+                    .map(mp => `${mp.metodoPago}: $${mp.monto}`)
+                    .join(', ');
+                  
+                  await prisma.historialVentasProductos.create({
+                    data: {
+                      fechaVenta: puntoMedioTurno, // ✅ Usar punto medio del turno para que quede dentro del rango específico
+                      cantidadVendida: ventaIndividual.cantidad,
+                      precioUnitario: ventaIndividual.precioUnitario,
+                      valorTotal: ventaIndividual.valorTotal,
+                      unidadMedida: ventaProducto.unidadMedida,
+                      observaciones:
+                        ventaIndividual.observaciones ||
+                        `Venta registrada en cierre de turno - Métodos de pago: ${metodosPagoStr}`,
+                      productoId: ventaProducto.productoId,
+                      metodoPagoId: metodoPagoDb.id,
+                      usuarioId: user.id,
+                      turnoId: turno.id, // ✅ Usando el turno recién creado
+                      puntoVentaId: cierreTurnoInput.puntoVentaId,
+                    },
+                  });
+                  console.log(
+                    `[CIERRE_TURNO] Venta registrada en historial (${productoDb.tipoProducto}): ${ventaProducto.codigoProducto} - ${ventaIndividual.cantidad} ${ventaProducto.unidadMedida} - Valor: $${ventaIndividual.valorTotal} - Métodos de pago: ${metodosPagoStr} - Turno: ${turno.id}`,
+                  );
+                } else {
+                  console.warn(
+                    `[CIERRE_TURNO] Método de pago no encontrado: ${metodoPagoPrincipal.metodoPago}`,
+                  );
+                  advertencias.push(
+                    `Método de pago no encontrado: ${metodoPagoPrincipal.metodoPago} para producto ${ventaProducto.codigoProducto}`,
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  `[CIERRE_TURNO] Error al registrar venta individual en historial:`,
+                  error,
+                );
+                advertencias.push(
+                  `Error al registrar venta de ${ventaProducto.codigoProducto} en historial: ${error.message}`,
+                );
               }
             }
           }
