@@ -15,9 +15,11 @@ import { CarrotanquesResolver } from './carrotanques.resolver';
 // Nuevos servicios para el sistema de ventas de productos
 import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
+import { HistorialVentaUpdateService } from './services/historial-venta-update.service';
 import { ProcessShiftResolver } from './process-shift.resolver';
 import { ProcessShiftService } from './services/process-shift.service';
 import { MovimientosEfectivoService } from './services/movimientos-efectivo.service';
+import { LecturaMangueraUpdateService } from './services/lectura-manguera-update.service';
 
 @Module({
   providers: [
@@ -36,9 +38,11 @@ import { MovimientosEfectivoService } from './services/movimientos-efectivo.serv
     // Nuevos servicios
     MetodosPagoService,
     HistorialVentasService,
+    HistorialVentaUpdateService,
     ProcessShiftService,
     ProcessShiftResolver,
     MovimientosEfectivoService,
+    LecturaMangueraUpdateService,
   ],
   exports: [
     InventoryService, 

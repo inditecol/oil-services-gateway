@@ -330,6 +330,103 @@ export class ProductsService {
     return this.formatProduct(producto);
   }
 
+  validateEmployeeUpdatePermissions(
+    existingProduct: Producto,
+    updateProductInput: UpdateProductInput
+  ): { isValid: boolean; filteredInput?: UpdateProductInput; error?: string } {
+    if (!existingProduct.esCombustible) {
+      return {
+        isValid: false,
+        error: 'Los empleados solo pueden actualizar el precio de productos combustibles'
+      };
+    }
+
+    const defaultValues = {
+      moneda: 'COP',
+      stockMinimo: 0,
+      stockActual: 0,
+      esCombustible: false,
+      activo: true,
+    };
+
+    const inputEntries = Object.entries(updateProductInput).filter(([key, value]) => {
+      if (defaultValues[key] !== undefined && value === defaultValues[key]) {
+        return false;
+      }
+      if (existingProduct[key] !== undefined && 
+          JSON.stringify(value) === JSON.stringify(existingProduct[key])) {
+        return false;
+      }
+      return value !== undefined && 
+             value !== null && 
+             value !== '' &&
+             typeof value !== 'function' &&
+             !(typeof value === 'object' && value.constructor === Object && Object.keys(value).length === 0);
+    });
+
+    const inputKeys = inputEntries.map(([key]) => key);
+    const allowedFields = ['precioVenta', 'motivoCambioPrecio'];
+    const invalidFields = inputKeys.filter(key => !allowedFields.includes(key));
+
+    if (invalidFields.length > 0) {
+      return {
+        isValid: false,
+        error: `Los empleados solo pueden actualizar el precio de venta. Campos no permitidos detectados: ${invalidFields.join(', ')}`
+      };
+    }
+
+    if (!updateProductInput.precioVenta) {
+      return {
+        isValid: false,
+        error: 'El precio de venta es requerido'
+      };
+    }
+
+    const precioCompraActual = parseFloat(existingProduct.precioCompra.toString());
+    const precioVentaNuevo = parseFloat(updateProductInput.precioVenta.toString());
+    
+    if (precioVentaNuevo <= precioCompraActual) {
+      return {
+        isValid: false,
+        error: 'El precio de venta debe ser mayor al precio de compra'
+      };
+    }
+
+    const filteredInput: UpdateProductInput = {
+      precioVenta: updateProductInput.precioVenta,
+      ...(updateProductInput.motivoCambioPrecio && { motivoCambioPrecio: updateProductInput.motivoCambioPrecio }),
+    };
+
+    return {
+      isValid: true,
+      filteredInput
+    };
+  }
+
+  convertGalonesToLitros(cantidad: number): number {
+    const GALONES_TO_LITROS = 3.78541;
+    return cantidad * GALONES_TO_LITROS;
+  }
+
+  validateAndConvertUnit(cantidad: number, unidadMedida: string): { cantidadEnLitros: number; error?: string } {
+    const unidadLower = unidadMedida.toLowerCase();
+    
+    if (unidadLower === 'galones') {
+      return {
+        cantidadEnLitros: this.convertGalonesToLitros(cantidad)
+      };
+    } else if (unidadLower === 'litros') {
+      return {
+        cantidadEnLitros: cantidad
+      };
+    } else {
+      return {
+        cantidadEnLitros: 0,
+        error: `Unidad no soportada: ${unidadMedida}. Use 'litros' o 'galones'`
+      };
+    }
+  }
+
   async updateStock(id: string, cantidad: number, tipo: 'entrada' | 'salida'): Promise<Producto> {
     const product = await this.findById(id);
 
@@ -964,6 +1061,7 @@ export class ProductsService {
       };
 
       const metodosPagoFormateados = cierreTurno.metodosPago?.map(pago => ({
+        id: pago.id,
         metodoPago: pago.metodoPago,
         monto: parseFloat(pago.monto.toString()),
         porcentaje: parseFloat(pago.porcentaje.toString()),
@@ -981,7 +1079,35 @@ export class ProductsService {
         lecturaAnterior: parseFloat(lectura.lecturaAnterior.toString()),
         lecturaActual: parseFloat(lectura.lecturaActual.toString()),
         cantidadVendida: parseFloat(lectura.cantidadVendida.toString()),
-        valorVenta: parseFloat(lectura.valorVenta.toString())
+        valorVenta: parseFloat(lectura.valorVenta.toString()),
+        manguera: lectura.manguera ? {
+          ...lectura.manguera,
+          lecturaAnterior: parseFloat(lectura.manguera.lecturaAnterior.toString()),
+          lecturaActual: parseFloat(lectura.manguera.lecturaActual.toString()),
+          producto: lectura.manguera.producto ? {
+            ...lectura.manguera.producto,
+            precioCompra: lectura.manguera.producto.precioCompra ? parseFloat(lectura.manguera.producto.precioCompra.toString()) : 0,
+            precioVenta: lectura.manguera.producto.precioVenta ? parseFloat(lectura.manguera.producto.precioVenta.toString()) : 0,
+            stockMinimo: lectura.manguera.producto.stockMinimo ? parseFloat(lectura.manguera.producto.stockMinimo.toString()) : 0,
+            stockActual: lectura.manguera.producto.stockActual ? parseFloat(lectura.manguera.producto.stockActual.toString()) : 0
+          } : null,
+          surtidor: lectura.manguera.surtidor ? {
+            id: lectura.manguera.surtidor.id,
+            numero: lectura.manguera.surtidor.numero,
+            nombre: lectura.manguera.surtidor.nombre,
+            descripcion: lectura.manguera.surtidor.descripcion,
+            ubicacion: lectura.manguera.surtidor.ubicacion,
+            cantidadMangueras: lectura.manguera.surtidor.cantidadMangueras,
+            activo: lectura.manguera.surtidor.activo,
+            fechaInstalacion: lectura.manguera.surtidor.fechaInstalacion,
+            fechaMantenimiento: lectura.manguera.surtidor.fechaMantenimiento,
+            observaciones: lectura.manguera.surtidor.observaciones,
+            createdAt: lectura.manguera.surtidor.createdAt,
+            updatedAt: lectura.manguera.surtidor.updatedAt,
+            mangueras: [],
+            puntoVenta: lectura.manguera.surtidor.puntoVenta || null
+          } as any : null
+        } : null
       }));
 
       const historialVentasFormateado = historialVentasProductos.map(venta => ({

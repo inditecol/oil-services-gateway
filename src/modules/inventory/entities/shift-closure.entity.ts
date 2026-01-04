@@ -212,6 +212,9 @@ export class ResumenTanques {
 
 @ObjectType()
 export class MetodoPagoResumen {
+  @Field(() => ID, { nullable: true })
+  id?: string;
+
   @Field()
   metodoPago: string;
 

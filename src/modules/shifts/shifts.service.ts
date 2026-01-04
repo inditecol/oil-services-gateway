@@ -1,36 +1,18 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CreateShiftInput } from './dto/create-shift.input';
 import { UpdateShiftInput } from './dto/update-shift.input';
+import { UpdateTurnoInput } from './dto/update-turno-legacy.input';
 import { Shift } from './entities/shift.entity';
+import { DateUtilsService } from './services/date-utils.service';
 
 @Injectable()
 export class ShiftsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly dateUtils: DateUtilsService
+  ) {}
 
-  /**
-   * Extrae la hora en formato HH:mm de un string ISO
-   * @param isoString - String ISO (ej: "2025-09-01T06:00:00.000Z")
-   * @returns String en formato HH:mm (ej: "06:00")
-   */
-  private extraerHoraEnFormatoHHmm(isoString: string): string {
-    const date = new Date(isoString);
-    const hours = date.getUTCHours().toString().padStart(2, '0');
-    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
-  /**
-   * Extrae solo la fecha (YYYY-MM-DD) de un string ISO o Date
-   * @param dateInput - String ISO o Date
-   * @returns String en formato YYYY-MM-DD
-   */
-  private extraerSoloFecha(dateInput: string | Date): string {
-    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    return date.toISOString().split('T')[0];
-  }
-
-  // Helper method to format Shift
   private formatShift(shift: any): Shift {
     return {
       id: shift.id,
@@ -50,20 +32,15 @@ export class ShiftsService {
   }
 
   async create(createShiftInput: CreateShiftInput): Promise<Shift> {
-    // Extraer fecha y horas
     const fechaInicio = new Date(createShiftInput.startDate);
-    const fechaInicioSolo = this.extraerSoloFecha(fechaInicio);
-    const horaInicio = createShiftInput.startTime; // Ya debe estar en formato HH:mm
+    const fechaInicioSolo = this.dateUtils.extractDateOnly(fechaInicio);
+    const horaInicio = createShiftInput.startTime;
     const horaFin = createShiftInput.endTime || null;
 
-    // Normalizar fechaInicio para comparar solo la fecha (sin hora)
     const fechaInicioInicio = new Date(fechaInicio);
     fechaInicioInicio.setUTCHours(0, 0, 0, 0);
     const fechaInicioFin = new Date(fechaInicio);
     fechaInicioFin.setUTCHours(23, 59, 59, 999);
-
-    // Validar que no exista un turno con los mismos datos únicos
-    // Criterio de unicidad: fechaInicio (solo fecha) + puntoVentaId + horaInicio + horaFin
     const turnoDuplicado = await this.prisma.turno.findFirst({
       where: {
         fechaInicio: {
@@ -128,14 +105,11 @@ export class ShiftsService {
     usuarioId: string,
     observaciones?: string
   ): Promise<Shift> {
-    // Extraer fecha y horas de los timestamps
     const fechaInicio = new Date(startTimeISO);
     const fechaFin = new Date(finishTimeISO);
-    const fechaInicioSolo = this.extraerSoloFecha(fechaInicio);
-    const horaInicio = this.extraerHoraEnFormatoHHmm(startTimeISO);
-    const horaFin = this.extraerHoraEnFormatoHHmm(finishTimeISO);
-
-    // Validar que no exista un turno con los mismos datos únicos
+    const fechaInicioSolo = this.dateUtils.extractDateOnly(fechaInicio);
+    const horaInicio = this.dateUtils.extractHourInHHmmFormat(startTimeISO);
+    const horaFin = this.dateUtils.extractHourInHHmmFormat(finishTimeISO);
     const turnoDuplicado = await this.prisma.turno.findFirst({
       where: {
         fechaInicio: fechaInicio,
@@ -151,13 +125,12 @@ export class ShiftsService {
       );
     }
 
-    // Crear NUEVO turno (nunca actualizar existente)
     const shift = await this.prisma.turno.create({
       data: {
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
-        horaInicio: horaInicio, // Formato "HH:mm" (ej: "06:00", "14:00")
-        horaFin: horaFin, // Formato "HH:mm" (ej: "14:00", "22:00")
+        horaInicio: horaInicio,
+        horaFin: horaFin,
         puntoVentaId: puntoVentaId,
         usuarioId: usuarioId,
         observaciones: observaciones || `Turno automático para cierre de ${puntoVentaId}`,
@@ -261,7 +234,6 @@ export class ShiftsService {
         throw new NotFoundException('Shift not found');
       }
 
-      // If changing the user, verify that it exists
       if (updateShiftInput.userId) {
         const user = await this.prisma.usuario.findUnique({
           where: { id: updateShiftInput.userId },
@@ -270,53 +242,126 @@ export class ShiftsService {
         if (!user) {
           throw new NotFoundException('User not found');
         }
+
+        if (!user.activo) {
+          throw new NotFoundException('User is not active');
+        }
       }
 
-      const updateData: any = {};
+      const updates: string[] = [];
+      const escapedId = id.replace(/'/g, "''");
 
       if (updateShiftInput.startDate) {
-        updateData.fechaInicio = new Date(updateShiftInput.startDate);
+        const dateMatch = updateShiftInput.startDate.match(/(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?/);
+        if (!dateMatch) {
+          throw new BadRequestException('Formato de startDate inválido. Se espera "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DD HH:mm:ss.fff"');
+        }
+        const escapedDate = updateShiftInput.startDate.replace(/'/g, "''");
+        const hasMilliseconds = updateShiftInput.startDate.includes('.');
+        const timestampFormat = hasMilliseconds ? 'YYYY-MM-DD HH24:MI:SS.FF3' : 'YYYY-MM-DD HH24:MI:SS';
+        updates.push(`"fechaInicio" = to_timestamp('${escapedDate}', '${timestampFormat}')`);
       }
 
       if (updateShiftInput.endDate) {
-        updateData.fechaFin = new Date(updateShiftInput.endDate);
+        const dateMatch = updateShiftInput.endDate.match(/(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?/);
+        if (!dateMatch) {
+          throw new BadRequestException('Formato de endDate inválido. Se espera "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DD HH:mm:ss.fff"');
+        }
+        const escapedDate = updateShiftInput.endDate.replace(/'/g, "''");
+        const hasMilliseconds = updateShiftInput.endDate.includes('.');
+        const timestampFormat = hasMilliseconds ? 'YYYY-MM-DD HH24:MI:SS.FF3' : 'YYYY-MM-DD HH24:MI:SS';
+        updates.push(`"fechaFin" = to_timestamp('${escapedDate}', '${timestampFormat}')`);
       }
 
-      if (updateShiftInput.startTime) {
-        updateData.horaInicio = updateShiftInput.startTime;
+      if (updateShiftInput.startTime !== undefined) {
+        const escapedTime = updateShiftInput.startTime.replace(/'/g, "''");
+        updates.push(`"horaInicio" = '${escapedTime}'`);
       }
 
-      if (updateShiftInput.endTime) {
-        updateData.horaFin = updateShiftInput.endTime;
+      if (updateShiftInput.endTime !== undefined) {
+        if (updateShiftInput.endTime) {
+          const escapedTime = updateShiftInput.endTime.replace(/'/g, "''");
+          updates.push(`"horaFin" = '${escapedTime}'`);
+        } else {
+          updates.push(`"horaFin" = NULL`);
+        }
       }
-
       if (updateShiftInput.observations !== undefined) {
-        updateData.observaciones = updateShiftInput.observations;
+        const escapedObs = (updateShiftInput.observations || '').replace(/'/g, "''");
+        updates.push(`"observaciones" = ${updateShiftInput.observations === null ? 'NULL' : `'${escapedObs}'`}`);
       }
 
       if (updateShiftInput.userId) {
-        updateData.usuarioId = updateShiftInput.userId;
+        const escapedUserId = updateShiftInput.userId.replace(/'/g, "''");
+        updates.push(`"usuarioId" = '${escapedUserId}'`);
       }
 
       if (updateShiftInput.active !== undefined) {
-        updateData.activo = updateShiftInput.active;
+        updates.push(`"activo" = ${updateShiftInput.active}`);
       }
 
-      const shift = await this.prisma.turno.update({
-        where: { id },
-        data: updateData,
-        include: {
-          usuario: true,
-        },
-      });
+      if (updates.length > 0) {
+        const setClause = updates.join(', ');
+        const sqlQuery = `UPDATE turnos.turnos SET ${setClause} WHERE id = '${escapedId}'`;
+        await this.prisma.$executeRawUnsafe(sqlQuery);
+      }
+
+      const shiftRaw = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT 
+          t.*,
+          to_char(t."fechaInicio", 'YYYY-MM-DD HH24:MI:SS.FF3') as "fechaInicioStr",
+          to_char(t."fechaFin", 'YYYY-MM-DD HH24:MI:SS.FF3') as "fechaFinStr"
+        FROM turnos.turnos t 
+        WHERE t.id = '${escapedId}'`
+      );
+
+      if (!shiftRaw || shiftRaw.length === 0) {
+        throw new NotFoundException('Shift not found after update');
+      }
+
+      const shiftData = shiftRaw[0];
+      
+      let usuario = null;
+      if (shiftData.usuarioId) {
+        const usuarios = await this.prisma.usuario.findMany({
+          where: { id: shiftData.usuarioId },
+        });
+        usuario = usuarios.length > 0 ? usuarios[0] : null;
+      }
+      const shift = {
+        ...shiftData,
+        fechaInicio: shiftData.fechaInicioStr ? this.dateUtils.parseDateFromString(shiftData.fechaInicioStr) : shiftData.fechaInicio,
+        fechaFin: shiftData.fechaFinStr ? this.dateUtils.parseDateFromString(shiftData.fechaFinStr) : (shiftData.fechaFin || null),
+        usuario: usuario
+      };
 
       return this.formatShift(shift);
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new Error(`Error updating shift: ${error.message}`);
     }
+  }
+
+  async updateFromLegacyInput(id: string, updateTurnoInput: UpdateTurnoInput): Promise<Shift> {
+    let startDate: string | undefined;
+    if (updateTurnoInput.fechaInicio) {
+      startDate = this.dateUtils.combineDateAndTime(updateTurnoInput.fechaInicio, updateTurnoInput.horaInicio);
+    }
+
+    let endDate: string | undefined;
+    if (updateTurnoInput.fechaFin) {
+      endDate = this.dateUtils.combineDateAndTime(updateTurnoInput.fechaFin, updateTurnoInput.horaFin);
+    }
+
+    return this.update(id, {
+      startDate,
+      endDate,
+      observations: updateTurnoInput.observaciones,
+      userId: updateTurnoInput.usuarioId,
+      active: updateTurnoInput.activo,
+    });
   }
 
   async remove(id: string): Promise<Shift> {
@@ -326,16 +371,6 @@ export class ShiftsService {
         throw new NotFoundException('Shift not found');
       }
 
-      // Verify if there are associated shift closures
-      /* 
-      const closuresCount = await this.prisma.cierreTurno.count({
-        where: { turnoId: id },
-      });
-
-      if (closuresCount > 0) {
-        throw new ConflictException('Cannot delete shift because it has associated closures');
-      }
-      */
 
       const shift = await this.prisma.turno.delete({
         where: { id },
@@ -358,7 +393,7 @@ export class ShiftsService {
       const activeShifts = await this.prisma.turno.findMany({
         where: {
           activo: true,
-          fechaFin: null, // Shifts without end date are considered active
+          fechaFin: null,
         },
         include: {
           usuario: {

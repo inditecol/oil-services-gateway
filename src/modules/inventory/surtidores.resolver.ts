@@ -494,6 +494,86 @@ export class SurtidoresResolver {
         console.log(`[CONSOLIDADO] Surtidor ${surtidor.numero} totales: ${totalSurtidorGalones} gal (${totalSurtidorLitros}L), $${totalSurtidorValor}`);
       }
 
+      // Ajustar totalGeneralValor con ventas actualizadas de combustibles desde HistorialVentasProductos
+      // IMPORTANTE: Las ventas de combustibles pueden haberse actualizado mediante UpdateHistorialVentaProducto
+      // y esos cambios solo están en HistorialVentasProductos, no en HistorialLectura
+      // Como totalGeneralValor solo incluye ventas de mangueras (combustibles), podemos reemplazarlo directamente
+      // con el valor actualizado desde HistorialVentasProductos si existe
+      if (surtidores.length > 0) {
+        // Obtener todos los productos de las mangueras (combustibles)
+        const productosManguerasIds = new Set<string>();
+        for (const surtidor of surtidores) {
+          for (const manguera of surtidor.mangueras) {
+            if (manguera.producto && manguera.producto.esCombustible) {
+              productosManguerasIds.add(manguera.producto.id);
+            }
+          }
+        }
+
+        if (productosManguerasIds.size > 0) {
+          console.log(`[CONSOLIDADO] Buscando ventas actualizadas de combustibles desde HistorialVentasProductos para ${productosManguerasIds.size} productos`);
+
+          // Construir filtro para HistorialVentasProductos
+          const filtroHistorialVentasCombustibles: any = {
+            producto: {
+              id: { in: Array.from(productosManguerasIds) },
+              esCombustible: true
+            }
+          };
+
+          // Filtrar por fechas
+          if (fechaDesde && fechaHasta) {
+            filtroHistorialVentasCombustibles.fechaVenta = {
+              gte: new Date(fechaDesde),
+              lte: new Date(fechaHasta),
+            };
+          } else if (fechaDesde) {
+            filtroHistorialVentasCombustibles.fechaVenta = { gte: new Date(fechaDesde) };
+          } else if (fechaHasta) {
+            filtroHistorialVentasCombustibles.fechaVenta = { lte: new Date(fechaHasta) };
+          }
+
+          // Filtrar por punto de venta
+          if (puntoVentaIdFiltro) {
+            filtroHistorialVentasCombustibles.puntoVentaId = puntoVentaIdFiltro;
+          } else if (puntosVentaIdsEmpresa && puntosVentaIdsEmpresa.length > 0) {
+            filtroHistorialVentasCombustibles.puntoVentaId = {
+              in: puntosVentaIdsEmpresa,
+            };
+          }
+
+          // Obtener valor total actualizado desde HistorialVentasProductos usando aggregate
+          const agregacionVentasActualizadas = await this.prisma.historialVentasProductos.aggregate({
+            where: filtroHistorialVentasCombustibles,
+            _sum: {
+              valorTotal: true,
+            },
+            _count: {
+              id: true,
+            },
+          });
+
+          const valorTotalActualizadoCombustibles = Number(agregacionVentasActualizadas._sum.valorTotal || 0);
+          const cantidadVentasActualizadas = agregacionVentasActualizadas._count.id || 0;
+
+          console.log(`[CONSOLIDADO] Valor total actualizado de combustibles desde HistorialVentasProductos: $${valorTotalActualizadoCombustibles} (${cantidadVentasActualizadas} registros)`);
+          console.log(`[CONSOLIDADO] Valor original desde HistorialLectura: $${totalGeneralValor}`);
+
+          // Si hay ventas actualizadas en HistorialVentasProductos, reemplazar el valor de HistorialLectura
+          // Esto asegura que se reflejen las actualizaciones hechas mediante UpdateHistorialVentaProducto
+          // IMPORTANTE: Las ventas en HistorialVentasProductos son las actualizadas, por lo que deben reemplazar
+          // completamente el valor de HistorialLectura para esos productos en el período
+          if (cantidadVentasActualizadas > 0) {
+            const valorOriginalDesdeLecturas = totalGeneralValor;
+            // Reemplazar completamente con el valor actualizado
+            totalGeneralValor = valorTotalActualizadoCombustibles;
+            console.log(`[CONSOLIDADO] totalGeneralValor actualizado: $${valorOriginalDesdeLecturas} → $${totalGeneralValor} (diferencia: ${valorTotalActualizadoCombustibles - valorOriginalDesdeLecturas >= 0 ? '+' : ''}${valorTotalActualizadoCombustibles - valorOriginalDesdeLecturas})`);
+          } else {
+            console.log(`[CONSOLIDADO] No hay ventas actualizadas en HistorialVentasProductos, manteniendo valor de HistorialLectura: $${totalGeneralValor}`);
+          }
+        }
+      }
+
       console.log(`[CONSOLIDADO] Totales generales: ${totalGeneralGalones} gal (${totalGeneralLitros}L), $${totalGeneralValor}, ${totalGeneralTransacciones} transacciones`);
 
       // Calcular resumen financiero consolidado
@@ -1012,29 +1092,44 @@ export class SurtidoresResolver {
           console.warn(`[CONSOLIDADO]   Filtro (por fechas del turno): fechaDesde=${fechaDesdeFinal?.toISOString() || 'ninguna'}, fechaHasta=${fechaHastaFinal?.toISOString() || 'ninguna'}`);
         }
 
-        // Sumar directamente los totales de los cierres
+        // IMPORTANTE: Calcular totales desde CierreTurnoMetodoPago en lugar de campos directos
+        // porque los campos totalEfectivo, totalTarjetas, etc. NO se actualizan cuando se modifica
+        // un historial de venta, pero CierreTurnoMetodoPago SÍ se actualiza
         for (const cierre of cierres) {
-          totalEfectivo += Number(cierre.totalEfectivo || 0);
-          totalTarjetas += Number(cierre.totalTarjetas || 0);
-          totalTransferencias += Number(cierre.totalTransferencias || 0);
-          totalRumbo += Number(cierre.totalRumbo || 0);
-          totalBonosViveTerpel += Number(cierre.totalBonosViveTerpel || 0);
-          totalOtros += Number(cierre.totalOtros || 0);
           totalDeclarado += Number(cierre.totalDeclarado || 0);
           totalCalculado += Number(cierre.valorTotalGeneral || 0);
 
-          // Consolidar métodos de pago detallados
+          // Calcular totales desde métodos de pago (valores actualizados)
           for (const metodo of cierre.metodosPago) {
             const key = metodo.metodoPago;
+            const montoMetodo = Number(metodo.monto || 0);
+            
+            // Consolidar métodos de pago detallados
             if (metodosPagoMap.has(key)) {
               const existente = metodosPagoMap.get(key)!;
-              existente.monto += Number(metodo.monto || 0);
+              existente.monto += montoMetodo;
             } else {
               metodosPagoMap.set(key, {
-                monto: Number(metodo.monto || 0),
+                monto: montoMetodo,
                 porcentaje: Number(metodo.porcentaje || 0),
                 observaciones: metodo.observaciones,
               });
+            }
+
+            // Clasificar por tipo de método de pago para totales consolidados
+            const metodoUpper = key.toUpperCase();
+            if (metodoUpper === 'EFECTIVO') {
+              totalEfectivo += montoMetodo;
+            } else if (metodoUpper === 'TARJETA_CREDITO' || metodoUpper === 'TARJETA_DEBITO' || metodoUpper === 'TARJETA' || metodoUpper.includes('TARJETA')) {
+              totalTarjetas += montoMetodo;
+            } else if (metodoUpper === 'TRANSFERENCIA' || metodoUpper === 'TRANSFERENCIA_BANCARIA' || metodoUpper.includes('TRANSFERENCIA')) {
+              totalTransferencias += montoMetodo;
+            } else if (key === 'Rumbo' || metodoUpper === 'RUMBO') {
+              totalRumbo += montoMetodo;
+            } else if (key === 'Bonos vive terpel' || key.toLowerCase().includes('bonos') || key.toLowerCase().includes('vive terpel')) {
+              totalBonosViveTerpel += montoMetodo;
+            } else {
+              totalOtros += montoMetodo;
             }
           }
         }
