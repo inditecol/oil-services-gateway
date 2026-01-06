@@ -1795,6 +1795,8 @@ export class ProductsResolver {
   /**
    * ACTUALIZAR LECTURA DE MANGUERA
    * Mutation para actualizar la cantidad vendida de una lectura con actualización en cascada
+   * @param actualizarMetodosPagoAutomaticamente - Si es true (default), actualiza métodos de pago automáticamente.
+   * Si es false, solo actualiza la lectura sin modificar métodos de pago (para asignación manual desde frontend).
    */
   @Mutation(() => HistorialLectura, { name: 'updateHistorialLectura' })
   @UseGuards(RolesGuard)
@@ -1802,12 +1804,15 @@ export class ProductsResolver {
   async updateHistorialLectura(
     @Args('id', { type: () => ID }) id: string,
     @Args('cantidadVendida', { type: () => Float }) cantidadVendida: number,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
+    @Args('actualizarMetodosPagoAutomaticamente', { type: () => Boolean, nullable: true, defaultValue: true }) 
+    actualizarMetodosPagoAutomaticamente: boolean = true
   ): Promise<HistorialLectura> {
     return this.lecturaMangueraUpdateService.updateHistorialLectura(
       id,
       cantidadVendida,
-      user.id
+      user.id,
+      actualizarMetodosPagoAutomaticamente
     );
   }
 } 

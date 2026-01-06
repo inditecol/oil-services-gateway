@@ -70,11 +70,14 @@ export class LecturaMangueraUpdateService {
 
   /**
    * Update hose reading with cascade updates
+   * @param actualizarMetodosPagoAutomaticamente - Si es true, actualiza métodos de pago automáticamente.
+   * Si es false, solo actualiza la lectura sin modificar métodos de pago (para asignación manual desde frontend).
    */
   async updateHistorialLectura(
     id: string,
     cantidadVendida: number,
-    usuarioId?: string
+    usuarioId?: string,
+    actualizarMetodosPagoAutomaticamente: boolean = true
   ): Promise<HistorialLectura> {
     // Initial validations
     if (cantidadVendida <= 0) {
@@ -173,7 +176,25 @@ export class LecturaMangueraUpdateService {
         }
       });
 
-      // 2. Actualizar historialVentasProductos relacionados
+      // 2. Actualizar lecturaActual en la tabla mangueras
+      // Verificar si este historial es el más reciente para esta manguera
+      // Solo actualizamos la manguera si este es el historial más reciente
+      const historialMasReciente = await prisma.historialLectura.findFirst({
+        where: { mangueraId: lectura.mangueraId },
+        orderBy: { fechaLectura: 'desc' },
+        select: { id: true, fechaLectura: true }
+      });
+
+      if (historialMasReciente && 
+          (historialMasReciente.id === id || 
+           historialMasReciente.fechaLectura.getTime() === lectura.fechaLectura.getTime())) {
+        await prisma.mangueraSurtidor.update({
+          where: { id: lectura.mangueraId },
+          data: { lecturaActual: nuevaLecturaActual }
+        });
+      }
+
+      // 3. Actualizar historialVentasProductos relacionados
       await this.updateVentasProductosRelacionadas(
         prisma,
         lectura,
@@ -183,13 +204,15 @@ export class LecturaMangueraUpdateService {
         diferenciaValor
       );
 
-      // 3. Recalcular métodos de pago
-      await this.recalcularMetodosPago(prisma, cierreTurnoId, diferenciaValor);
+      // 4. Recalcular métodos de pago (solo si está habilitado)
+      if (actualizarMetodosPagoAutomaticamente) {
+        await this.recalcularMetodosPago(prisma, cierreTurnoId, diferenciaValor);
+      }
 
-      // 4. Actualizar totales del cierre
+      // 5. Actualizar totales del cierre
       await this.actualizarTotalesCierre(prisma, cierreTurnoId);
 
-      // 5. Actualizar resumenSurtidores (JSON)
+      // 6. Actualizar resumenSurtidores (JSON)
       await this.actualizarResumenSurtidores(
         prisma,
         cierreTurnoId,
@@ -198,7 +221,7 @@ export class LecturaMangueraUpdateService {
         nuevoValorVenta
       );
 
-      // 6. Actualizar caja si aplica
+      // 7. Actualizar caja si aplica
       if (Math.abs(diferenciaValor) > this.PRECISION_TOLERANCE) {
         await this.actualizarCaja(prisma, cierreTurno, diferenciaValor);
       }
