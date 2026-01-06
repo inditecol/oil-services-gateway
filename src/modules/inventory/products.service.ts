@@ -1004,6 +1004,19 @@ export class ProductsService {
         throw new NotFoundException(`Turno con ID ${turnoId} no encontrado`);
       }
 
+      // Obtener seleccionPorProducto desde configuracion_empresa
+      let seleccionPorProducto = false;
+      if (turno.puntoVenta?.empresaId) {
+        const configuracionEmpresa = await this.prisma.configuracionEmpresa.findUnique({
+          where: { empresaId: turno.puntoVenta.empresaId },
+          select: { seleccionPorProducto: true }
+        });
+        seleccionPorProducto = configuracionEmpresa?.seleccionPorProducto ?? false;
+      }
+
+      // Usar seleccionPorProducto como el valor de active (en lugar de turno.activo)
+      const activoValue: boolean = seleccionPorProducto;
+
       const cierreTurno = turno.cierres && turno.cierres.length > 0 
         ? turno.cierres[0] 
         : null;
@@ -1065,7 +1078,8 @@ export class ProductsService {
         metodoPago: pago.metodoPago,
         monto: parseFloat(pago.monto.toString()),
         porcentaje: parseFloat(pago.porcentaje.toString()),
-        observaciones: pago.observaciones
+        observaciones: pago.observaciones,
+        cierreTurnoId: pago.cierreTurnoId
       })) || [];
 
       const movimientosEfectivoFormateados = cierreTurno.movimientosEfectivo?.map(mov => ({
@@ -1080,6 +1094,7 @@ export class ProductsService {
         lecturaActual: parseFloat(lectura.lecturaActual.toString()),
         cantidadVendida: parseFloat(lectura.cantidadVendida.toString()),
         valorVenta: parseFloat(lectura.valorVenta.toString()),
+        cierreTurnoId: lectura.turnoId || cierreTurno.id, // turnoId contiene el cierreTurnoId
         manguera: lectura.manguera ? {
           ...lectura.manguera,
           lecturaAnterior: parseFloat(lectura.manguera.lecturaAnterior.toString()),
@@ -1195,12 +1210,24 @@ export class ProductsService {
         updatedAt: turno.puntoVenta?.caja?.updatedAt || cierreTurno.fechaCierre,
       };
 
+      const turnoResponse = {
+        id: turno.id,
+        startDate: turno.fechaInicio,
+        endDate: turno.fechaFin,
+        startTime: turno.horaInicio,
+        endTime: turno.horaFin,
+        observations: turno.observaciones,
+        active: activoValue,
+        createdAt: turno.createdAt,
+        updatedAt: turno.updatedAt,
+        userId: turno.usuarioId,
+        user: turno.usuario,
+        puntoVentaId: turno.puntoVentaId,
+        puntoVenta: turno.puntoVenta
+      };
+
       return {
-        turno: {
-          ...turno,
-          fechaInicio: turno.fechaInicio,
-          fechaFin: turno.fechaFin
-        },
+        turno: turnoResponse,
         cierreTurno: cierreFormateado,
         metodosPago: metodosPagoFormateados,
         historialLecturas: historialLecturasFormateado,

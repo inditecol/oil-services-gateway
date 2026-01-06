@@ -198,6 +198,7 @@ export class LecturaMangueraUpdateService {
       await this.updateVentasProductosRelacionadas(
         prisma,
         lectura,
+        cierreTurno.turnoId,
         cantidadVendida,
         nuevoValorVenta,
         diferenciaCantidad,
@@ -230,24 +231,21 @@ export class LecturaMangueraUpdateService {
     });
   }
 
-  /**
-   * Actualizar ventas de productos relacionadas
-   */
   private async updateVentasProductosRelacionadas(
     prisma: any,
     lectura: any,
+    turnoId: string,
     nuevaCantidadVendida: number,
     nuevoValorVenta: number,
     diferenciaCantidad: number,
     diferenciaValor: number
   ): Promise<void> {
-    if (!lectura.turnoId) return;
+    if (!turnoId) return;
 
-    // Buscar ventas relacionadas del mismo producto y turno
     const ventasRelacionadas = await prisma.historialVentasProductos.findMany({
       where: {
         productoId: lectura.manguera.productoId,
-        turnoId: lectura.turnoId
+        turnoId: turnoId
       },
       orderBy: {
         fechaVenta: 'desc'
@@ -278,6 +276,32 @@ export class LecturaMangueraUpdateService {
     }
   }
 
+  private async calcularTotalVentasTurno(prisma: any, cierreTurnoId: string, turnoId: string): Promise<number> {
+    const totalVentasLecturas = await prisma.historialLectura.aggregate({
+      where: {
+        turnoId: cierreTurnoId
+      },
+      _sum: {
+        valorVenta: true
+      }
+    });
+
+    const totalVentasProductos = await prisma.historialVentasProductos.aggregate({
+      where: {
+        turnoId: turnoId
+      },
+      _sum: {
+        valorTotal: true
+      }
+    });
+
+    const sumaVentasLecturas = Number(totalVentasLecturas._sum.valorVenta || 0);
+    const sumaVentasProductos = Number(totalVentasProductos._sum.valorTotal || 0);
+    const totalVentasTurno = sumaVentasLecturas + sumaVentasProductos;
+
+    return Math.max(0, totalVentasTurno);
+  }
+
   /**
    * Recalcular métodos de pago del cierre
    */
@@ -289,57 +313,57 @@ export class LecturaMangueraUpdateService {
     if (Math.abs(diferenciaValor) < this.PRECISION_TOLERANCE) return;
 
     const metodosPago = await prisma.cierreTurnoMetodoPago.findMany({
-      where: { cierreTurnoId }
+      where: { cierreTurnoId },
+      include: {
+        metodoPagoRel: true
+      }
     });
 
     if (metodosPago.length === 0) return;
 
     const cierreTurno = await prisma.cierreTurno.findUnique({
-      where: { id: cierreTurnoId }
+      where: { id: cierreTurnoId },
+      include: {
+        turno: true
+      }
     });
 
+    if (!cierreTurno) return;
+
+    const totalVentasTurno = await this.calcularTotalVentasTurno(prisma, cierreTurnoId, cierreTurno.turnoId);
     const valorTotalGeneralActual = Number(cierreTurno.valorTotalGeneral);
     const nuevoValorTotalGeneral = Math.max(0, valorTotalGeneralActual + diferenciaValor);
-
-    // Estrategia: Redistribuir proporcionalmente basado en los porcentajes actuales
-    // Si hay un método de pago asociado a la venta, actualizar ese específicamente
-    // Por ahora, redistribuimos proporcionalmente
 
     const totales = { efectivo: 0, tarjetas: 0, transferencias: 0, rumbo: 0, bonosViveTerpel: 0, otros: 0 };
 
     await Promise.all(
       metodosPago.map(async (metodo: any) => {
         const montoActual = Number(metodo.monto);
-        // Mantener el porcentaje y ajustar el monto proporcionalmente
-        const porcentajeActual = Number(metodo.porcentaje);
-        const nuevoMonto = nuevoValorTotalGeneral > 0
-          ? Math.round((nuevoValorTotalGeneral * porcentajeActual / 100) * this.ROUND_FACTOR) / this.ROUND_FACTOR
-          : montoActual;
+        const porcentajeMp = totalVentasTurno > 0
+          ? Math.round((montoActual / totalVentasTurno) * this.ROUND_FACTOR * this.ROUND_FACTOR) / this.ROUND_FACTOR
+          : 0;
 
         const metodoStr = metodo.metodoPago?.toUpperCase() || '';
         const metodoLower = metodo.metodoPago?.toLowerCase() || '';
 
-        if (metodoStr === 'EFECTIVO') {
-          totales.efectivo += nuevoMonto;
-        } else if (metodoStr.includes('TARJETA') || metodoStr === 'TARJETA_CREDITO' || metodoStr === 'TARJETA_DEBITO') {
-          totales.tarjetas += nuevoMonto;
-        } else if (metodoStr.includes('TRANSFERENCIA') || metodoStr === 'TRANSFERENCIA_BANCARIA') {
-          totales.transferencias += nuevoMonto;
+        if (metodoStr === 'EFECTIVO' || metodo.metodoPagoRel?.esEfectivo) {
+          totales.efectivo += montoActual;
+        } else if (metodoStr.includes('TARJETA') || metodoStr === 'TARJETA_CREDITO' || metodoStr === 'TARJETA_DEBITO' || metodo.metodoPagoRel?.esTarjeta) {
+          totales.tarjetas += montoActual;
+        } else if (metodoStr.includes('TRANSFERENCIA') || metodoStr === 'TRANSFERENCIA_BANCARIA' || metodo.metodoPagoRel?.esDigital) {
+          totales.transferencias += montoActual;
         } else if (metodoStr === 'RUMBO' || metodoLower === 'rumbo') {
-          totales.rumbo += nuevoMonto;
+          totales.rumbo += montoActual;
         } else if (metodoStr === 'BONOS VIVE TERPEL' || metodoLower.includes('bonos') || metodoLower.includes('vive terpel')) {
-          totales.bonosViveTerpel += nuevoMonto;
+          totales.bonosViveTerpel += montoActual;
         } else {
-          totales.otros += nuevoMonto;
+          totales.otros += montoActual;
         }
 
         return prisma.cierreTurnoMetodoPago.update({
           where: { id: metodo.id },
           data: {
-            monto: nuevoMonto,
-            porcentaje: nuevoValorTotalGeneral > 0
-              ? Math.round((nuevoMonto / nuevoValorTotalGeneral) * 100 * this.ROUND_FACTOR) / this.ROUND_FACTOR
-              : porcentajeActual
+            porcentaje: porcentajeMp
           }
         });
       })
