@@ -648,7 +648,11 @@ export class SurtidoresService {
             createdAt: item.manguera.createdAt,
             updatedAt: item.manguera.updatedAt,
             surtidorId: item.manguera.surtidorId,
-            surtidor: item.manguera.surtidor,
+            surtidor: item.manguera.surtidor ? {
+              ...item.manguera.surtidor,
+              mangueras: [],
+              puntoVenta: item.manguera.surtidor.puntoVenta || null
+            } as any : null,
             productoId: item.manguera.productoId,
             producto: {
               id: item.manguera.producto.id,

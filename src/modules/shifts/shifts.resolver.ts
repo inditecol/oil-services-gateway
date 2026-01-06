@@ -171,15 +171,7 @@ export class ShiftsResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('updateTurnoInput') updateTurnoInput: UpdateTurnoInput,
   ): Promise<Shift> {
-    return this.shiftsService.update(id, {
-      startDate: updateTurnoInput.fechaInicio,
-      endDate: updateTurnoInput.fechaFin,
-      startTime: updateTurnoInput.horaInicio,
-      endTime: updateTurnoInput.horaFin,
-      observations: updateTurnoInput.observaciones,
-      userId: updateTurnoInput.usuarioId,
-      active: updateTurnoInput.activo,
-    });
+    return this.shiftsService.updateFromLegacyInput(id, updateTurnoInput);
   }
 
   @Mutation(() => Shift)

@@ -26,7 +26,8 @@ import {
   ResumenCaja,
   MovimientoEfectivo,
   MovimientosEfectivoResponse,
-  ShiftClosureDataResponse
+  ShiftClosureDataResponse,
+  MetodoPagoResumen
 } from './entities/shift-closure.entity';
 import {
   CierreTurnoInput,
@@ -59,12 +60,17 @@ import { MetodoPago } from './entities/metodo-pago.entity';
 import { HistorialVentasProductos } from './entities/historial-ventas-productos.entity';
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from './entities/consolidado-productos-ventas.entity';
 import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput, UpdateHistorialVentaProductoInput } from './dto/registrar-venta-producto.input';
+import { UpdateCierreTurnoMetodoPagoInput } from './dto/update-cierre-turno-metodo-pago.input';
+import { UpdateMovimientoEfectivoInput } from './dto/update-movimiento-efectivo.input';
 import { CrearMetodoPagoInput, ActualizarMetodoPagoInput, FiltrosMetodosPagoInput } from './dto/metodo-pago.input';
 import { MetodosPagoService } from './services/metodos-pago.service';
 import { HistorialVentasService } from './services/historial-ventas.service';
 import { MovimientosEfectivoService } from './services/movimientos-efectivo.service';
 import { HistorialPrecios, HistorialPreciosResponse } from './entities/historial-precios.entity';
 import { Caja } from './entities/caja.entity';
+import { LecturaMangueraDetails } from './entities/lectura-manguera-details.entity';
+import { HistorialLectura } from './entities/historial-lectura.entity';
+import { LecturaMangueraUpdateService } from './services/lectura-manguera-update.service';
 
 @Resolver(() => Producto)
 @UseGuards(JwtAuthGuard)
@@ -77,7 +83,8 @@ export class ProductsResolver {
     private readonly inventoryService: InventoryService,
     private readonly metodosPagoService: MetodosPagoService,
     private readonly historialVentasService: HistorialVentasService,
-    private readonly movimientosEfectivoService: MovimientosEfectivoService
+    private readonly movimientosEfectivoService: MovimientosEfectivoService,
+    private readonly lecturaMangueraUpdateService: LecturaMangueraUpdateService
   ) {}
 
   @Mutation(() => Producto)
@@ -232,91 +239,30 @@ export class ProductsResolver {
     @Args('updateProductInput') updateProductInput: UpdateProductInput,
     @CurrentUser() user: any
   ): Promise<Producto> {
-    // Obtener el rol del usuario
-    const userRole = user.rol?.nombre || user.rol || user.role || user.userRole;
+    const userRole = user?.rol?.nombre || user?.rol || user?.role || user?.userRole || 'employee';
 
-    // Si es empleado, validar restricciones
     if (userRole === 'employee') {
-      // IMPORTANTE: Validar ANTES de obtener el producto para evitar que se mezclen objetos
-      // Los valores por defecto del DTO pueden estar presentes, pero debemos validar solo los campos realmente enviados
-      
-      // 1. Obtener el producto actual de la BD primero (necesitamos precioCompra para validar)
       const existingProduct = await this.productsService.findById(id);
       
       if (!existingProduct) {
         throw new NotFoundException('Producto no encontrado');
       }
 
-      // 2. Validar que el producto es combustible
-      if (!existingProduct.esCombustible) {
-        throw new ForbiddenException('Los empleados solo pueden actualizar el precio de productos combustibles');
-      }
-
-      // 3. Validar que solo viene precioVenta (y opcionalmente motivoCambioPrecio)
-      // IMPORTANTE: Comparar con los valores del producto existente para detectar solo cambios reales
-      const allowedFields = ['precioVenta', 'motivoCambioPrecio'];
+      const validation = this.productsService.validateEmployeeUpdatePermissions(existingProduct, updateProductInput);
       
-      // Valores por defecto del DTO que pueden estar presentes pero no fueron enviados
-      const defaultValues = {
-        moneda: 'COP',
-        stockMinimo: 0,
-        stockActual: 0,
-        esCombustible: false,
-        activo: true,
-      };
-      
-      // Obtener solo los campos que realmente fueron enviados (comparando con valores por defecto y con el producto existente)
-      const inputEntries = Object.entries(updateProductInput).filter(([key, value]) => {
-        // Excluir campos que son valores por defecto del DTO
-        if (defaultValues[key] !== undefined && value === defaultValues[key]) {
-          return false;
+      if (!validation.isValid) {
+        if (validation.error?.includes('no permitidos')) {
+          throw new ForbiddenException(validation.error);
         }
-        
-        // Excluir campos que coinciden con el producto existente (no fueron modificados)
-        if (existingProduct[key] !== undefined && 
-            JSON.stringify(value) === JSON.stringify(existingProduct[key])) {
-          return false;
+        if (validation.error?.includes('precio de venta debe ser mayor')) {
+          throw new BadRequestException(validation.error);
         }
-        
-        // Incluir solo si tiene un valor real y es diferente de undefined/null/vacío
-        return value !== undefined && 
-               value !== null && 
-               value !== '' &&
-               typeof value !== 'function' &&
-               !(typeof value === 'object' && value.constructor === Object && Object.keys(value).length === 0);
-      });
-      
-      const inputKeys = inputEntries.map(([key]) => key);
-      
-      // Verificar que todos los campos presentes están en la lista permitida
-      const invalidFields = inputKeys.filter(key => !allowedFields.includes(key));
-      
-      if (invalidFields.length > 0) {
-        throw new ForbiddenException(`Los empleados solo pueden actualizar el precio de venta. Campos no permitidos detectados: ${invalidFields.join(', ')}`);
+        throw new ForbiddenException(validation.error);
       }
 
-      if (!updateProductInput.precioVenta) {
-        throw new ForbiddenException('El precio de venta es requerido');
-      }
-
-      // 4. Validar precioVenta > precioCompra (usando precioCompra de la BD)
-      const precioCompraActual = parseFloat(existingProduct.precioCompra.toString());
-      const precioVentaNuevo = parseFloat(updateProductInput.precioVenta.toString());
-      
-      if (precioVentaNuevo <= precioCompraActual) {
-        throw new BadRequestException('El precio de venta debe ser mayor al precio de compra');
-      }
-
-      // 5. Filtrar el input para solo incluir precioVenta y motivoCambioPrecio
-      const filteredInput: UpdateProductInput = {
-        precioVenta: updateProductInput.precioVenta,
-        ...(updateProductInput.motivoCambioPrecio && { motivoCambioPrecio: updateProductInput.motivoCambioPrecio }),
-      };
-
-      return this.productsService.update(id, filteredInput, user.id, true);
+      return this.productsService.update(id, validation.filteredInput!, user.id, true);
     }
 
-    // Para admin y manager, comportamiento normal
     return this.productsService.update(id, updateProductInput, user.id);
   }
 
@@ -497,30 +443,21 @@ export class ProductsResolver {
   async updateStockSimple(
     @Args('input') input: SimpleStockUpdateInput
   ): Promise<Producto> {
-    const GALONES_TO_LITROS = 3.78541; // 1 galón = 3.78541 litros
-    
-    // Buscar producto
     const product = await this.productsService.findByCode(input.codigoProducto);
     if (!product) {
-      throw new Error(`Producto no encontrado: ${input.codigoProducto}`);
+      throw new NotFoundException(`Producto no encontrado: ${input.codigoProducto}`);
     }
 
-    // Convertir cantidad a litros si viene en galones
-    let cantidadEnLitros = input.cantidad;
-    if (input.unidadMedida.toLowerCase() === 'galones') {
-      cantidadEnLitros = input.cantidad * GALONES_TO_LITROS;
-    } else if (input.unidadMedida.toLowerCase() !== 'litros') {
-      throw new Error(`Unidad no soportada: ${input.unidadMedida}. Use 'litros' o 'galones'`);
+    const conversion = this.productsService.validateAndConvertUnit(input.cantidad, input.unidadMedida);
+    if (conversion.error) {
+      throw new BadRequestException(conversion.error);
     }
 
-    // Actualizar stock
-    const updatedProduct = await this.productsService.updateStock(
+    return this.productsService.updateStock(
       product.id, 
-      Math.round(cantidadEnLitros * 100) / 100, 
+      Math.round(conversion.cantidadEnLitros * 100) / 100, 
       input.tipo as 'entrada' | 'salida'
     );
-
-    return updatedProduct;
   }
 
   @Query(() => String, { name: 'tankStatus' })
@@ -1622,6 +1559,42 @@ export class ProductsResolver {
     return this.historialVentasService.updateHistorialVentaProducto(input);
   }
 
+  @Mutation(() => MetodoPagoResumen, { name: 'updateCierreTurnoMetodoPago' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async updateCierreTurnoMetodoPago(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('monto', { type: () => Float, nullable: true }) monto?: number,
+    @Args('observaciones', { nullable: true }) observaciones?: string
+  ): Promise<MetodoPagoResumen> {
+    const input: UpdateCierreTurnoMetodoPagoInput = {
+      id,
+      ...(monto !== undefined && { monto }),
+      ...(observaciones !== undefined && { observaciones })
+    };
+    return this.historialVentasService.updateCierreTurnoMetodoPago(input);
+  }
+
+  @Mutation(() => MovimientoEfectivo, { name: 'updateMovimientoEfectivo' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async updateMovimientoEfectivo(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('monto', { type: () => Float, nullable: true }) monto?: number,
+    @Args('concepto', { nullable: true }) concepto?: string,
+    @Args('detalle', { nullable: true }) detalle?: string,
+    @Args('observaciones', { nullable: true }) observaciones?: string
+  ): Promise<MovimientoEfectivo> {
+    const input: UpdateMovimientoEfectivoInput = {
+      id,
+      ...(monto !== undefined && { monto }),
+      ...(concepto !== undefined && { concepto }),
+      ...(detalle !== undefined && { detalle }),
+      ...(observaciones !== undefined && { observaciones })
+    };
+    return this.historialVentasService.updateMovimientoEfectivo(input);
+  }
+
   /**
    * OBTENER VENTAS DE PRODUCTOS CON FILTROS
    */
@@ -1802,5 +1775,39 @@ export class ProductsResolver {
     const empresaId = usuario?.empresaId || undefined;
 
     return this.movimientosEfectivoService.obtenerMovimientosEfectivo(filtros, empresaId);
+  }
+
+  // ===== ACTUALIZACIÓN DINÁMICA DE LECTURAS DE MANGUERAS =====
+
+  /**
+   * OBTENER DETALLES DE UNA LECTURA DE MANGUERA
+   * Query para obtener todos los datos necesarios para editar una lectura
+   */
+  @Query(() => LecturaMangueraDetails, { name: 'getLecturaMangueraDetails' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async getLecturaMangueraDetails(
+    @Args('lecturaId', { type: () => ID }) lecturaId: string
+  ): Promise<LecturaMangueraDetails> {
+    return this.lecturaMangueraUpdateService.getLecturaMangueraDetails(lecturaId);
+  }
+
+  /**
+   * ACTUALIZAR LECTURA DE MANGUERA
+   * Mutation para actualizar la cantidad vendida de una lectura con actualización en cascada
+   */
+  @Mutation(() => HistorialLectura, { name: 'updateHistorialLectura' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async updateHistorialLectura(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('cantidadVendida', { type: () => Float }) cantidadVendida: number,
+    @CurrentUser() user: any
+  ): Promise<HistorialLectura> {
+    return this.lecturaMangueraUpdateService.updateHistorialLectura(
+      id,
+      cantidadVendida,
+      user.id
+    );
   }
 } 

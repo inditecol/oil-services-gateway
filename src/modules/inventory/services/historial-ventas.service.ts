@@ -3,10 +3,16 @@ import { PrismaService } from '../../../config/prisma/prisma.service';
 import { HistorialVentasProductos as HistorialVentasProductosGraphQL } from '../entities/historial-ventas-productos.entity';
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from '../entities/consolidado-productos-ventas.entity';
 import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput, UpdateHistorialVentaProductoInput } from '../dto/registrar-venta-producto.input';
+import { UpdateCierreTurnoMetodoPagoInput } from '../dto/update-cierre-turno-metodo-pago.input';
+import { UpdateMovimientoEfectivoInput } from '../dto/update-movimiento-efectivo.input';
+import { HistorialVentaUpdateService } from './historial-venta-update.service';
 
 @Injectable()
 export class HistorialVentasService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private historialVentaUpdateService: HistorialVentaUpdateService
+  ) {}
 
   async registrarVentaProducto(input: RegistrarVentaProductoInput): Promise<any> {
     // Obtener el método de pago por código
@@ -838,90 +844,14 @@ export class HistorialVentasService {
   }
 
   async updateHistorialVentaProducto(input: UpdateHistorialVentaProductoInput): Promise<any> {
-    const registroExistente = await this.prisma.historialVentasProductos.findUnique({
-      where: { id: input.id },
-      include: {
-        turno: {
-          include: {
-            cierres: {
-              take: 1
-            }
-          }
-        }
-      }
-    });
+    return this.historialVentaUpdateService.updateHistorialVentaProducto(input);
+  }
 
-    if (!registroExistente) {
-      throw new NotFoundException(`Registro de venta de producto con ID ${input.id} no encontrado`);
-    }
+  async updateCierreTurnoMetodoPago(input: UpdateCierreTurnoMetodoPagoInput): Promise<any> {
+    return this.historialVentaUpdateService.updateCierreTurnoMetodoPago(input);
+  }
 
-    if (!registroExistente.turno || !registroExistente.turno.cierres || registroExistente.turno.cierres.length === 0) {
-      throw new BadRequestException(`El registro no pertenece a un turno con cierre asociado`);
-    }
-
-    const datosActualizacion: any = {};
-    let nuevaCantidad = registroExistente.cantidadVendida;
-    let nuevoPrecio = registroExistente.precioUnitario;
-
-    if (input.cantidadVendida !== undefined) {
-      if (input.cantidadVendida <= 0) {
-        throw new BadRequestException('La cantidad vendida debe ser mayor a 0');
-      }
-      nuevaCantidad = input.cantidadVendida;
-      datosActualizacion.cantidadVendida = input.cantidadVendida;
-    }
-
-    if (input.precioUnitario !== undefined) {
-      if (input.precioUnitario <= 0) {
-        throw new BadRequestException('El precio unitario debe ser mayor a 0');
-      }
-      nuevoPrecio = input.precioUnitario;
-      datosActualizacion.precioUnitario = input.precioUnitario;
-    }
-
-    datosActualizacion.valorTotal = Math.round((nuevaCantidad * nuevoPrecio) * 100) / 100;
-
-    if (input.observaciones !== undefined) {
-      datosActualizacion.observaciones = input.observaciones;
-    }
-
-    const registroActualizado = await this.prisma.historialVentasProductos.update({
-      where: { id: input.id },
-      data: datosActualizacion,
-      include: {
-        producto: true,
-        metodoPago: true,
-        cliente: true,
-        usuario: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            username: true,
-            email: true
-          }
-        },
-        turno: {
-          include: {
-            puntoVenta: {
-              select: {
-                id: true,
-                codigo: true,
-                nombre: true
-              }
-            }
-          }
-        },
-        puntoVenta: {
-          select: {
-            id: true,
-            codigo: true,
-            nombre: true
-          }
-        }
-      }
-    });
-
-    return registroActualizado;
+  async updateMovimientoEfectivo(input: UpdateMovimientoEfectivoInput): Promise<any> {
+    return this.historialVentaUpdateService.updateMovimientoEfectivo(input);
   }
 }
