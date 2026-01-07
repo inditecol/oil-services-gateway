@@ -274,7 +274,15 @@ export class TanquesService {
     // }
 
     // Convertir altura a volumen usando tabla de aforo
-    const volumen = await this.getVolumeByHeight(id, alturaFluido);
+    // IMPORTANTE: getVolumeByHeight SIEMPRE retorna el volumen en LITROS (según tabla_aforo)
+    const volumenEnLitros = await this.getVolumeByHeight(id, alturaFluido);
+
+    // Convertir el volumen a la unidad del tanque si es necesario
+    const LITROS_A_GALONES = 0.264172;
+    const unidadTanque = tanque.unidadMedida || 'GALONES';
+    const volumen = unidadTanque === 'GALONES' 
+      ? Math.round(volumenEnLitros * LITROS_A_GALONES * 100) / 100 
+      : Math.round(volumenEnLitros * 100) / 100;
 
     // Verificar que no exceda la capacidad
     const capacidadTotal = parseFloat(tanque.capacidadTotal.toString());
@@ -284,7 +292,7 @@ export class TanquesService {
 
     // Verificar nivel mínimo
     const nivelMinimo = parseFloat(tanque.nivelMinimo.toString());
-    const unidadDisplay = tanque.unidadMedida || 'unidades';
+    const unidadDisplay = unidadTanque;
     
     if (volumen < nivelMinimo) {
       warnings.push(`¡ALERTA! El volumen calculado (${volumen} ${unidadDisplay}) está por debajo del nivel mínimo (${nivelMinimo} ${unidadDisplay})`);
@@ -298,27 +306,48 @@ export class TanquesService {
       status = status === 'CRITICAL' ? 'CRITICAL' : 'WARNING';
     }
 
-    // Actualizar tanto el nivel como la altura actual
-    const tanqueActualizado = await this.prisma.tanque.update({
-      where: { id },
-      data: { 
-        nivelActual: volumen,
-        alturaActual: alturaFluido, // TODO: Uncomment when Prisma client is regenerated
-        updatedAt: new Date() 
-      },
-      include: {
-        producto: true,
-        puntoVenta: true,
-        tablaAforo: {
-          orderBy: { altura: 'asc' }
+    // Actualizar tanto el nivel como la altura actual del tanque
+    // Y sincronizar automáticamente el stockActual del producto asociado
+    const tanqueActualizado = await this.prisma.$transaction(async (prisma) => {
+      // 1. Actualizar el tanque con el volumen en su unidad de medida
+      const tanqueUpdated = await prisma.tanque.update({
+        where: { id },
+        data: { 
+          nivelActual: volumen,
+          alturaActual: alturaFluido,
+          updatedAt: new Date() 
         },
-      },
+        include: {
+          producto: true,
+          puntoVenta: true,
+          tablaAforo: {
+            orderBy: { altura: 'asc' }
+          },
+        },
+      });
+
+      // 2. Sincronizar el stockActual del producto asociado
+      // El stockActual debe tener exactamente el mismo valor que nivelActual del tanque
+      if (tanqueUpdated.productoId) {
+        await prisma.producto.update({
+          where: { id: tanqueUpdated.productoId },
+          data: {
+            stockActual: volumen,
+            updatedAt: new Date()
+          }
+        });
+      }
+
+      return tanqueUpdated;
     });
 
     const tanqueMapeado = await this.mapTanqueWithCalculations(tanqueActualizado);
 
     if (warnings.length === 0) {
       messages.push(`Nivel actualizado exitosamente: ${volumen} ${unidadDisplay} (${alturaFluido}cm)`);
+      if (tanqueActualizado.productoId) {
+        messages.push(`Stock del producto sincronizado automáticamente`);
+      }
     }
 
     return {
