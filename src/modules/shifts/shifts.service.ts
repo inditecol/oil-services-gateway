@@ -32,32 +32,11 @@ export class ShiftsService {
   }
 
   async create(createShiftInput: CreateShiftInput): Promise<Shift> {
-    // Extraer la fecha base (sin hora) del startDate
-    const fechaBase = new Date(createShiftInput.startDate);
-    fechaBase.setUTCHours(0, 0, 0, 0);
-    
-    // Combinar la fecha con la hora de inicio
-    const [horaInicioNum, minutoInicioNum] = createShiftInput.startTime.split(':').map(Number);
-    const fechaInicio = new Date(fechaBase);
-    fechaInicio.setUTCHours(horaInicioNum, minutoInicioNum, 0, 0);
-    
-    // Combinar la fecha con la hora de fin (si existe)
-    let fechaFin: Date | null = null;
-    if (createShiftInput.endDate && createShiftInput.endTime) {
-      const fechaBaseFin = new Date(createShiftInput.endDate);
-      fechaBaseFin.setUTCHours(0, 0, 0, 0);
-      const [horaFinNum, minutoFinNum] = createShiftInput.endTime.split(':').map(Number);
-      fechaFin = new Date(fechaBaseFin);
-      fechaFin.setUTCHours(horaFinNum, minutoFinNum, 0, 0);
-    } else if (createShiftInput.endDate) {
-      fechaFin = new Date(createShiftInput.endDate);
-    }
-    
+    const fechaInicio = new Date(createShiftInput.startDate);
     const fechaInicioSolo = this.dateUtils.extractDateOnly(fechaInicio);
     const horaInicio = createShiftInput.startTime;
     const horaFin = createShiftInput.endTime || null;
 
-    // Verificar duplicados
     const fechaInicioInicio = new Date(fechaInicio);
     fechaInicioInicio.setUTCHours(0, 0, 0, 0);
     const fechaInicioFin = new Date(fechaInicio);
@@ -83,7 +62,7 @@ export class ShiftsService {
     const shift = await this.prisma.turno.create({
       data: {
         fechaInicio: fechaInicio,
-        fechaFin: fechaFin,
+        fechaFin: createShiftInput.endDate ? new Date(createShiftInput.endDate) : null,
         horaInicio: horaInicio,
         horaFin: horaFin,
         observaciones: createShiftInput.observations,
@@ -387,204 +366,25 @@ export class ShiftsService {
 
   async remove(id: string): Promise<Shift> {
     try {
-      // Verificar que el turno existe
       const existingShift = await this.findById(id);
       if (!existingShift) {
-        throw new NotFoundException('El turno no existe o ya fue eliminado');
+        throw new NotFoundException('Shift not found');
       }
 
-      // Eliminar el turno y revertir todos los cambios asociados en una transacción
-      return await this.prisma.$transaction(async (prisma) => {
-        // 1. Obtener todos los cierres de turno asociados
-        const cierresTurno = await prisma.cierreTurno.findMany({
-          where: { turnoId: id },
-          include: {
-            metodosPago: true,
-            movimientosEfectivo: true,
-          },
-        });
 
-        // 2. Para cada cierre, revertir los cambios
-        for (const cierre of cierresTurno) {
-          // 2.1. Obtener todas las lecturas de mangueras asociadas a este cierre
-          // Nota: En el sistema, turnoId en HistorialLectura contiene el ID del CierreTurno
-          const historialesLectura = await prisma.historialLectura.findMany({
-            where: { turnoId: cierre.id },
-            include: {
-              manguera: {
-                include: {
-                  producto: true,
-                },
-              },
-            },
-          });
-
-          // 2.2. Revertir las lecturas de mangueras y el stock
-          // Agrupar historiales por manguera para manejar múltiples lecturas
-          const historialesPorManguera = new Map<string, typeof historialesLectura>();
-          for (const historial of historialesLectura) {
-            const mangueraId = historial.mangueraId;
-            if (!historialesPorManguera.has(mangueraId)) {
-              historialesPorManguera.set(mangueraId, []);
-            }
-            historialesPorManguera.get(mangueraId)!.push(historial);
-          }
-
-          // Para cada manguera, revertir usando el historial más antiguo (primero creado)
-          for (const [mangueraId, historiales] of historialesPorManguera.entries()) {
-            // Ordenar por fecha de lectura (más antiguo primero)
-            historiales.sort((a, b) => 
-              a.fechaLectura.getTime() - b.fechaLectura.getTime()
-            );
-            
-            const historialMasAntiguo = historiales[0];
-            const manguera = historialMasAntiguo.manguera;
-            const producto = manguera.producto;
-
-            // Restaurar la lectura anterior del historial más antiguo como lectura actual
-            await prisma.mangueraSurtidor.update({
-              where: { id: manguera.id },
-              data: {
-                lecturaActual: historialMasAntiguo.lecturaAnterior,
-              },
-            });
-
-            // Revertir el stock del producto (sumar todas las cantidades vendidas)
-            if (producto) {
-              let totalCantidadARevertir = 0;
-              
-              for (const historial of historiales) {
-                const cantidadVendida = parseFloat(historial.cantidadVendida.toString());
-                if (cantidadVendida > 0) {
-                  totalCantidadARevertir += cantidadVendida;
-                }
-              }
-
-              if (totalCantidadARevertir > 0) {
-                // Si el producto tiene tanque, también revertir el nivel del tanque
-                const tanque = await prisma.tanque.findFirst({
-                  where: {
-                    productoId: producto.id,
-                    puntoVentaId: existingShift.puntoVentaId,
-                  },
-                });
-
-                if (tanque) {
-                  // Revertir nivel del tanque
-                  const nivelAnterior = parseFloat(tanque.nivelActual.toString()) + totalCantidadARevertir;
-                  await prisma.tanque.update({
-                    where: { id: tanque.id },
-                    data: {
-                      nivelActual: nivelAnterior,
-                    },
-                  });
-                }
-
-                // Revertir stock del producto
-                await prisma.producto.update({
-                  where: { id: producto.id },
-                  data: {
-                    stockActual: { increment: totalCantidadARevertir },
-                  },
-                });
-              }
-            }
-          }
-
-          // 2.3. Revertir cambios en la caja (si hay movimientos de efectivo)
-          if (cierre.movimientosEfectivo && cierre.movimientosEfectivo.length > 0) {
-            const puntoVenta = await prisma.puntoVenta.findUnique({
-              where: { id: existingShift.puntoVentaId },
-            });
-
-            if (puntoVenta) {
-              const caja = await prisma.caja.findUnique({
-                where: { puntoVentaId: puntoVenta.id },
-              });
-
-              if (caja) {
-                // Calcular el total a revertir (sumar ingresos, restar egresos)
-                let totalARevertir = 0;
-                for (const movimiento of cierre.movimientosEfectivo) {
-                  const monto = parseFloat(movimiento.monto.toString());
-                  if (movimiento.tipo === 'INGRESO') {
-                    totalARevertir -= monto; // Revertir ingresos (restar)
-                  } else if (movimiento.tipo === 'EGRESO') {
-                    totalARevertir += monto; // Revertir egresos (sumar)
-                  }
-                }
-
-                if (totalARevertir !== 0) {
-                  await prisma.caja.update({
-                    where: { id: caja.id },
-                    data: {
-                      saldoActual: { increment: totalARevertir },
-                    },
-                  });
-                }
-              }
-            }
-          }
-
-          // 2.4. Eliminar el historial de lecturas asociado
-          await prisma.historialLectura.deleteMany({
-            where: { turnoId: cierre.id },
-          });
-        }
-
-        // 3. Obtener y revertir el historial de ventas asociado
-        const historialVentas = await prisma.historialVentasProductos.findMany({
-          where: { turnoId: id },
-          include: {
-            producto: true,
-          },
-        });
-
-        for (const venta of historialVentas) {
-          // Revertir el stock del producto (sumar lo que se restó)
-          const cantidadVendida = parseFloat(venta.cantidadVendida.toString());
-          if (cantidadVendida > 0) {
-            await prisma.producto.update({
-              where: { id: venta.productoId },
-              data: {
-                stockActual: { increment: cantidadVendida },
-              },
-            });
-          }
-        }
-
-        // 4. Eliminar el historial de ventas
-        await prisma.historialVentasProductos.deleteMany({
-          where: { turnoId: id },
-        });
-
-        // 5. Eliminar las ventas asociadas (esto eliminará en cascada los detalles de venta)
-        await prisma.venta.deleteMany({
-          where: { turnoId: id },
-        });
-
-        // 6. Eliminar los cierres de turno (esto eliminará en cascada métodos de pago y movimientos de efectivo)
-        await prisma.cierreTurno.deleteMany({
-          where: { turnoId: id },
-        });
-
-        // 7. Finalmente, eliminar el turno
-        const shift = await prisma.turno.delete({
-          where: { id },
-          include: {
-            usuario: true,
-          },
-        });
-
-        return this.formatShift(shift);
+      const shift = await this.prisma.turno.delete({
+        where: { id },
+        include: {
+          usuario: true,
+        },
       });
+
+      return this.formatShift(shift);
     } catch (error) {
-      // Re-lanzar excepciones de NestJS (se convierten automáticamente a formato GraphQL)
       if (error instanceof NotFoundException || error instanceof ConflictException) {
         throw error;
       }
-      // Para otros errores, lanzar una excepción genérica con mensaje descriptivo
-      throw new Error(`Error al eliminar el turno: ${error.message}`);
+      throw new Error(`Error deleting shift: ${error.message}`);
     }
   }
 
@@ -643,51 +443,6 @@ export class ShiftsService {
       return shifts.map(shift => this.formatShift(shift));
     } catch (error) {
       throw new Error(`Error querying user shifts: ${error.message}`);
-    }
-  }
-
-  /**
-   * Corrige las fechas y horas de un turno específico
-   * Útil para corregir turnos que se guardaron incorrectamente
-   */
-  async fixShiftDates(
-    id: string,
-    correctStartDate: string, // ISO string con hora correcta (ej: "2026-01-07T14:00:00.000Z")
-    correctEndDate: string,   // ISO string con hora correcta (ej: "2026-01-07T22:00:00.000Z")
-    correctStartTime: string, // HH:mm (ej: "14:00")
-    correctEndTime: string    // HH:mm (ej: "22:00")
-  ): Promise<Shift> {
-    try {
-      const existingShift = await this.findById(id);
-      if (!existingShift) {
-        throw new NotFoundException('El turno no existe');
-      }
-
-      // Crear objetos Date con las fechas correctas
-      const fechaInicio = new Date(correctStartDate);
-      const fechaFin = new Date(correctEndDate);
-
-      // Actualizar el turno
-      const shift = await this.prisma.turno.update({
-        where: { id },
-        data: {
-          fechaInicio: fechaInicio,
-          fechaFin: fechaFin,
-          horaInicio: correctStartTime,
-          horaFin: correctEndTime,
-        },
-        include: {
-          usuario: true,
-          puntoVenta: true,
-        },
-      });
-
-      return this.formatShift(shift);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new Error(`Error corrigiendo fechas del turno: ${error.message}`);
     }
   }
 } 
