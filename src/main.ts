@@ -1,10 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { setupConsoleInterceptor } from './config/logger/console-interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  // Obtener el logger de Pino para NestJS
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
+  // Interceptar console.log, console.warn, console.error para redirigirlos a Pino
+  setupConsoleInterceptor(logger);
 
   // Configurar CORS
   app.enableCors({
@@ -29,8 +40,8 @@ async function bootstrap() {
 
   await app.listen(port);
   
-  console.log(`🚀 Aplicación ejecutándose en: http://localhost:${port}`);
-  console.log(`📊 GraphQL Playground disponible en: http://localhost:${port}/graphql`);
+  logger.log(`🚀 Aplicación ejecutándose en: http://localhost:${port}`);
+  logger.log(`📊 GraphQL Playground disponible en: http://localhost:${port}/graphql`);
 }
 
 bootstrap(); 

@@ -6,7 +6,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 import { ShiftsService } from './shifts.service';
-import { Shift, ShiftListResponse } from './entities/shift.entity';
+import { Shift, ShiftListResponse, DeleteShiftResponse } from './entities/shift.entity';
 import { CreateShiftInput } from './dto/create-shift.input';
 import { UpdateShiftInput } from './dto/update-shift.input';
 import { CreateTurnoInput } from './dto/create-turno-legacy.input';
@@ -103,11 +103,16 @@ export class ShiftsResolver {
     return this.shiftsService.closeShift(id);
   }
 
-  @Mutation(() => Shift)
+  @Mutation(() => DeleteShiftResponse)
   @UseGuards(RolesGuard)
   @Roles('admin')
-  async deleteShift(@Args('id', { type: () => ID }) id: string): Promise<Shift> {
-    return this.shiftsService.remove(id);
+  async deleteShift(@Args('id', { type: () => ID }) id: string): Promise<DeleteShiftResponse> {
+    const shift = await this.shiftsService.remove(id);
+    return {
+      shift,
+      message: 'Turno eliminado exitosamente',
+      success: true,
+    };
   }
 
   // Legacy queries for compatibility (keeping Spanish names)
@@ -200,10 +205,34 @@ export class ShiftsResolver {
     return JSON.stringify(shifts);
   }
 
+  @Mutation(() => DeleteShiftResponse)
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async deleteTurno(@Args('id', { type: () => ID }) id: string): Promise<DeleteShiftResponse> {
+    const shift = await this.shiftsService.remove(id);
+    return {
+      shift,
+      message: 'Turno eliminado exitosamente',
+      success: true,
+    };
+  }
+
   @Mutation(() => Shift)
   @UseGuards(RolesGuard)
   @Roles('admin')
-  async deleteTurno(@Args('id', { type: () => ID }) id: string): Promise<Shift> {
-    return this.shiftsService.remove(id);
+  async fixShiftDates(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('correctStartDate') correctStartDate: string,
+    @Args('correctEndDate') correctEndDate: string,
+    @Args('correctStartTime') correctStartTime: string,
+    @Args('correctEndTime') correctEndTime: string,
+  ): Promise<Shift> {
+    return this.shiftsService.fixShiftDates(
+      id,
+      correctStartDate,
+      correctEndDate,
+      correctStartTime,
+      correctEndTime
+    );
   }
 } 

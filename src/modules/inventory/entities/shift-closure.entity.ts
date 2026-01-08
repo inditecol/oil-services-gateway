@@ -226,6 +226,15 @@ export class MetodoPagoResumen {
 
   @Field({ nullable: true })
   observaciones?: string;
+
+  @Field(() => ID, { nullable: true })
+  cierreTurnoId?: string;
+
+  @Field({ nullable: true })
+  createdAt?: Date;
+
+  @Field({ nullable: true })
+  updatedAt?: Date;
 }
 
 @ObjectType()

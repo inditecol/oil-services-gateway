@@ -57,4 +57,16 @@ export class ShiftListResponse {
 
   @Field()
   limit: number;
+}
+
+@ObjectType()
+export class DeleteShiftResponse {
+  @Field(() => Shift)
+  shift: Shift;
+
+  @Field()
+  message: string;
+
+  @Field()
+  success: boolean;
 } 

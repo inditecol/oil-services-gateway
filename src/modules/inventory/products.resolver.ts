@@ -61,6 +61,7 @@ import { HistorialVentasProductos } from './entities/historial-ventas-productos.
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from './entities/consolidado-productos-ventas.entity';
 import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput, UpdateHistorialVentaProductoInput } from './dto/registrar-venta-producto.input';
 import { UpdateCierreTurnoMetodoPagoInput } from './dto/update-cierre-turno-metodo-pago.input';
+import { CreateCierreTurnoMetodoPagoInput } from './dto/create-cierre-turno-metodo-pago.input';
 import { UpdateMovimientoEfectivoInput } from './dto/update-movimiento-efectivo.input';
 import { CrearMetodoPagoInput, ActualizarMetodoPagoInput, FiltrosMetodosPagoInput } from './dto/metodo-pago.input';
 import { MetodosPagoService } from './services/metodos-pago.service';
@@ -1559,6 +1560,33 @@ export class ProductsResolver {
     return this.historialVentasService.updateHistorialVentaProducto(input);
   }
 
+  @Mutation(() => MetodoPagoResumen, { name: 'createCierreTurnoMetodoPago' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async createCierreTurnoMetodoPago(
+    @Args('cierreTurnoId', { type: () => ID }) cierreTurnoId: string,
+    @Args('metodoPagoId', { type: () => ID }) metodoPagoId: string,
+    @Args('monto', { type: () => Float }) monto: number,
+    @Args('observaciones', { nullable: true }) observaciones?: string
+  ): Promise<MetodoPagoResumen> {
+    const input: CreateCierreTurnoMetodoPagoInput = {
+      cierreTurnoId,
+      metodoPagoId,
+      monto,
+      observaciones
+    };
+    return this.historialVentasService.createCierreTurnoMetodoPago(input);
+  }
+
+  @Mutation(() => MetodoPagoResumen, { name: 'deleteCierreTurnoMetodoPago' })
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'manager', 'employee')
+  async deleteCierreTurnoMetodoPago(
+    @Args('id', { type: () => ID }) id: string
+  ): Promise<MetodoPagoResumen> {
+    return this.historialVentasService.deleteCierreTurnoMetodoPago(id);
+  }
+
   @Mutation(() => MetodoPagoResumen, { name: 'updateCierreTurnoMetodoPago' })
   @UseGuards(RolesGuard)
   @Roles('admin', 'manager', 'employee')
@@ -1795,6 +1823,8 @@ export class ProductsResolver {
   /**
    * ACTUALIZAR LECTURA DE MANGUERA
    * Mutation para actualizar la cantidad vendida de una lectura con actualización en cascada
+   * @param actualizarMetodosPagoAutomaticamente - Si es true (default), actualiza métodos de pago automáticamente.
+   * Si es false, solo actualiza la lectura sin modificar métodos de pago (para asignación manual desde frontend).
    */
   @Mutation(() => HistorialLectura, { name: 'updateHistorialLectura' })
   @UseGuards(RolesGuard)
@@ -1802,12 +1832,15 @@ export class ProductsResolver {
   async updateHistorialLectura(
     @Args('id', { type: () => ID }) id: string,
     @Args('cantidadVendida', { type: () => Float }) cantidadVendida: number,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
+    @Args('actualizarMetodosPagoAutomaticamente', { type: () => Boolean, nullable: true, defaultValue: true }) 
+    actualizarMetodosPagoAutomaticamente: boolean = true
   ): Promise<HistorialLectura> {
     return this.lecturaMangueraUpdateService.updateHistorialLectura(
       id,
       cantidadVendida,
-      user.id
+      user.id,
+      actualizarMetodosPagoAutomaticamente
     );
   }
 } 

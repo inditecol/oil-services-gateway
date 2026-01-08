@@ -4,6 +4,7 @@ import { HistorialVentasProductos as HistorialVentasProductosGraphQL } from '../
 import { ConsolidadoProductosVendidos, ResumenVentasProductos } from '../entities/consolidado-productos-ventas.entity';
 import { RegistrarVentaProductoInput, FiltrosVentasProductosInput, FiltrosReporteVentasInput, UpdateHistorialVentaProductoInput } from '../dto/registrar-venta-producto.input';
 import { UpdateCierreTurnoMetodoPagoInput } from '../dto/update-cierre-turno-metodo-pago.input';
+import { CreateCierreTurnoMetodoPagoInput } from '../dto/create-cierre-turno-metodo-pago.input';
 import { UpdateMovimientoEfectivoInput } from '../dto/update-movimiento-efectivo.input';
 import { HistorialVentaUpdateService } from './historial-venta-update.service';
 
@@ -847,8 +848,16 @@ export class HistorialVentasService {
     return this.historialVentaUpdateService.updateHistorialVentaProducto(input);
   }
 
+  async createCierreTurnoMetodoPago(input: CreateCierreTurnoMetodoPagoInput): Promise<any> {
+    return this.historialVentaUpdateService.createCierreTurnoMetodoPago(input);
+  }
+
   async updateCierreTurnoMetodoPago(input: UpdateCierreTurnoMetodoPagoInput): Promise<any> {
     return this.historialVentaUpdateService.updateCierreTurnoMetodoPago(input);
+  }
+
+  async deleteCierreTurnoMetodoPago(id: string): Promise<any> {
+    return this.historialVentaUpdateService.deleteCierreTurnoMetodoPago(id);
   }
 
   async updateMovimientoEfectivo(input: UpdateMovimientoEfectivoInput): Promise<any> {

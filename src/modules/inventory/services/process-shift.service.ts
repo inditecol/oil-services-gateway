@@ -50,14 +50,20 @@ export class ProcessShiftService {
       // ==========================================
       // VALIDAR CONFIGURACIÓN DE MÉTODOS DE PAGO
       // ==========================================
-      // Obtener configuración de la empresa desde el JWT
-      const seleccionPorProducto = user?.configuracionEmpresa?.seleccionPorProducto ?? false;
+      // Obtener configuración desde JWT (más eficiente y consistente durante la sesión)
+      // Si no está disponible en JWT, consultar desde BD como fallback
+      let seleccionPorProducto = false;
       
-      console.log('[CIERRE_TURNO] Configuración de métodos de pago:', {
-        seleccionPorProducto,
-        tieneConfiguracion: !!user?.configuracionEmpresa,
-        userId: user?.id,
-      });
+      if (user?.configuracionEmpresa?.seleccionPorProducto !== undefined) {
+        seleccionPorProducto = user.configuracionEmpresa.seleccionPorProducto;
+      } else if (puntoVenta.empresaId) {
+        // Fallback: consultar desde BD si no está en JWT
+        const configuracionEmpresa = await this.prisma.configuracionEmpresa.findUnique({
+          where: { empresaId: puntoVenta.empresaId },
+          select: { seleccionPorProducto: true }
+        });
+        seleccionPorProducto = configuracionEmpresa?.seleccionPorProducto ?? false;
+      }
 
       // Si seleccionPorProducto = true, validar que NO se envíen métodos de pago por manguera individual
       if (seleccionPorProducto) {
