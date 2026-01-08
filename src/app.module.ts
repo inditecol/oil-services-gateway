@@ -4,6 +4,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 
 // Módulos de la aplicación
+import { LoggerModule } from './config/logger/logger.module';
 import { PrismaModule } from './config/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -23,6 +24,9 @@ import { HealthModule } from './health/health.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Logger (debe ir antes de otros módulos)
+    LoggerModule,
 
     // GraphQL Configuration
     GraphQLModule.forRoot<ApolloDriverConfig>({

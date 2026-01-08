@@ -1,9 +1,10 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor() {
+  constructor(private readonly logger: Logger) {
     super({
       log: ['query', 'info', 'warn', 'error'],
       transactionOptions: {
@@ -16,12 +17,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit() {
     await this.$connect();
-    console.log('✅ Base de datos conectada correctamente');
+    this.logger.log('✅ Base de datos conectada correctamente', 'PrismaService');
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
-    console.log('❌ Desconectado de la base de datos');
+    this.logger.log('❌ Desconectado de la base de datos', 'PrismaService');
   }
 
   // Método para limpiar la base de datos (útil para testing)
