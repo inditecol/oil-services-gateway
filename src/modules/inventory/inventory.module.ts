@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { InventoryResolver } from './inventory.resolver';
 import { ProductsService } from './products.service';
@@ -20,8 +20,10 @@ import { ProcessShiftResolver } from './process-shift.resolver';
 import { ProcessShiftService } from './services/process-shift.service';
 import { MovimientosEfectivoService } from './services/movimientos-efectivo.service';
 import { LecturaMangueraUpdateService } from './services/lectura-manguera-update.service';
+import { ShiftsModule } from '../shifts/shifts.module';
 
 @Module({
+  imports: [forwardRef(() => ShiftsModule)],
   providers: [
     InventoryService,
     InventoryResolver,

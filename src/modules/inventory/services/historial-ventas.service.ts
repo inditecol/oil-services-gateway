@@ -844,23 +844,23 @@ export class HistorialVentasService {
     };
   }
 
-  async updateHistorialVentaProducto(input: UpdateHistorialVentaProductoInput): Promise<any> {
-    return this.historialVentaUpdateService.updateHistorialVentaProducto(input);
+  async updateHistorialVentaProducto(input: UpdateHistorialVentaProductoInput, usuarioId?: string): Promise<any> {
+    return this.historialVentaUpdateService.updateHistorialVentaProducto(input, usuarioId);
   }
 
   async createCierreTurnoMetodoPago(input: CreateCierreTurnoMetodoPagoInput): Promise<any> {
     return this.historialVentaUpdateService.createCierreTurnoMetodoPago(input);
   }
 
-  async updateCierreTurnoMetodoPago(input: UpdateCierreTurnoMetodoPagoInput): Promise<any> {
-    return this.historialVentaUpdateService.updateCierreTurnoMetodoPago(input);
+  async updateCierreTurnoMetodoPago(input: UpdateCierreTurnoMetodoPagoInput, usuarioId?: string): Promise<any> {
+    return this.historialVentaUpdateService.updateCierreTurnoMetodoPago(input, usuarioId);
   }
 
   async deleteCierreTurnoMetodoPago(id: string): Promise<any> {
     return this.historialVentaUpdateService.deleteCierreTurnoMetodoPago(id);
   }
 
-  async updateMovimientoEfectivo(input: UpdateMovimientoEfectivoInput): Promise<any> {
-    return this.historialVentaUpdateService.updateMovimientoEfectivo(input);
+  async updateMovimientoEfectivo(input: UpdateMovimientoEfectivoInput, usuarioId?: string): Promise<any> {
+    return this.historialVentaUpdateService.updateMovimientoEfectivo(input, usuarioId);
   }
 }

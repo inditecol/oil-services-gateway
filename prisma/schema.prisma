@@ -124,6 +124,7 @@ model Usuario {
   puntosVenta       PuntoVenta[]       @relation("PuntoVentaToUsuario")
   historialVentasProductos HistorialVentasProductos[]
   gastosAprobados   Gasto[]            @relation("GastosAprobados")
+  historialCambiosTurno HistorialCambioTurno[]
 
   @@map("usuarios")
   @@schema("usuarios")
@@ -146,6 +147,7 @@ model Turno {
   usuario           Usuario?           @relation(fields: [usuarioId], references: [id])
   ventas            Venta[]
   historialVentasProductos HistorialVentasProductos[]
+  historialCambios HistorialCambioTurno[]
 
   // NOTA: La unicidad se valida en el código por: fechaInicio + puntoVentaId + horaInicio + horaFin
   // Para agregar restricción única a nivel de BD (PostgreSQL):
@@ -792,4 +794,37 @@ model ConfiguracionEmpresa {
 
   @@map("configuracion_empresa")
   @@schema("configuracion")
+}
+
+// Sistema de auditoría para cambios en turnos
+enum TipoModificacionTurno {
+  INFORMACION_GENERAL
+  LECTURA_MANGUERA
+  PRODUCTO_VENDIDO
+  METODO_PAGO
+  MOVIMIENTO_EFECTIVO
+
+  @@schema("turnos")
+}
+
+model HistorialCambioTurno {
+  id                String                @id @default(cuid())
+  turnoId           String                // ID del turno modificado
+  usuarioId         String                // Usuario que hizo el cambio
+  fechaModificacion DateTime              @default(now())
+  tipoModificacion  TipoModificacionTurno
+  datosAnteriores   Json                  // Estado anterior (JSON)
+  datosNuevos       Json                  // Estado nuevo (JSON)
+  descripcion       String?               // Descripción del cambio
+  createdAt         DateTime              @default(now())
+
+  // Relaciones
+  turno             Turno                 @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  usuario           Usuario               @relation(fields: [usuarioId], references: [id])
+
+  @@index([turnoId, fechaModificacion])
+  @@index([usuarioId])
+  @@index([tipoModificacion])
+  @@map("historial_cambio_turno")
+  @@schema("turnos")
 }

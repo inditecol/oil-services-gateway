@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../config/prisma/prisma.service';
 import { LecturaMangueraDetails } from '../entities/lectura-manguera-details.entity';
 import { HistorialLectura } from '../entities/historial-lectura.entity';
+import { AuditoriaTurnoService, TipoModificacionTurno } from '../../shifts/services/auditoria-turno.service';
 
 @Injectable()
 export class LecturaMangueraUpdateService {
   private readonly ROUND_FACTOR = 100;
   private readonly PRECISION_TOLERANCE = 0.01;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => AuditoriaTurnoService))
+    private auditoriaService: AuditoriaTurnoService
+  ) {}
 
   /**
    * Get complete details of a hose reading
@@ -225,6 +230,78 @@ export class LecturaMangueraUpdateService {
       // 7. Actualizar caja si aplica
       if (Math.abs(diferenciaValor) > this.PRECISION_TOLERANCE) {
         await this.actualizarCaja(prisma, cierreTurno, diferenciaValor);
+      }
+
+      // 8. Actualizar lecturaAnterior y lecturaActual del siguiente turno (SIEMPRE, independientemente de flags)
+      // Necesitamos pasar la lectura anterior original para calcular el delta
+      await this.actualizarLecturaAnteriorSiguienteTurno(
+        prisma,
+        cierreTurno,
+        lectura.mangueraId,
+        lecturaAnterior, // lectura anterior original
+        nuevaLecturaActual // nueva lectura actual
+      );
+
+      // 9. Actualizar lecturaActual de la manguera con la lectura del último turno cerrado
+      // Esto es necesario porque si se actualiza un turno anterior, la cascada puede cambiar
+      // el último turno cerrado, y la manguera debe reflejar siempre la lectura del último turno cerrado
+      await this.actualizarLecturaActualManguera(
+        prisma,
+        lectura.mangueraId,
+        cierreTurno.turno.puntoVentaId
+      );
+
+      // 10. Registrar cambio en auditoría si hay usuarioId
+      if (usuarioId && cierreTurno.turnoId) {
+        const datosAnteriores = {
+          lecturaAnterior: lecturaAnterior,
+          lecturaActual: Number(lectura.lecturaActual),
+          cantidadVendida: cantidadAnterior,
+          valorVenta: valorVentaAnterior,
+          manguera: {
+            numero: lectura.manguera.numero,
+            producto: {
+              id: lectura.manguera.producto.id,
+              codigo: lectura.manguera.producto.codigo,
+              nombre: lectura.manguera.producto.nombre
+            },
+            surtidor: {
+              numero: lectura.manguera.surtidor.numero,
+              nombre: lectura.manguera.surtidor.nombre
+            }
+          }
+        };
+
+        const datosNuevos = {
+          lecturaAnterior: lecturaAnterior,
+          lecturaActual: nuevaLecturaActual,
+          cantidadVendida: cantidadVendida,
+          valorVenta: nuevoValorVenta,
+          manguera: {
+            numero: lectura.manguera.numero,
+            producto: {
+              id: lectura.manguera.producto.id,
+              codigo: lectura.manguera.producto.codigo,
+              nombre: lectura.manguera.producto.nombre
+            },
+            surtidor: {
+              numero: lectura.manguera.surtidor.numero,
+              nombre: lectura.manguera.surtidor.nombre
+            }
+          }
+        };
+
+        const descripcion = `Actualización de lectura de manguera ${lectura.manguera.numero} (${lectura.manguera.producto.nombre}): Cantidad ${cantidadAnterior} → ${cantidadVendida}, Valor $${valorVentaAnterior} → $${nuevoValorVenta}`;
+
+        await this.auditoriaService.registrarCambio(
+          cierreTurno.turnoId,
+          usuarioId,
+          TipoModificacionTurno.LECTURA_MANGUERA,
+          datosAnteriores,
+          datosNuevos,
+          descripcion,
+          prisma
+        );
       }
 
       return this.mapToHistorialLectura(lecturaActualizada);
@@ -627,6 +704,286 @@ export class LecturaMangueraUpdateService {
           });
         }
       }
+    }
+  }
+
+  /**
+   * Actualizar lecturaAnterior y lecturaActual del siguiente turno en cascada completa
+   * Esta función se ejecuta SIEMPRE cuando se actualiza una lectura
+   * para mantener la integridad de datos entre turnos.
+   * 
+   * Propaga los cambios a TODOS los turnos siguientes de forma recursiva.
+   * 
+   * Lógica CRÍTICA:
+   * 1. La cantidadVendida de cada turno debe mantenerse FIJA (no se modifica)
+   * 2. Actualiza lecturaAnterior del siguiente turno con la lecturaActual del turno anterior
+   * 3. Recalcula lecturaActual = lecturaAnterior + cantidadVendida (usando cantidadVendida original)
+   * 4. Recalcula valorVenta con la cantidadVendida original
+   * 5. Repite el proceso para el siguiente turno (cascada completa)
+   * 
+   * IMPORTANTE: La cantidadVendida representa lo vendido en ese turno y NO debe cambiar
+   * por actualizaciones de turnos anteriores.
+   */
+  private async actualizarLecturaAnteriorSiguienteTurno(
+    prisma: any,
+    cierreTurnoActual: any,
+    mangueraId: string,
+    lecturaAnteriorOriginal: number,
+    nuevaLecturaActual: number
+  ): Promise<void> {
+    try {
+
+      // Iniciar la cascada: comenzar con el turno actual
+      let turnoActual = cierreTurnoActual.turno;
+      let lecturaActualDelTurnoAnterior = nuevaLecturaActual;
+      
+      let turnosActualizados = 0;
+      const MAX_TURNOS = 1000; // Límite de seguridad para evitar loops infinitos
+
+      // Iterar hasta que no haya más turnos siguientes
+      while (turnosActualizados < MAX_TURNOS) {
+        if (!turnoActual) {
+          break;
+        }
+
+        const puntoVentaId = turnoActual.puntoVentaId;
+        const fechaInicioActual = turnoActual.fechaInicio;
+        const horaInicioActual = turnoActual.horaInicio;
+
+        // Normalizar fechaInicio para comparación (solo la fecha sin hora)
+        const fechaInicioSolo = new Date(fechaInicioActual);
+        fechaInicioSolo.setUTCHours(0, 0, 0, 0);
+        const fechaInicioFin = new Date(fechaInicioActual);
+        fechaInicioFin.setUTCHours(23, 59, 59, 999);
+
+        // Buscar el siguiente turno:
+        // - Mismo puntoVentaId
+        // - Fecha/hora de inicio posterior al turno actual
+        const turnosSiguientes = await prisma.turno.findMany({
+          where: {
+            puntoVentaId: puntoVentaId,
+            OR: [
+              {
+                // Turno en fecha posterior (después del día actual)
+                fechaInicio: {
+                  gt: fechaInicioFin
+                }
+              },
+              {
+                // Turno en misma fecha pero hora posterior
+                AND: [
+                  {
+                    fechaInicio: {
+                      gte: fechaInicioSolo,
+                      lte: fechaInicioFin
+                    }
+                  },
+                  {
+                    horaInicio: {
+                      gt: horaInicioActual
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          orderBy: [
+            { fechaInicio: 'asc' },
+            { horaInicio: 'asc' }
+          ],
+          take: 1, // Solo el siguiente turno inmediato
+          include: {
+            cierres: {
+              take: 1,
+              orderBy: {
+                fechaCierre: 'desc'
+              }
+            }
+          }
+        });
+
+        if (turnosSiguientes.length === 0) {
+          // No hay más turnos siguientes, terminamos la cascada
+          if (turnosActualizados === 0) {
+            console.log('[LECTURA_UPDATE] No se encontró siguiente turno para actualizar lecturaAnterior');
+          } else {
+            console.log(`[LECTURA_UPDATE] Cascada completada. Total de turnos actualizados: ${turnosActualizados}`);
+          }
+          break;
+        }
+
+        const siguienteTurno = turnosSiguientes[0];
+        
+        if (!siguienteTurno.cierres || siguienteTurno.cierres.length === 0) {
+          // El siguiente turno aún no tiene cierre, no hay lectura que actualizar
+          // Pero seguimos buscando más turnos siguientes por si acaso
+          console.log(`[LECTURA_UPDATE] Turno siguiente (ID: ${siguienteTurno.id}) no tiene cierre aún, continuando con siguiente turno`);
+          turnoActual = siguienteTurno;
+          continue;
+        }
+
+        const siguienteCierreTurno = siguienteTurno.cierres[0];
+
+        // Buscar la lectura de la misma manguera en el siguiente turno
+        const lecturaSiguienteTurno = await prisma.historialLectura.findFirst({
+          where: {
+            turnoId: siguienteCierreTurno.id,
+            mangueraId: mangueraId
+          },
+          include: {
+            manguera: {
+              include: {
+                producto: true
+              }
+            }
+          }
+        });
+
+        if (!lecturaSiguienteTurno) {
+          // No hay lectura de esta manguera en el siguiente turno
+          // Continuamos con el siguiente turno
+          console.log(`[LECTURA_UPDATE] No se encontró lectura de la manguera en el siguiente turno (CierreTurno ID: ${siguienteCierreTurno.id}), continuando`);
+          turnoActual = siguienteTurno;
+          continue;
+        }
+
+        // Obtener valores actuales del siguiente turno
+        // CRÍTICO: La cantidadVendida debe mantenerse FIJA
+        const cantidadVendidaSiguiente = Number(lecturaSiguienteTurno.cantidadVendida);
+
+        // Actualizar lecturaAnterior del siguiente turno con la lecturaActual del turno anterior
+        const nuevaLecturaAnteriorSiguiente = lecturaActualDelTurnoAnterior;
+
+        // Recalcular lecturaActual basándose en la cantidadVendida ORIGINAL (que se mantiene fija)
+        // lecturaActual = lecturaAnterior + cantidadVendida
+        const nuevaLecturaActualSiguiente = nuevaLecturaAnteriorSiguiente + cantidadVendidaSiguiente;
+
+        // Validar que nueva lecturaAnterior <= nueva lecturaActual
+        if (nuevaLecturaAnteriorSiguiente > nuevaLecturaActualSiguiente) {
+          console.error(
+            `[LECTURA_UPDATE] Error: La nueva lecturaAnterior (${nuevaLecturaAnteriorSiguiente}) ` +
+            `es mayor que la nueva lecturaActual (${nuevaLecturaActualSiguiente}) en turno ` +
+            `(CierreTurno ID: ${siguienteCierreTurno.id}). Deteniendo cascada.`
+          );
+          break;
+        }
+
+        // La cantidadVendida se mantiene FIJA (no se modifica)
+        const nuevaCantidadVendidaSiguiente = cantidadVendidaSiguiente;
+
+        // Recalcular valorVenta con el precio actual del producto y la cantidadVendida ORIGINAL
+        const precioUnitario = Number(lecturaSiguienteTurno.manguera.producto.precioVenta);
+        const nuevoValorVentaSiguiente = Math.round(cantidadVendidaSiguiente * precioUnitario * this.ROUND_FACTOR) / this.ROUND_FACTOR;
+
+        // Actualizar lecturaAnterior y lecturaActual del siguiente turno
+        // cantidadVendida se mantiene FIJA (no se modifica)
+        await prisma.historialLectura.update({
+          where: { id: lecturaSiguienteTurno.id },
+          data: {
+            lecturaAnterior: nuevaLecturaAnteriorSiguiente,
+            lecturaActual: nuevaLecturaActualSiguiente,
+            cantidadVendida: cantidadVendidaSiguiente, // Se mantiene fija
+            valorVenta: nuevoValorVentaSiguiente,
+            observaciones: lecturaSiguienteTurno.observaciones
+              ? `${lecturaSiguienteTurno.observaciones} | lecturaAnterior y lecturaActual actualizadas automáticamente (cascada): ${new Date().toISOString()}`
+              : `lecturaAnterior y lecturaActual actualizadas automáticamente (cascada): ${new Date().toISOString()}`
+          }
+        });
+
+        turnosActualizados++;
+        console.log(
+          `[LECTURA_UPDATE] [Cascada ${turnosActualizados}] Actualizada lecturaAnterior (${nuevaLecturaAnteriorSiguiente}) ` +
+          `y lecturaActual (${nuevaLecturaActualSiguiente}) del turno siguiente ` +
+          `(CierreTurno ID: ${siguienteCierreTurno.id}, Lectura ID: ${lecturaSiguienteTurno.id}). ` +
+          `cantidadVendida mantenida fija: ${cantidadVendidaSiguiente}`
+        );
+
+        // Preparar para la siguiente iteración: el turno recién actualizado se convierte en el "actual"
+        turnoActual = siguienteTurno;
+        lecturaActualDelTurnoAnterior = nuevaLecturaActualSiguiente;
+      }
+
+      if (turnosActualizados >= MAX_TURNOS) {
+        console.error(
+          `[LECTURA_UPDATE] Advertencia: Se alcanzó el límite de ${MAX_TURNOS} turnos en la cascada. ` +
+          `Esto puede indicar un loop infinito o una cadena muy larga de turnos.`
+        );
+      }
+
+      if (turnosActualizados > 0) {
+        console.log(
+          `[LECTURA_UPDATE] Cascada completa finalizada. Total de turnos actualizados: ${turnosActualizados}. ` +
+          `cantidadVendida se mantuvo fija en todos los turnos.`
+        );
+      }
+    } catch (error) {
+      // No queremos que un error en esta operación falle toda la transacción
+      // Solo registramos el error para diagnóstico
+      console.error('[LECTURA_UPDATE] Error al actualizar lecturaAnterior y lecturaActual en cascada:', error);
+    }
+  }
+
+  /**
+   * Actualizar lecturaActual de la manguera con la lectura del último turno cerrado
+   * Esto asegura que la manguera siempre refleje la lectura del último turno cerrado,
+   * independientemente de si se actualiza directamente el último turno o un turno anterior
+   * que afecta al último turno en cascada.
+   */
+  private async actualizarLecturaActualManguera(
+    prisma: any,
+    mangueraId: string,
+    puntoVentaId: string
+  ): Promise<void> {
+    try {
+      // Buscar el último historial de lectura cerrado (con turnoId/CierreTurno) de esta manguera
+      // Ordenar por fechaLectura descendente para obtener el más reciente
+      const ultimoHistorialCerrado = await prisma.historialLectura.findFirst({
+        where: {
+          mangueraId: mangueraId,
+          turnoId: { not: null } // Solo turnos cerrados (que tienen CierreTurno)
+        },
+        orderBy: {
+          fechaLectura: 'desc'
+        },
+        select: {
+          id: true,
+          lecturaActual: true,
+          fechaLectura: true,
+          turnoId: true
+        }
+      });
+
+      if (!ultimoHistorialCerrado) {
+        // No hay turnos cerrados para esta manguera, no hay nada que actualizar
+        console.log(
+          `[LECTURA_UPDATE] No se encontró último turno cerrado para la manguera ${mangueraId}. ` +
+          `No se actualizará la lecturaActual de la manguera.`
+        );
+        return;
+      }
+
+      const lecturaActualDelUltimoTurno = Number(ultimoHistorialCerrado.lecturaActual);
+
+      // Actualizar la lecturaActual de la manguera
+      await prisma.mangueraSurtidor.update({
+        where: { id: mangueraId },
+        data: {
+          lecturaActual: lecturaActualDelUltimoTurno
+        }
+      });
+
+      console.log(
+        `[LECTURA_UPDATE] Actualizada lecturaActual de la manguera ${mangueraId} ` +
+        `a ${lecturaActualDelUltimoTurno} (del último turno cerrado - Historial ID: ${ultimoHistorialCerrado.id}, ` +
+        `CierreTurno ID: ${ultimoHistorialCerrado.turnoId})`
+      );
+    } catch (error) {
+      // No queremos que un error en esta operación falle toda la transacción
+      // Solo registramos el error para diagnóstico
+      console.error(
+        `[LECTURA_UPDATE] Error al actualizar lecturaActual de la manguera ${mangueraId}:`,
+        error
+      );
     }
   }
 

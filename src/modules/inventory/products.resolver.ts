@@ -1546,6 +1546,7 @@ export class ProductsResolver {
   @UseGuards(RolesGuard)
   @Roles('admin', 'manager', 'employee')
   async updateHistorialVentaProducto(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
     @Args('cantidadVendida', { type: () => Float, nullable: true }) cantidadVendida?: number,
     @Args('precioUnitario', { type: () => Float, nullable: true }) precioUnitario?: number,
@@ -1557,7 +1558,7 @@ export class ProductsResolver {
       ...(precioUnitario !== undefined && { precioUnitario }),
       ...(observaciones !== undefined && { observaciones })
     };
-    return this.historialVentasService.updateHistorialVentaProducto(input);
+    return this.historialVentasService.updateHistorialVentaProducto(input, user?.id);
   }
 
   @Mutation(() => MetodoPagoResumen, { name: 'createCierreTurnoMetodoPago' })
@@ -1591,6 +1592,7 @@ export class ProductsResolver {
   @UseGuards(RolesGuard)
   @Roles('admin', 'manager', 'employee')
   async updateCierreTurnoMetodoPago(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
     @Args('monto', { type: () => Float, nullable: true }) monto?: number,
     @Args('observaciones', { nullable: true }) observaciones?: string
@@ -1600,13 +1602,14 @@ export class ProductsResolver {
       ...(monto !== undefined && { monto }),
       ...(observaciones !== undefined && { observaciones })
     };
-    return this.historialVentasService.updateCierreTurnoMetodoPago(input);
+    return this.historialVentasService.updateCierreTurnoMetodoPago(input, user?.id);
   }
 
   @Mutation(() => MovimientoEfectivo, { name: 'updateMovimientoEfectivo' })
   @UseGuards(RolesGuard)
   @Roles('admin', 'manager', 'employee')
   async updateMovimientoEfectivo(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
     @Args('monto', { type: () => Float, nullable: true }) monto?: number,
     @Args('concepto', { nullable: true }) concepto?: string,
@@ -1620,7 +1623,7 @@ export class ProductsResolver {
       ...(detalle !== undefined && { detalle }),
       ...(observaciones !== undefined && { observaciones })
     };
-    return this.historialVentasService.updateMovimientoEfectivo(input);
+    return this.historialVentasService.updateMovimientoEfectivo(input, user?.id);
   }
 
   /**

@@ -92,8 +92,9 @@ export class ShiftsResolver {
   async updateShift(
     @Args('id', { type: () => ID }) id: string,
     @Args('updateShiftInput') updateShiftInput: UpdateShiftInput,
+    @CurrentUser() user: any,
   ): Promise<Shift> {
-    return this.shiftsService.update(id, updateShiftInput);
+    return this.shiftsService.update(id, updateShiftInput, user?.id);
   }
 
   @Mutation(() => Shift)

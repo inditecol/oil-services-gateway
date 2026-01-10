@@ -5,12 +5,14 @@ import { UpdateShiftInput } from './dto/update-shift.input';
 import { UpdateTurnoInput } from './dto/update-turno-legacy.input';
 import { Shift } from './entities/shift.entity';
 import { DateUtilsService } from './services/date-utils.service';
+import { AuditoriaTurnoService, TipoModificacionTurno } from './services/auditoria-turno.service';
 
 @Injectable()
 export class ShiftsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly dateUtils: DateUtilsService
+    private readonly dateUtils: DateUtilsService,
+    private readonly auditoriaService: AuditoriaTurnoService
   ) {}
 
   private formatShift(shift: any): Shift {
@@ -227,11 +229,21 @@ export class ShiftsService {
     }
   }
 
-  async update(id: string, updateShiftInput: UpdateShiftInput): Promise<Shift> {
+  async update(id: string, updateShiftInput: UpdateShiftInput, usuarioId?: string): Promise<Shift> {
     try {
       const existingShift = await this.findById(id);
       if (!existingShift) {
         throw new NotFoundException('Shift not found');
+      }
+
+      // Obtener usuario anterior si existe
+      let usuarioAnterior = null;
+      if (existingShift.userId) {
+        const usuario = await this.prisma.usuario.findUnique({
+          where: { id: existingShift.userId },
+          select: { id: true, nombre: true, apellido: true, username: true }
+        });
+        usuarioAnterior = usuario;
       }
 
       if (updateShiftInput.userId) {
@@ -247,6 +259,22 @@ export class ShiftsService {
           throw new NotFoundException('User is not active');
         }
       }
+
+      // Preparar datos anteriores para auditoría
+      const datosAnteriores: any = {
+        fechaInicio: existingShift.startDate?.toISOString() || null,
+        fechaFin: existingShift.endDate?.toISOString() || null,
+        horaInicio: existingShift.startTime || null,
+        horaFin: existingShift.endTime || null,
+        observaciones: existingShift.observations || null,
+        trabajador: usuarioAnterior ? {
+          id: usuarioAnterior.id,
+          nombre: usuarioAnterior.nombre,
+          apellido: usuarioAnterior.apellido,
+          username: usuarioAnterior.username
+        } : null,
+        activo: existingShift.active ?? true
+      };
 
       const updates: string[] = [];
       const escapedId = id.replace(/'/g, "''");
@@ -322,11 +350,20 @@ export class ShiftsService {
       const shiftData = shiftRaw[0];
       
       let usuario = null;
+      let usuarioNuevo = null;
       if (shiftData.usuarioId) {
         const usuarios = await this.prisma.usuario.findMany({
           where: { id: shiftData.usuarioId },
         });
         usuario = usuarios.length > 0 ? usuarios[0] : null;
+        if (usuario) {
+          usuarioNuevo = {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            username: usuario.username
+          };
+        }
       }
       const shift = {
         ...shiftData,
@@ -334,6 +371,56 @@ export class ShiftsService {
         fechaFin: shiftData.fechaFinStr ? this.dateUtils.parseDateFromString(shiftData.fechaFinStr) : (shiftData.fechaFin || null),
         usuario: usuario
       };
+
+      // Registrar cambio en auditoría si hay cambios y usuarioId proporcionado
+      if (updates.length > 0 && usuarioId) {
+        // Construir datosNuevos usando el estado final real del turno desde la base de datos
+        const datosNuevos: any = {
+          fechaInicio: shift.fechaInicio?.toISOString() || null,
+          fechaFin: shift.fechaFin?.toISOString() || null,
+          horaInicio: shift.horaInicio || null,
+          horaFin: shift.horaFin || null,
+          observaciones: shift.observaciones || null,
+          trabajador: usuarioNuevo,
+          activo: shift.activo ?? true
+        };
+
+        // Generar descripción de cambios
+        const cambios: string[] = [];
+        if (datosAnteriores.fechaInicio !== datosNuevos.fechaInicio) {
+          cambios.push(`Fecha inicio: ${datosAnteriores.fechaInicio} → ${datosNuevos.fechaInicio}`);
+        }
+        if (datosAnteriores.fechaFin !== datosNuevos.fechaFin) {
+          cambios.push(`Fecha fin: ${datosAnteriores.fechaFin || 'null'} → ${datosNuevos.fechaFin || 'null'}`);
+        }
+        if (datosAnteriores.horaInicio !== datosNuevos.horaInicio) {
+          cambios.push(`Hora inicio: ${datosAnteriores.horaInicio} → ${datosNuevos.horaInicio}`);
+        }
+        if (datosAnteriores.horaFin !== datosNuevos.horaFin) {
+          cambios.push(`Hora fin: ${datosAnteriores.horaFin || 'null'} → ${datosNuevos.horaFin || 'null'}`);
+        }
+        if (JSON.stringify(datosAnteriores.trabajador) !== JSON.stringify(datosNuevos.trabajador)) {
+          const nombreAnterior = datosAnteriores.trabajador ? `${datosAnteriores.trabajador.nombre} ${datosAnteriores.trabajador.apellido}` : 'null';
+          const nombreNuevo = datosNuevos.trabajador ? `${datosNuevos.trabajador.nombre} ${datosNuevos.trabajador.apellido}` : 'null';
+          cambios.push(`Trabajador: ${nombreAnterior} → ${nombreNuevo}`);
+        }
+        if (datosAnteriores.activo !== datosNuevos.activo) {
+          cambios.push(`Activo: ${datosAnteriores.activo} → ${datosNuevos.activo}`);
+        }
+
+        const descripcion = cambios.length > 0 
+          ? `Actualización de información general: ${cambios.join(', ')}`
+          : 'Actualización de información general';
+
+        await this.auditoriaService.registrarCambio(
+          id,
+          usuarioId,
+          TipoModificacionTurno.INFORMACION_GENERAL,
+          datosAnteriores,
+          datosNuevos,
+          descripcion
+        );
+      }
 
       return this.formatShift(shift);
     } catch (error) {

@@ -1,16 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../config/prisma/prisma.service';
 import { UpdateHistorialVentaProductoInput } from '../dto/registrar-venta-producto.input';
 import { UpdateCierreTurnoMetodoPagoInput } from '../dto/update-cierre-turno-metodo-pago.input';
 import { CreateCierreTurnoMetodoPagoInput } from '../dto/create-cierre-turno-metodo-pago.input';
 import { UpdateMovimientoEfectivoInput } from '../dto/update-movimiento-efectivo.input';
+import { AuditoriaTurnoService, TipoModificacionTurno } from '../../shifts/services/auditoria-turno.service';
 
 @Injectable()
 export class HistorialVentaUpdateService {
   private readonly PRECISION_TOLERANCE = 0.01;
   private readonly ROUND_FACTOR = 100;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => AuditoriaTurnoService))
+    private auditoriaService: AuditoriaTurnoService
+  ) {}
 
   private async calcularTotalVentasTurno(cierreTurnoId: string, turnoId: string): Promise<number> {
     const totalVentasLecturas = await this.prisma.historialLectura.aggregate({
@@ -38,7 +43,7 @@ export class HistorialVentaUpdateService {
     return Math.max(0, totalVentasTurno);
   }
 
-  async updateHistorialVentaProducto(input: UpdateHistorialVentaProductoInput): Promise<any> {
+  async updateHistorialVentaProducto(input: UpdateHistorialVentaProductoInput, usuarioId?: string): Promise<any> {
     const registroExistente = await this.prisma.historialVentasProductos.findUnique({
       where: { id: input.id },
       include: {
@@ -289,6 +294,53 @@ export class HistorialVentaUpdateService {
         }
       }
 
+      // Registrar cambio en auditoría si hay usuarioId
+      if (usuarioId && registroExistente.turnoId) {
+        const datosAnteriores = {
+          producto: {
+            id: registroExistente.producto.id,
+            codigo: registroExistente.producto.codigo,
+            nombre: registroExistente.producto.nombre
+          },
+          cantidadVendida: cantidadAnterior,
+          precioUnitario: registroExistente.precioUnitario,
+          valorTotal: valorTotalAnterior,
+          metodoPago: {
+            id: registroExistente.metodoPago.id,
+            codigo: registroExistente.metodoPago.codigo,
+            nombre: registroExistente.metodoPago.nombre
+          }
+        };
+
+        const datosNuevos = {
+          producto: {
+            id: registroExistente.producto.id,
+            codigo: registroExistente.producto.codigo,
+            nombre: registroExistente.producto.nombre
+          },
+          cantidadVendida: nuevaCantidad,
+          precioUnitario: nuevoPrecio,
+          valorTotal: nuevoValorTotal,
+          metodoPago: {
+            id: registroExistente.metodoPago.id,
+            codigo: registroExistente.metodoPago.codigo,
+            nombre: registroExistente.metodoPago.nombre
+          }
+        };
+
+        const descripcion = `Actualización de producto vendido: ${registroExistente.producto.nombre} (${registroExistente.producto.codigo}), Cantidad ${cantidadAnterior} → ${nuevaCantidad}, Valor $${valorTotalAnterior} → $${nuevoValorTotal}`;
+
+        await this.auditoriaService.registrarCambio(
+          registroExistente.turnoId,
+          usuarioId,
+          TipoModificacionTurno.PRODUCTO_VENDIDO,
+          datosAnteriores,
+          datosNuevos,
+          descripcion,
+          prisma
+        );
+      }
+
       return registroActualizado;
     });
   }
@@ -497,7 +549,7 @@ export class HistorialVentaUpdateService {
     });
   }
 
-  async updateCierreTurnoMetodoPago(input: UpdateCierreTurnoMetodoPagoInput): Promise<any> {
+  async updateCierreTurnoMetodoPago(input: UpdateCierreTurnoMetodoPagoInput, usuarioId?: string): Promise<any> {
     const metodoPagoExistente = await this.prisma.cierreTurnoMetodoPago.findUnique({
       where: { id: input.id },
       include: {
@@ -656,6 +708,41 @@ export class HistorialVentaUpdateService {
             }
           }
         }
+      }
+
+      // Registrar cambio en auditoría si hay usuarioId
+      if (usuarioId && cierreTurno.turnoId) {
+        const datosAnteriores = {
+          metodoPago: {
+            id: metodoPagoExistente.metodoPagoRel?.id || null,
+            codigo: metodoPagoExistente.metodoPagoRel?.codigo || metodoPagoExistente.metodoPago || null,
+            nombre: metodoPagoExistente.metodoPagoRel?.nombre || metodoPagoExistente.metodoPago || null
+          },
+          monto: montoAnterior,
+          observaciones: metodoPagoExistente.observaciones || null
+        };
+
+        const datosNuevos = {
+          metodoPago: {
+            id: metodoPagoExistente.metodoPagoRel?.id || null,
+            codigo: metodoPagoExistente.metodoPagoRel?.codigo || metodoPagoExistente.metodoPago || null,
+            nombre: metodoPagoExistente.metodoPagoRel?.nombre || metodoPagoExistente.metodoPago || null
+          },
+          monto: nuevoMonto,
+          observaciones: input.observaciones !== undefined ? input.observaciones : metodoPagoExistente.observaciones || null
+        };
+
+        const descripcion = `Actualización de método de pago: ${metodoPagoExistente.metodoPagoRel?.nombre || metodoPagoExistente.metodoPago}, Monto $${montoAnterior} → $${nuevoMonto}`;
+
+        await this.auditoriaService.registrarCambio(
+          cierreTurno.turnoId,
+          usuarioId,
+          TipoModificacionTurno.METODO_PAGO,
+          datosAnteriores,
+          datosNuevos,
+          descripcion,
+          prisma
+        );
       }
 
       const metodoPagoActualizado = await prisma.cierreTurnoMetodoPago.findUnique({
@@ -844,7 +931,7 @@ export class HistorialVentaUpdateService {
     });
   }
 
-  async updateMovimientoEfectivo(input: UpdateMovimientoEfectivoInput): Promise<any> {
+  async updateMovimientoEfectivo(input: UpdateMovimientoEfectivoInput, usuarioId?: string): Promise<any> {
     const movimientoExistente = await this.prisma.movimientoEfectivo.findUnique({
       where: { id: input.id },
       include: {
@@ -927,6 +1014,37 @@ export class HistorialVentaUpdateService {
             fechaUltimoMovimiento: new Date()
           }
         });
+      }
+
+      // Registrar cambio en auditoría si hay usuarioId
+      if (usuarioId && movimientoExistente.cierreTurno.turnoId) {
+        const datosAnteriores = {
+          tipo: movimientoExistente.tipo,
+          monto: montoAnterior,
+          concepto: movimientoExistente.concepto,
+          detalle: movimientoExistente.detalle || null,
+          observaciones: movimientoExistente.observaciones || null
+        };
+
+        const datosNuevos = {
+          tipo: movimientoExistente.tipo,
+          monto: nuevoMonto,
+          concepto: input.concepto !== undefined ? input.concepto : movimientoExistente.concepto,
+          detalle: input.detalle !== undefined ? input.detalle : movimientoExistente.detalle || null,
+          observaciones: input.observaciones !== undefined ? input.observaciones : movimientoExistente.observaciones || null
+        };
+
+        const descripcion = `Actualización de movimiento de efectivo (${movimientoExistente.tipo}): Monto $${montoAnterior} → $${nuevoMonto}, Concepto: ${datosNuevos.concepto}`;
+
+        await this.auditoriaService.registrarCambio(
+          movimientoExistente.cierreTurno.turnoId,
+          usuarioId,
+          TipoModificacionTurno.MOVIMIENTO_EFECTIVO,
+          datosAnteriores,
+          datosNuevos,
+          descripcion,
+          prisma
+        );
       }
 
       const movimientoActualizado = await prisma.movimientoEfectivo.findUnique({
